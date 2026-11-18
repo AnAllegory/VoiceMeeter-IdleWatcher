@@ -86,6 +86,7 @@ The launcher/controller. It:
 - Resolves native 64-bit PowerShell through Sysnative when needed from a 32-bit WScript process on 64-bit Windows.
 - Supports default Start behavior and explicit /start or /stop arguments.
 - Creates a temporary startup-status path for Start and waits for an explicit startup result.
+- Writes startup status tokens through the `Write-StartupStatus` helper.
 - Reports early startup errors and a timeout rather than assuming a successful start.
 - For Stop, waits for the PowerShell controller to finish and checks its exit status.
 
