@@ -172,7 +172,7 @@ function Write-Log {
 # The VBS launcher waits for a short status token, so startup failures are not
 # hidden by WshShell.Run(..., WaitOnReturn=False).
 $script:StartupStatusWritten = $false
-function Set-StartupStatus {
+function Write-StartupStatus {
     param([ValidateSet('READY', 'ALREADY_RUNNING', 'STOPPED', 'FAILED')][string]$Status)
 
     if ([string]::IsNullOrWhiteSpace($StartupStatusFile) -or $script:StartupStatusWritten) {
@@ -843,7 +843,7 @@ try {
     # must never stop an already-running watcher.
     if (-not $mutexOwned) {
         Write-Log 'Watcher is already running. This Start request will not create a second instance.'
-        Set-StartupStatus -Status 'ALREADY_RUNNING'
+        Write-StartupStatus -Status 'ALREADY_RUNNING'
         $watcherMutex.Dispose()
         $watcherMutex = $null
         return
@@ -865,7 +865,7 @@ catch {
     }
 
     Write-Log "Failed during single-instance or stop-request handling: $($_.Exception.Message)" -Level 'ERROR'
-    if ($Mode -eq 'Start') { Set-StartupStatus -Status 'FAILED' }
+    if ($Mode -eq 'Start') { Write-StartupStatus -Status 'FAILED' }
     throw
 }
 
@@ -894,7 +894,7 @@ try {
 
     if ($displayWaitResult -eq 1 -or [VMRIdleWatcherNative]::IsExitRequested()) {
         Write-Log 'Stop request received during initialization. Skipping VoiceMeeter API login.'
-        Set-StartupStatus -Status 'STOPPED'
+        Write-StartupStatus -Status 'STOPPED'
     }
     else {
         if ($displayState -lt 0) {
@@ -933,7 +933,7 @@ try {
             Write-Log "Successfully logged in to VoiceMeeter API (code $login)."
         }
 
-        Set-StartupStatus -Status 'READY'
+        Write-StartupStatus -Status 'READY'
 
         # ==================== Main loop ====================
         while (-not [VMRIdleWatcherNative]::IsExitRequested()) {
@@ -1189,7 +1189,7 @@ try {
 }
 catch {
     Write-Log "Fatal error: $($_.Exception.Message)" -Level 'ERROR'
-    if (-not $script:StartupStatusWritten) { Set-StartupStatus -Status 'FAILED' }
+    if (-not $script:StartupStatusWritten) { Write-StartupStatus -Status 'FAILED' }
     throw
 }
 finally {
