@@ -124,24 +124,26 @@ A two-state MacroButtons button can start and stop the watcher. The commands bel
 **ON action (START):**
 
 ~~~vb
-System.Execute("%windir%\System32\cmd.exe","C:\Users\serge\Desktop\VoiceMeeter Automation","/C wscript.exe VoiceMeeter-IdleWatcher.vbs");
+System.Execute("%windir%\\System32\\cmd.exe","C:\\Users\\serge\\Desktop\\VoiceMeeter Automation","/C wscript.exe VoiceMeeter-IdleWatcher.vbs");
 ~~~
 
 **OFF action (STOP):**
 
 ~~~vb
-System.Execute("%windir%\System32\cmd.exe","C:\Users\serge\Desktop\VoiceMeeter Automation","/C wscript.exe VoiceMeeter-IdleWatcher.vbs /stop");
+System.Execute("%windir%\\System32\\cmd.exe","C:\\Users\\serge\\Desktop\\VoiceMeeter Automation","/C wscript.exe VoiceMeeter-IdleWatcher.vbs /stop");
 ~~~
 
 The working-directory path is specific to the maintainer's current computer. Change it to the directory where both project scripts are installed on another system. Before making the repository public, replace this personal local path with a generic example or remove it.
 
-The watcher also synchronizes the configured button's **displayed state** with its own process state through the VoiceMeeter Remote API. It checks the state every 10 seconds while running and writes only when the displayed state differs. The API's `STATEONLY` mode changes the displayed state without executing the button macro. **ON means the watcher process is running**, even when the VoiceMeeter audio engine is temporarily stopped; graceful watcher shutdown attempts to display OFF.
+While the watcher is running, it periodically asserts ON for the configured button through the VoiceMeeter Remote API. It does not read the button state: the watcher already knows its own process state. The API STATEONLY mode changes only the displayed state and never executes the button macro. Graceful watcher shutdown asserts OFF.
 
-The source setting `$MacroButtonLogicalIndex` is the zero-based VoiceMeeter Remote API button ID. It is currently `1`; ID `0` is reserved for the maintainer's microphone button. Set the value to `-1` to disable synchronization.
+The source setting $MacroButtonLogicalIndex is the zero-based VoiceMeeter Remote API button ID. It is currently 1; ID 0 is reserved for the maintainer's microphone button. Set the value to -1 to disable synchronization.
 
-If the configured button or the API function is unavailable, synchronization is skipped and retried later. These optional failures are DEBUG-only, do not stop the watcher, and do not generate repeated ERROR entries. No second monitoring process is created.
+A repeated START request does not create another watcher process. It signals the existing watcher through an auto-reset event for an immediate button refresh instead of waiting for the normal 10-second interval. Periodic ON assertions also restore the display if MacroButtons is opened after the watcher has started.
 
-The synchronization logic is implemented in source, but its live behavior still needs to be confirmed on the maintainer's Windows system with the actual MacroButtons configuration. GitHub Actions performs static checks only.
+If the configured button or API function is unavailable, synchronization is skipped and retried later. These optional failures are DEBUG-only, do not stop the watcher, and do not generate repeated ERROR entries. No second monitoring process is created.
+
+GitHub Actions checks source syntax, the STATEONLY contract and embedded C# compilation. Live MacroButtons behavior still requires verification on the maintainer's Windows system; GitHub Actions cannot test that local UI.
 
 ## Logs
 

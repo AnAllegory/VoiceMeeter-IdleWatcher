@@ -13,7 +13,7 @@ This document gives a high-level view of the watcher's control flow. It compleme
 flowchart TD
     A[User starts the VBS launcher] --> B[Launch hidden PowerShell watcher]
     B --> C[Initialize logging, single-instance guard, display notifications and Remote API]
-    C --> MB[Reconcile configured MacroButtons display state with STATEONLY]
+    C --> MB[Assert MacroButtons ON with STATEONLY]
     MB --> D[Monitoring loop]
     D --> MB
 
@@ -38,6 +38,8 @@ flowchart TD
 
     P[User requests /stop through VBS] --> Q[Signal named Windows stop event]
     Q --> O[Set MacroButtons display state to OFF with STATEONLY]
+    T[Duplicate START request] --> U[Signal named auto-reset refresh event]
+    U --> MB
     O --> R[Log out, unregister notifications and release mutex]
     R --> S[Watcher exits]
 ```
@@ -62,7 +64,7 @@ If VoiceMeeter is not running, the watcher continues monitoring. It can detect a
 
 ### MacroButtons state display
 
-The watcher optionally polls the configured MacroButtons displayed state every 10 seconds. It writes ON while its own process is active and attempts OFF during graceful cleanup. The Remote API STATEONLY mode changes the visual state without executing the button macro. Button synchronization is optional: unavailable API calls or an unavailable button do not affect the main monitoring loop. The configured logical button ID is 1 (ID 0 is reserved for the maintainer's microphone button); set `$MacroButtonLogicalIndex` to -1 to disable synchronization.
+The watcher periodically asserts ON for the configured MacroButtons logical ID every 10 seconds and asserts OFF during graceful cleanup. It does not read the button state: the process itself is the source of truth. Remote API STATEONLY changes only the visual state and never executes the button macro. A repeated START request signals the active watcher through an auto-reset event for an immediate refresh. Button synchronization is optional: unavailable API calls or an unavailable button do not affect the main monitoring loop. The configured logical button ID is 1 (ID 0 is reserved for the maintainer's microphone button); set `$MacroButtonLogicalIndex` to -1 to disable synchronization.
 
 ### Scope
 
@@ -79,7 +81,7 @@ This is a simplified architecture diagram, not a complete representation of ever
 flowchart TD
     A[Пользователь запускает VBS] --> B[Скрытый запуск PowerShell]
     B --> C[Инициализация журналов, защиты от второго экземпляра, уведомлений дисплея и Remote API]
-    C --> MB[Синхронизация отображения MacroButtons через STATEONLY]
+    C --> MB[Установка ON для MacroButtons через STATEONLY]
     MB --> D[Цикл наблюдения]
     D --> MB
 
@@ -104,6 +106,8 @@ flowchart TD
 
     P[Пользователь передаёт /stop через VBS] --> Q[Сигнал именованному событию Windows]
     Q --> O[Установка OFF на MacroButtons через STATEONLY]
+    T[Повторный запрос START] --> U[Сигнал именованному событию обновления]
+    U --> MB
     O --> R[Logout, снятие уведомлений и освобождение mutex]
     R --> S[Завершение наблюдателя]
 ```
@@ -128,7 +132,7 @@ flowchart TD
 
 ### Отображение состояния MacroButtons
 
-Наблюдатель по дополнительной настройке проверяет отображаемое состояние указанной кнопки MacroButtons каждые 10 секунд. Пока процесс наблюдателя работает, он поддерживает ON, а при штатном завершении пытается установить OFF. Режим Remote API STATEONLY меняет отображение, не запуская макрос кнопки. Синхронизация необязательна: недоступность API или кнопки не влияет на основной цикл наблюдения. Сейчас задан логический ID кнопки 1 (ID 0 зарезервирован под кнопку микрофона); значение `$MacroButtonLogicalIndex = -1` отключает синхронизацию.
+Наблюдатель каждые 10 секунд устанавливает ON для указанного логического ID кнопки MacroButtons, а при штатном завершении устанавливает OFF. Он не читает состояние кнопки: источником истины является состояние самого процесса. Режим Remote API STATEONLY меняет отображение, не запуская макрос. Повторный запрос START посылает работающему экземпляру сигнал через auto-reset событие для немедленного обновления кнопки. Синхронизация необязательна: недоступность API или кнопки не влияет на основной цикл наблюдения. Сейчас задан логический ID кнопки 1 (ID 0 зарезервирован под кнопку микрофона); значение `$MacroButtonLogicalIndex = -1` отключает синхронизацию.
 
 ### Границы схемы
 

@@ -36,6 +36,7 @@ $PostShutdownConfirmationTimeoutSec = 5
 $ApiSessionRecoveryRetryIntervalSec = 5
 $MutexName = 'Local\VoiceMeeter-IdleWatcher'
 $StopEventName = 'Local\VoiceMeeter-IdleWatcher.Stop'
+$SyncEventName = 'Local\VoiceMeeter-IdleWatcher.Sync'
 $LogMutexName = 'Local\VoiceMeeter-IdleWatcher.Log'
 $StopWaitTimeoutSec = 20
 
@@ -342,6 +343,7 @@ public static class VMRIdleWatcherNative
 
     private static readonly ManualResetEvent ExitRequested = new ManualResetEvent(false);
     private static EventWaitHandle _externalStopEvent;
+    private static EventWaitHandle _externalSyncEvent;
 
     [UnmanagedFunctionPointer(CallingConvention.Winapi)]
     private delegate uint DeviceNotifyCallbackRoutine(
@@ -466,6 +468,41 @@ public static class VMRIdleWatcherNative
         _externalStopEvent = stopEvent;
     }
 
+    public static void CreateExternalSyncEvent(string eventName)
+    {
+        if (_externalSyncEvent != null)
+        {
+            return;
+        }
+
+        bool createdNew;
+        EventWaitHandle syncEvent = new EventWaitHandle(
+            false,
+            EventResetMode.AutoReset,
+            eventName,
+            out createdNew
+        );
+
+        if (!createdNew)
+        {
+            syncEvent.Dispose();
+            throw new InvalidOperationException(
+                "The named sync event already exists. Another watcher may still be active."
+            );
+        }
+
+        _externalSyncEvent = syncEvent;
+    }
+
+    public static void DisposeExternalSyncEvent()
+    {
+        if (_externalSyncEvent != null)
+        {
+            _externalSyncEvent.Dispose();
+            _externalSyncEvent = null;
+        }
+    }
+
     public static void DisposeExternalStopEvent()
     {
         if (_externalStopEvent != null)
@@ -491,28 +528,70 @@ public static class VMRIdleWatcherNative
         return false;
     }
 
-    public static bool WaitForExit(int timeoutMilliseconds)
+    // Returns 0 on timeout, 1 on graceful stop, and 2 when an existing
+    // Start request asks the running watcher to refresh its MacroButtons state.
+    public static int WaitForWatcherEvent(int timeoutMilliseconds)
     {
-        if (_externalStopEvent == null)
+        if (_externalStopEvent != null && _externalSyncEvent != null)
         {
-            return ExitRequested.WaitOne(timeoutMilliseconds);
+            WaitHandle[] waitHandles = new WaitHandle[]
+            {
+                ExitRequested,
+                _externalStopEvent,
+                _externalSyncEvent
+            };
+
+            int result = WaitHandle.WaitAny(waitHandles, timeoutMilliseconds);
+            if (result == 1)
+            {
+                ExitRequested.Set();
+                return 1;
+            }
+
+            if (result == 2)
+            {
+                return 2;
+            }
+
+            return result == 0 ? 1 : 0;
         }
 
-        WaitHandle[] waitHandles = new WaitHandle[]
+        if (_externalStopEvent != null)
         {
-            ExitRequested,
-            _externalStopEvent
-        };
+            WaitHandle[] stopHandles = new WaitHandle[]
+            {
+                ExitRequested,
+                _externalStopEvent
+            };
 
-        int result = WaitHandle.WaitAny(waitHandles, timeoutMilliseconds);
+            int stopResult = WaitHandle.WaitAny(stopHandles, timeoutMilliseconds);
+            if (stopResult == 1)
+            {
+                ExitRequested.Set();
+                return 1;
+            }
 
-        if (result == 1)
-        {
-            ExitRequested.Set();
-            return true;
+            return stopResult == 0 ? 1 : 0;
         }
 
-        return result == 0;
+        if (_externalSyncEvent != null)
+        {
+            WaitHandle[] syncHandles = new WaitHandle[]
+            {
+                ExitRequested,
+                _externalSyncEvent
+            };
+
+            int syncResult = WaitHandle.WaitAny(syncHandles, timeoutMilliseconds);
+            if (syncResult == 1)
+            {
+                return 2;
+            }
+
+            return syncResult == 0 ? 1 : 0;
+        }
+
+        return ExitRequested.WaitOne(timeoutMilliseconds) ? 1 : 0;
     }
 
     // Returns 0 when the first display state arrives, 1 when shutdown was
@@ -663,9 +742,6 @@ public static class VMRIdleWatcherNative
     [DllImport(Dll, EntryPoint = "VBVMR_SetParameterFloat", CallingConvention = CallingConvention.StdCall, ExactSpelling = true, CharSet = CharSet.Ansi)]
     public static extern int SetParameterFloat([MarshalAs(UnmanagedType.LPStr)] string parameter, float value);
 
-    [DllImport(Dll, EntryPoint = "VBVMR_MacroButton_GetStatus", CallingConvention = CallingConvention.StdCall, ExactSpelling = true)]
-    public static extern int MacroButtonGetStatus(int logicalButton, out float value, int bitmode);
-
     [DllImport(Dll, EntryPoint = "VBVMR_MacroButton_SetStatus", CallingConvention = CallingConvention.StdCall, ExactSpelling = true)]
     public static extern int MacroButtonSetStatus(int logicalButton, float value, int bitmode);
 }
@@ -694,8 +770,8 @@ function Invoke-VoiceMeeterApiLogin {
 }
 
 # ==================== Optional MacroButtons display-state synchronization ====================
-$script:MacroButtonReadStatus = 'NotChecked'
 $script:MacroButtonWriteStatus = 'NotChecked'
+$script:MacroButtonLastSuccessfulState = $null
 $script:MacroButtonNextSyncAt = [datetime]::MinValue
 
 function Invoke-MacroButtonStateSync {
@@ -707,7 +783,7 @@ function Invoke-MacroButtonStateSync {
         [switch]$Force
     )
 
-    if (($MacroButtonLogicalIndex -lt 0) -or ($script:MacroButtonReadStatus -eq 'Unsupported')) {
+    if (($MacroButtonLogicalIndex -lt 0) -or ($script:MacroButtonWriteStatus -eq 'Unsupported')) {
         return
     }
 
@@ -717,53 +793,9 @@ function Invoke-MacroButtonStateSync {
     }
 
     $script:MacroButtonNextSyncAt = $now.AddSeconds($MacroButtonSyncIntervalSec)
-    $currentButtonState = [single]0
 
-    try {
-        $getResult = [VMRIdleWatcherNative]::MacroButtonGetStatus(
-            [int]$MacroButtonLogicalIndex,
-            ([ref]$currentButtonState),
-            [int]$MacroButtonStateOnlyMode
-        )
-    }
-    catch [System.EntryPointNotFoundException] {
-        if ($script:MacroButtonReadStatus -ne 'Unsupported') {
-            Write-Log 'MacroButtons synchronization functions are not exported by this Remote API DLL. Continuing without optional button synchronization.' -Level 'DEBUG'
-        }
-        $script:MacroButtonReadStatus = 'Unsupported'
-        $script:MacroButtonNextSyncAt = [datetime]::MaxValue
-        return
-    }
-    catch {
-        $readStatus = 'ReadException'
-        if ($script:MacroButtonReadStatus -ne $readStatus) {
-            Write-Log "Could not read MacroButtons logical button $MacroButtonLogicalIndex state: $($_.Exception.Message). The watcher will continue and retry later." -Level 'DEBUG'
-        }
-        $script:MacroButtonReadStatus = $readStatus
-        return
-    }
-
-    if ($getResult -ne 0) {
-        $readStatus = "ReadResult:$getResult"
-        if ($script:MacroButtonReadStatus -ne $readStatus) {
-            Write-Log "MacroButtons logical button $MacroButtonLogicalIndex is not currently available (Remote API code $getResult). The watcher continues normally and will retry later." -Level 'DEBUG'
-        }
-        $script:MacroButtonReadStatus = $readStatus
-        return
-    }
-
-    if (($script:MacroButtonReadStatus -ne 'Available') -and ($script:MacroButtonReadStatus -ne 'NotChecked')) {
-        Write-Log "MacroButtons state access recovered for logical button $MacroButtonLogicalIndex." -Level 'DEBUG'
-    }
-    $script:MacroButtonReadStatus = 'Available'
-
-    Write-Log "MacroButtons logical button $MacroButtonLogicalIndex read displayed state $currentButtonState; desired state is $DesiredState." -Level 'DEBUG'
-    $currentState = if ($currentButtonState -ge 0.5) { 1 } else { 0 }
-    if ($currentState -eq $DesiredState) {
-        $script:MacroButtonWriteStatus = 'NoChangeNeeded'
-        return
-    }
-
+    # The watcher already knows its real process state. Assert only the
+    # displayed button state; STATEONLY never executes the button macro.
     try {
         $setResult = [VMRIdleWatcherNative]::MacroButtonSetStatus(
             [int]$MacroButtonLogicalIndex,
@@ -772,15 +804,17 @@ function Invoke-MacroButtonStateSync {
         )
     }
     catch [System.EntryPointNotFoundException] {
-        Write-Log 'MacroButtons SetStatus is not exported by this Remote API DLL. Continuing without optional button synchronization.' -Level 'DEBUG'
-        $script:MacroButtonReadStatus = 'Unsupported'
+        if ($script:MacroButtonWriteStatus -ne 'Unsupported') {
+            Write-Log 'MacroButtons SetStatus is not exported by this Remote API DLL. Continuing without optional button synchronization.' -Level 'DEBUG'
+        }
+        $script:MacroButtonWriteStatus = 'Unsupported'
         $script:MacroButtonNextSyncAt = [datetime]::MaxValue
         return
     }
     catch {
         $writeStatus = 'WriteException'
         if ($script:MacroButtonWriteStatus -ne $writeStatus) {
-            Write-Log "Could not update MacroButtons logical button $MacroButtonLogicalIndex display state: $($_.Exception.Message). The watcher continues normally and will retry later." -Level 'DEBUG'
+            Write-Log "Could not update MacroButtons logical button $MacroButtonLogicalIndex display state: $($_.Exception.Message). The watcher will continue and retry later." -Level 'DEBUG'
         }
         $script:MacroButtonWriteStatus = $writeStatus
         return
@@ -789,15 +823,20 @@ function Invoke-MacroButtonStateSync {
     if ($setResult -ne 0) {
         $writeStatus = "WriteResult:$setResult"
         if ($script:MacroButtonWriteStatus -ne $writeStatus) {
-            Write-Log "MacroButtons logical button $MacroButtonLogicalIndex display state could not be updated (Remote API code $setResult). The watcher continues normally and will retry later." -Level 'DEBUG'
+            Write-Log "MacroButtons logical button $MacroButtonLogicalIndex display state could not be asserted (Remote API code $setResult). The watcher continues normally and will retry later." -Level 'DEBUG'
         }
         $script:MacroButtonWriteStatus = $writeStatus
         return
     }
 
-    $script:MacroButtonWriteStatus = 'Available'
     $stateLabel = if ($DesiredState -eq 1) { 'ON' } else { 'OFF' }
-    Write-Log "MacroButtons logical button $MacroButtonLogicalIndex display state synchronized to $stateLabel using STATEONLY." -Level 'INFO'
+    if (($script:MacroButtonWriteStatus -ne 'Available') -or
+        ($script:MacroButtonLastSuccessfulState -ne $DesiredState) -or $Force) {
+        Write-Log "MacroButtons logical button $MacroButtonLogicalIndex display state set to $stateLabel using STATEONLY."
+    }
+
+    $script:MacroButtonWriteStatus = 'Available'
+    $script:MacroButtonLastSuccessfulState = $DesiredState
 }
 
 # ==================== Runtime state and lifecycle resources ====================
@@ -812,7 +851,44 @@ $connectionWarningLogged = $false
 $shutdownWarningLogged = $false
 $displayNotificationRegistered = $false
 $stopEventCreated = $false
+$syncEventCreated = $false
 $lastLoggedDisplayState = -999
+
+function Send-SyncRequestToExistingWatcher {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$EventName
+    )
+
+    # Retry briefly to cover the small window between mutex acquisition and
+    # creation of the active watcher's auto-reset synchronization event.
+    $attempts = 20
+
+    for ($attempt = 0; $attempt -lt $attempts; $attempt++) {
+        $eventHandle = $null
+
+        try {
+            $eventHandle = [System.Threading.EventWaitHandle]::OpenExisting($EventName)
+            [void]$eventHandle.Set()
+            return $true
+        }
+        catch [System.Threading.WaitHandleCannotBeOpenedException] {
+            Start-Sleep -Milliseconds 100
+        }
+        catch {
+            Write-Log "Could not request immediate MacroButtons refresh: $($_.Exception.Message). The watcher will keep its normal refresh schedule." -Level 'DEBUG'
+            return $false
+        }
+        finally {
+            if ($null -ne $eventHandle) {
+                $eventHandle.Dispose()
+            }
+        }
+    }
+
+    Write-Log 'Could not find the active watcher sync event. It will keep its normal MacroButtons refresh schedule.' -Level 'DEBUG'
+    return $false
+}
 
 function Send-StopRequestToExistingWatcher {
     param(
@@ -967,7 +1043,18 @@ try {
     # Start mode is deliberately non-destructive. A duplicate scheduled launch
     # must never stop an already-running watcher.
     if (-not $mutexOwned) {
-        Write-Log 'Watcher is already running. This Start request will not create a second instance.'
+        if ($MacroButtonLogicalIndex -ge 0) {
+            $syncRequestSent = Send-SyncRequestToExistingWatcher -EventName $SyncEventName
+            if ($syncRequestSent) {
+                Write-Log 'Watcher is already running. Requested an immediate MacroButtons display-state refresh; no second instance was created.'
+            }
+            else {
+                Write-Log 'Watcher is already running. This Start request will not create a second instance.'
+            }
+        }
+        else {
+            Write-Log 'Watcher is already running. This Start request will not create a second instance.'
+        }
         Write-StartupStatus -Status 'ALREADY_RUNNING'
         $watcherMutex.Dispose()
         $watcherMutex = $null
@@ -1005,6 +1092,17 @@ try {
     Initialize-VoicemeeterNativeInterop -DllPath $dllPath
     [VMRIdleWatcherNative]::CreateExternalStopEvent($StopEventName)
     $stopEventCreated = $true
+
+    if ($MacroButtonLogicalIndex -ge 0) {
+        try {
+            [VMRIdleWatcherNative]::CreateExternalSyncEvent($SyncEventName)
+            $syncEventCreated = $true
+        }
+        catch {
+            Write-Log "Optional MacroButtons refresh event could not be created: $($_.Exception.Message). Periodic refresh remains available." -Level 'DEBUG'
+        }
+    }
+
     Write-Log 'Graceful stop event is ready. Run the VBS file with /stop to request a clean shutdown.'
 
     # Register for the display state of this interactive Windows session.
@@ -1314,9 +1412,13 @@ try {
                 $waitMilliseconds = [Math]::Min($waitMilliseconds, [Math]::Max(100, $millisecondsUntilApiAttempt))
             }
 
-            if ([VMRIdleWatcherNative]::WaitForExit($waitMilliseconds)) {
+            $waitResult = [VMRIdleWatcherNative]::WaitForWatcherEvent($waitMilliseconds)
+            if ($waitResult -eq 1) {
                 Write-Log 'Stop request received. Leaving main loop for graceful cleanup.'
                 break
+            }
+            elseif ($waitResult -eq 2) {
+                Invoke-MacroButtonStateSync -DesiredState 1 -Force
             }
         }
     }
@@ -1373,7 +1475,19 @@ finally {
             }
         }
 
-        # 3. Close the stop event before releasing the mutex.
+        # 3. Close the MacroButtons refresh event before releasing the mutex.
+        if ($syncEventCreated) {
+            try {
+                [VMRIdleWatcherNative]::DisposeExternalSyncEvent()
+                $syncEventCreated = $false
+                Write-Log 'MacroButtons refresh event closed.'
+            }
+            catch {
+                Write-Log "Failed to close MacroButtons refresh event: $($_.Exception.Message)" -Level 'ERROR'
+            }
+        }
+
+        # 4. Close the stop event before releasing the mutex.
         if ($stopEventCreated) {
             try {
                 [VMRIdleWatcherNative]::DisposeExternalStopEvent()
@@ -1392,7 +1506,7 @@ finally {
         Write-Log "Unexpected error in graceful cleanup: $($_.Exception.Message)" -Level 'ERROR'
     }
     finally {
-        # 4. Release the mutex last. The Stop controller treats a normal mutex
+        # 5. Release the mutex last. The Stop controller treats a normal mutex
         #    hand-off as confirmation that this process has completed its cleanup path.
         if ($null -ne $watcherMutex) {
             if ($mutexOwned) {
