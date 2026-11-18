@@ -46,6 +46,9 @@ VoiceMeeter-IdleWatcher/
 ├── PROJECT_CONTEXT.md
 ├── ARCHITECTURE.md
 ├── CHANGELOG.md
+├── .github/
+│   └── workflows/
+│       └── powershell-check.yml
 └── .gitignore
 ~~~
 
@@ -224,25 +227,34 @@ When assisting with this project:
 - Explain risks plainly and avoid lengthy multi-stage troubleshooting unless it is necessary.
 - If a local file is needed but not present in the repository or current conversation, ask the user to provide that exact current file.
 
-## 13. Change history
+## 13. Automated checks
+
+- `.github/workflows/powershell-check.yml` runs on pushes and pull requests targeting `main`, and can also be started manually.
+- It explicitly uses the Windows PowerShell Desktop shell on a Windows GitHub-hosted runner.
+- It checks required repository files and parses the main PS1 source using the Windows PowerShell 5.1 parser. Parser errors fail the workflow.
+- It installs PSScriptAnalyzer 1.25.0 and reports Error, Warning, and Information findings.
+- Initial baseline mode is intentional: PSScriptAnalyzer findings are reported but do not yet fail the workflow. Review the first run before deciding which analyzer rules should become blocking.
+- This is static analysis only. It does not execute the watcher, connect to VoiceMeeter, test MacroButtons, or verify actual display power notifications.
+
+## 14. Change history
 
 - `CHANGELOG.md` records the repository baseline and future notable changes.
 - No numbered release has been declared yet; do not infer software versions from documentation commits.
 
-## 14. Architecture documentation
+## 15. Architecture documentation
 
 - `ARCHITECTURE.md` contains a bilingual high-level description and Mermaid diagrams for the watcher’s main control flow, safety checks, and graceful stop path.
 - Both README files include a concise overview diagram and link to the detailed architecture document.
 - The diagram is intentionally high-level; retry, timeout, API recovery, and logging details remain defined by the current source code.
 
-## 15. Current repository state at handover
+## 16. Current repository state at handover
 
 At the time this context file is being prepared:
 
 - Repository: AnAllegory/VoiceMeeter-IdleWatcher.
 - Visibility: Private.
 - Default branch: main.
-- The repository contains the current PS1 and VBS source files, bilingual README files, project handover notes, and architecture documentation.
+- The repository contains the current PS1 and VBS source files, bilingual README files, project handover notes, architecture documentation, changelog, and automated PowerShell checks.
 - GitHub connector read access to the private repository was successfully used in the current conversation.
 - README.md and README.ru.md contain the English and Russian project documentation, including the main Mermaid flow diagram.
 - PROJECT_CONTEXT.md is the handover document for restoring project context in a future chat.
