@@ -30,6 +30,32 @@ If VoiceMeeter is not running, the watcher continues monitoring. If VoiceMeeter 
 
 An unknown display state is treated as a safe condition: automatic shutdown remains blocked.
 
+## Architecture
+
+The diagram below summarizes the main control flow. For the bilingual explanation and the stop/cleanup path, see [ARCHITECTURE.md](ARCHITECTURE.md).
+
+```mermaid
+flowchart TD
+    A[Start VBS launcher] --> B[Launch hidden PowerShell watcher]
+    B --> C[Initialize watcher and Remote API]
+    C --> D[Monitoring loop]
+    D --> E[Read idle time]
+    D --> F[Read display state]
+    E --> G{Idle threshold reached?}
+    F --> H{Display is Off?}
+    G -->|No| D
+    H -->|No| D
+    G -->|Yes| I{Both conditions true?}
+    H -->|Yes| I
+    I -->|No| D
+    I -->|Yes| J[Re-check both conditions]
+    J --> K{Still eligible?}
+    K -->|No| D
+    K -->|Yes| L[Send VoiceMeeter shutdown command]
+    L --> M[Probe engine stop or restart]
+    M --> D
+```
+
 ## Current configuration
 
 | Setting | Default | Description |
@@ -50,6 +76,7 @@ The script also uses shorter internal intervals for API recovery and for checkin
 | README.md | English documentation. |
 | README.ru.md | Russian documentation. |
 | PROJECT_CONTEXT.md | Maintainer's project handover and context reference. |
+| ARCHITECTURE.md | Bilingual architecture overview and Mermaid diagrams. |
 | .gitignore | Excludes local logs, temporary files, backups, and KeePass databases from Git. |
 
 Keep the PS1 and VBS files in the same directory. The VBS launcher locates the PS1 file beside itself and expects the matching base filename.
