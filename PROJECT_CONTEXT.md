@@ -44,6 +44,7 @@ VoiceMeeter-IdleWatcher/
 ├── README.md
 ├── README.ru.md
 ├── PROJECT_CONTEXT.md
+├── ARCHITECTURE.md
 └── .gitignore
 ~~~
 
@@ -222,17 +223,24 @@ When assisting with this project:
 - Explain risks plainly and avoid lengthy multi-stage troubleshooting unless it is necessary.
 - If a local file is needed but not present in the repository or current conversation, ask the user to provide that exact current file.
 
-## 13. Current repository state at handover
+## 13. Architecture documentation
+
+- `ARCHITECTURE.md` contains a bilingual high-level description and Mermaid diagrams for the watcher’s main control flow, safety checks, and graceful stop path.
+- Both README files include a concise overview diagram and link to the detailed architecture document.
+- The diagram is intentionally high-level; retry, timeout, API recovery, and logging details remain defined by the current source code.
+
+## 14. Current repository state at handover
 
 At the time this context file is being prepared:
 
 - Repository: AnAllegory/VoiceMeeter-IdleWatcher.
 - Visibility: Private.
 - Default branch: main.
-- The repository contains the current uploaded PS1 and VBS source files.
+- The repository contains the current PS1 and VBS source files, bilingual README files, project handover notes, and architecture documentation.
 - GitHub connector read access to the private repository was successfully used in the current conversation.
-- README.md previously contained only the default two-line GitHub initialization text.
-- README.ru.md and PROJECT_CONTEXT.md are being added as the Russian companion and future-chat handover document.
+- README.md and README.ru.md contain the English and Russian project documentation, including the main Mermaid flow diagram.
+- PROJECT_CONTEXT.md is the handover document for restoring project context in a future chat.
+- ARCHITECTURE.md contains the bilingual detailed architecture overview and Mermaid diagrams.
 - The current source files were fetched back from GitHub for this review; their sizes were about 51 KB (PS1) and 7 KB (VBS).
 - The current PS1 source has no hard-coded C:\Users\serge path and no obvious API-token pattern was detected in a basic static scan. This is not a comprehensive security audit.
 
