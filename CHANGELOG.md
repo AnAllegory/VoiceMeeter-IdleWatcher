@@ -6,6 +6,10 @@ This project has not yet published a numbered release. Until the first release i
 
 ## [Unreleased]
 
+### Added
+
+- Added a GitHub Actions workflow that runs on Windows PowerShell 5.1, checks required project files, parses the main PS1 source, and reports PSScriptAnalyzer findings in baseline mode.
+
 Changes made after the latest dated entry will be recorded here.
 
 ## [Repository baseline — 2026-11-18]
