@@ -6,6 +6,10 @@ This project has not yet published a numbered release. Until the first release i
 
 ## [Unreleased]
 
+### Changed
+
+- Renamed `Set-StartupStatus` to `Write-StartupStatus` to describe its file-writing responsibility accurately; no startup-status behavior was changed.
+
 ### Added
 
 - Added a GitHub Actions workflow that runs on Windows PowerShell 5.1, checks required project files, parses the main PS1 source, and reports PSScriptAnalyzer findings in baseline mode.
