@@ -45,6 +45,7 @@ VoiceMeeter-IdleWatcher/
 ├── README.ru.md
 ├── PROJECT_CONTEXT.md
 ├── ARCHITECTURE.md
+├── CHANGELOG.md
 └── .gitignore
 ~~~
 
@@ -223,13 +224,18 @@ When assisting with this project:
 - Explain risks plainly and avoid lengthy multi-stage troubleshooting unless it is necessary.
 - If a local file is needed but not present in the repository or current conversation, ask the user to provide that exact current file.
 
-## 13. Architecture documentation
+## 13. Change history
+
+- `CHANGELOG.md` records the repository baseline and future notable changes.
+- No numbered release has been declared yet; do not infer software versions from documentation commits.
+
+## 14. Architecture documentation
 
 - `ARCHITECTURE.md` contains a bilingual high-level description and Mermaid diagrams for the watcher’s main control flow, safety checks, and graceful stop path.
 - Both README files include a concise overview diagram and link to the detailed architecture document.
 - The diagram is intentionally high-level; retry, timeout, API recovery, and logging details remain defined by the current source code.
 
-## 14. Current repository state at handover
+## 15. Current repository state at handover
 
 At the time this context file is being prepared:
 
