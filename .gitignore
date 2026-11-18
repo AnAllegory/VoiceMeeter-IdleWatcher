@@ -1,0 +1,21 @@
+# Runtime logs and rotated logs
+*.log
+*.log.old
+*.log.*
+
+# Temporary launcher status files
+*.status
+*.tmp
+
+# Local backups
+*-backup.*
+*.bak
+*.old
+
+# KeePassXC databases and protected credential files
+*.kdbx
+*.kdbx.*
+
+# Windows Explorer metadata
+Thumbs.db
+Desktop.ini
