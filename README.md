@@ -79,6 +79,7 @@ The script also uses shorter internal intervals for API recovery and for checkin
 | ARCHITECTURE.md | Bilingual architecture overview and Mermaid diagrams. |
 | CHANGELOG.md | Repository change history and development baseline. |
 | .gitignore | Excludes local logs, temporary files, backups, and KeePass databases from Git. |
+| .github/workflows/powershell-check.yml | Runs automated Windows PowerShell 5.1 parser and PSScriptAnalyzer checks. |
 
 Keep the PS1 and VBS files in the same directory. The VBS launcher locates the PS1 file beside itself and expects the matching base filename.
 
