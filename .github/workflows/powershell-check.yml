@@ -108,6 +108,29 @@ jobs:
 
           Write-Host 'MacroButtons synchronization uses logical ID 1 and STATEONLY mode.'
 
+      - name: Verify PowerShell .NET out-parameter handling
+        shell: powershell
+        run: |
+          Add-Type -TypeDefinition @'
+          public static class OutParameterProbe
+          {
+              public static int SetValue(out float value)
+              {
+                  value = 1.0f;
+                  return 0;
+              }
+          }
+          '@
+
+          [single]$probeValue = 0
+          $probeResult = [OutParameterProbe]::SetValue(([ref]$probeValue))
+
+          if (($probeResult -ne 0) -or ($probeValue -ne 1.0)) {
+              throw ("PowerShell did not receive the .NET out parameter correctly. Result={0}; Value={1}" -f $probeResult, $probeValue)
+          }
+
+          Write-Host 'PowerShell correctly received the .NET out parameter value.'
+
       - name: Install PSScriptAnalyzer
         shell: powershell
         run: |

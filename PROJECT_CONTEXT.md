@@ -71,7 +71,7 @@ The main watcher. The current source has approximately 1,275 lines. It includes:
 - Primary, fallback, and emergency log paths.
 - API login recovery when Login returns -2: perform Logout, then retry Login.
 - VoiceMeeter shutdown through the Remote API parameter Command.Shutdown.
-- Optional MacroButtons displayed-state synchronization through VBVMR_MacroButton_GetStatus and VBVMR_MacroButton_SetStatus in STATEONLY mode. The configured value is VoiceMeeter Remote API logical button ID 1 (ID 0 is reserved for the maintainer's microphone button). The displayed state is checked every 10 seconds, set to ON while the watcher process is active, and OFF during graceful cleanup. API or button unavailability is non-fatal and DEBUG-only.
+- Optional MacroButtons displayed-state synchronization through VBVMR_MacroButton_GetStatus and VBVMR_MacroButton_SetStatus in STATEONLY mode. The configured value is VoiceMeeter Remote API logical button ID 1 (ID 0 is reserved for the maintainer's microphone button). The displayed state is checked every 10 seconds, set to ON while the watcher process is active, and OFF during graceful cleanup. The GetStatus out parameter is passed from PowerShell as `([ref]$currentButtonState)`; a DEBUG-only readback message records the returned value when DebugMode is enabled. API or button unavailability is non-fatal and DEBUG-only.
 - Revalidation of idle time and display state immediately before dispatching shutdown.
 - Follow-up probes to detect whether VoiceMeeter stopped or restarted after a shutdown request.
 - Cleanup that logs out of the API, unregisters display notifications, closes the stop event, and releases the watcher mutex.
@@ -194,7 +194,7 @@ These are user-reported local runtime observations. They are not the same as an 
 
 ## 10. Known limitations and open items
 
-1. **MacroButtons visual-state synchronization is implemented but not yet verified on the maintainer's Windows system.** The watcher reads the configured button state and reconciles it every 10 seconds with Remote API STATEONLY mode. This changes only the visual state and does not execute the button macro. No helper process is created. The current target is logical button ID 1; logical ID 0 is reserved for the maintainer's microphone button.
+1. **MacroButtons visual-state synchronization is implemented but not yet fully verified on the maintainer's Windows system.** The watcher reads the configured button state and reconciles it every 10 seconds with Remote API STATEONLY mode. This changes only the visual state and does not execute the button macro. No helper process is created. The current target is logical button ID 1; logical ID 0 is reserved for the maintainer's microphone button. A PowerShell by-reference argument issue in the GetStatus readback has been corrected by parenthesizing the `[ref]` expression; the updated runtime behavior still needs a local test.
 2. If the configured button or MacroButtons API function is unavailable, synchronization is skipped and retried later. Repeated identical failures are suppressed and recorded only at DEBUG level; they do not stop the watcher.
 3. The CI workflow performs syntax and static analyzer checks only. It does not execute the watcher or test actual VoiceMeeter/MacroButtons/display behavior.
 4. No license has been chosen.

@@ -6,6 +6,10 @@ This project has not yet published a numbered release. Until the first release i
 
 ## [Unreleased]
 
+### Fixed
+
+- Corrected the PowerShell by-reference argument passed to `VBVMR_MacroButton_GetStatus` by grouping the `[ref]` expression. Added a debug-only readback line and a Windows PowerShell CI probe for .NET `out` parameter handling.
+
 ### Changed
 
 - Renamed `Set-StartupStatus` to `Write-StartupStatus` to describe its file-writing responsibility accurately; no startup-status behavior was changed.

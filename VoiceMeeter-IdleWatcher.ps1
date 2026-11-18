@@ -722,7 +722,7 @@ function Invoke-MacroButtonStateSync {
     try {
         $getResult = [VMRIdleWatcherNative]::MacroButtonGetStatus(
             [int]$MacroButtonLogicalIndex,
-            [ref]$currentButtonState,
+            ([ref]$currentButtonState),
             [int]$MacroButtonStateOnlyMode
         )
     }
@@ -757,6 +757,7 @@ function Invoke-MacroButtonStateSync {
     }
     $script:MacroButtonReadStatus = 'Available'
 
+    Write-Log "MacroButtons logical button $MacroButtonLogicalIndex read displayed state $currentButtonState; desired state is $DesiredState." -Level 'DEBUG'
     $currentState = if ($currentButtonState -ge 0.5) { 1 } else { 0 }
     if ($currentState -eq $DesiredState) {
         $script:MacroButtonWriteStatus = 'NoChangeNeeded'
