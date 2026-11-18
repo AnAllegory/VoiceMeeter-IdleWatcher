@@ -12,6 +12,8 @@ This project has not yet published a numbered release. Until the first release i
 
 ### Added
 
+- Added optional MacroButtons displayed-state synchronization for VoiceMeeter Remote API logical button ID 1 (ID 0 is reserved for the microphone button). The watcher uses `VBVMR_MacroButton_GetStatus` and `VBVMR_MacroButton_SetStatus` with `STATEONLY`, reconciles the displayed state every 10 seconds, and attempts to set OFF during graceful cleanup. API/button unavailability is non-fatal and only reported in DEBUG mode.
+
 - Added a GitHub Actions workflow that runs on Windows PowerShell 5.1, checks required project files, parses the main PS1 source, and reports PSScriptAnalyzer findings in baseline mode.
 
 Changes made after the latest dated entry will be recorded here.

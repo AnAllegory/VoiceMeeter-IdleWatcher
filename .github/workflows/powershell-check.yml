@@ -83,6 +83,31 @@ jobs:
 
           Write-Host 'PowerShell parser found no syntax errors.'
 
+      - name: Verify MacroButtons sync safety contract
+        shell: powershell
+        run: |
+          $source = Get-Content -LiteralPath 'VoiceMeeter-IdleWatcher.ps1' -Raw
+
+          $requiredPatterns = @(
+              '\$MacroButtonLogicalIndex = 1',
+              'EntryPoint = "VBVMR_MacroButton_GetStatus"',
+              'EntryPoint = "VBVMR_MacroButton_SetStatus"',
+              '\$MacroButtonStateOnlyMode = 0x00000002',
+              'MacroButtonSetStatus\('
+          )
+
+          foreach ($pattern in $requiredPatterns) {
+              if ($source -notmatch $pattern) {
+                  throw ("MacroButtons synchronization safety check failed. Missing source pattern: {0}" -f $pattern)
+              }
+          }
+
+          if ($source -notmatch 'MacroButtonSetStatus\([\s\S]{0,240}\$MacroButtonStateOnlyMode') {
+              throw 'MacroButtons state update must use STATEONLY mode.'
+          }
+
+          Write-Host 'MacroButtons synchronization uses logical ID 1 and STATEONLY mode.'
+
       - name: Install PSScriptAnalyzer
         shell: powershell
         run: |

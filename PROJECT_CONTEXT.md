@@ -71,6 +71,7 @@ The main watcher. The current source has approximately 1,275 lines. It includes:
 - Primary, fallback, and emergency log paths.
 - API login recovery when Login returns -2: perform Logout, then retry Login.
 - VoiceMeeter shutdown through the Remote API parameter Command.Shutdown.
+- Optional MacroButtons displayed-state synchronization through VBVMR_MacroButton_GetStatus and VBVMR_MacroButton_SetStatus in STATEONLY mode. The configured value is VoiceMeeter Remote API logical button ID 1 (ID 0 is reserved for the maintainer's microphone button). The displayed state is checked every 10 seconds, set to ON while the watcher process is active, and OFF during graceful cleanup. API or button unavailability is non-fatal and DEBUG-only.
 - Revalidation of idle time and display state immediately before dispatching shutdown.
 - Follow-up probes to detect whether VoiceMeeter stopped or restarted after a shutdown request.
 - Cleanup that logs out of the API, unregisters display notifications, closes the stop event, and releases the watcher mutex.
@@ -108,6 +109,8 @@ Verified in the current PS1 source:
 | PostShutdownConfirmationTimeoutSec | 5 seconds | Confirmation window before retry logic. |
 | ApiSessionRecoveryRetryIntervalSec | 5 seconds | Delay before API session recovery retry. |
 | DebugMode | Off by default | Enabled by passing -DebugMode. |
+| MacroButtonLogicalIndex | 1 | VoiceMeeter Remote API logical button ID to synchronize; ID 0 is reserved for the microphone button. Set to -1 to disable. |
+| MacroButtonSyncIntervalSec | 10 seconds | Interval for reconciling displayed button state with watcher process state. |
 
 Logging limits in the current code:
 
@@ -191,12 +194,12 @@ These are user-reported local runtime observations. They are not the same as an 
 
 ## 10. Known limitations and open items
 
-1. **MacroButtons visual-state synchronization is not implemented in the current repository source.** The user observed that if the watcher is already running before MacroButtons is opened, the button may visually show OFF. Pressing START can then report "Watcher is already running"; the visual button state and watcher process state become unsynchronized.
-2. A previous design discussion considered VBVMR_MacroButton_SetStatus with STATEONLY mode and periodic synchronization. The current uploaded PS1 does not contain this declaration or a call. Treat this as a future idea only, not existing functionality.
-3. No automatic test suite or CI validation is included.
+1. **MacroButtons visual-state synchronization is implemented but not yet verified on the maintainer's Windows system.** The watcher reads the configured button state and reconciles it every 10 seconds with Remote API STATEONLY mode. This changes only the visual state and does not execute the button macro. No helper process is created. The current target is logical button ID 1; logical ID 0 is reserved for the maintainer's microphone button.
+2. If the configured button or MacroButtons API function is unavailable, synchronization is skipped and retried later. Repeated identical failures are suppressed and recorded only at DEBUG level; they do not stop the watcher.
+3. The CI workflow performs syntax and static analyzer checks only. It does not execute the watcher or test actual VoiceMeeter/MacroButtons/display behavior.
 4. No license has been chosen.
 5. The repository currently documents the maintainer's local MacroButtons path. It is private; generalize that path before making the repository public.
-6. Runtime behavior has been observed on the maintainer's Windows system, but this context document does not claim independent reproduction or testing by ChatGPT.
+6. Runtime behavior must still be confirmed on the maintainer's Windows system; GitHub Actions cannot independently verify the local VoiceMeeter engine, MacroButtons UI, or display hardware.
 
 ## 11. Logs and troubleshooting
 
@@ -261,5 +264,6 @@ At the time this context file is being prepared:
 - PROJECT_CONTEXT.md is the handover document for restoring project context in a future chat.
 - ARCHITECTURE.md contains the bilingual detailed architecture overview and Mermaid diagrams.
 - The current source files were fetched back from GitHub for this review; their sizes were about 51 KB (PS1) and 7 KB (VBS).
+- MacroButtons visual-state synchronization is implemented for VoiceMeeter Remote API logical button ID 1 (ID 0 is reserved for the mic), with STATEONLY and a 10-second reconciliation interval. Target-PC runtime verification is pending.
 - The current PS1 source has no hard-coded C:\Users\serge path and no obvious API-token pattern was detected in a basic static scan. This is not a comprehensive security audit.
 

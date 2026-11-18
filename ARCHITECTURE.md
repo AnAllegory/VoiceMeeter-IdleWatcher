@@ -13,7 +13,9 @@ This document gives a high-level view of the watcher's control flow. It compleme
 flowchart TD
     A[User starts the VBS launcher] --> B[Launch hidden PowerShell watcher]
     B --> C[Initialize logging, single-instance guard, display notifications and Remote API]
-    C --> D[Monitoring loop]
+    C --> MB[Reconcile configured MacroButtons display state with STATEONLY]
+    MB --> D[Monitoring loop]
+    D --> MB
 
     D --> E[Read Windows idle duration]
     D --> F[Read display power state]
@@ -35,7 +37,8 @@ flowchart TD
     N --> D
 
     P[User requests /stop through VBS] --> Q[Signal named Windows stop event]
-    Q --> R[Log out, unregister notifications and release mutex]
+    Q --> O[Set MacroButtons display state to OFF with STATEONLY]
+    O --> R[Log out, unregister notifications and release mutex]
     R --> S[Watcher exits]
 ```
 
@@ -57,9 +60,13 @@ If VoiceMeeter is not running, the watcher continues monitoring. It can detect a
 - A graceful stop logs out of the Remote API, unregisters display notifications, closes stop-event resources, releases the single-instance mutex and exits.
 - Stopping the watcher does **not** itself shut down VoiceMeeter.
 
+### MacroButtons state display
+
+The watcher optionally polls the configured MacroButtons displayed state every 10 seconds. It writes ON while its own process is active and attempts OFF during graceful cleanup. The Remote API STATEONLY mode changes the visual state without executing the button macro. Button synchronization is optional: unavailable API calls or an unavailable button do not affect the main monitoring loop. The configured logical button ID is 1 (ID 0 is reserved for the maintainer's microphone button); set `$MacroButtonLogicalIndex` to -1 to disable synchronization.
+
 ### Scope
 
-This is a simplified architecture diagram, not a complete representation of every retry, timeout, API recovery path or logging branch. Consult the current source files for exact behavior.
+This is a simplified architecture diagram, not a complete representation of every retry, timeout, API recovery path or logging branch. Consult the current source files for exact behavior. Live MacroButtons behavior still requires verification on the target Windows system.
 
 <a id="русский"></a>
 ## Русский
@@ -72,7 +79,9 @@ This is a simplified architecture diagram, not a complete representation of ever
 flowchart TD
     A[Пользователь запускает VBS] --> B[Скрытый запуск PowerShell]
     B --> C[Инициализация журналов, защиты от второго экземпляра, уведомлений дисплея и Remote API]
-    C --> D[Цикл наблюдения]
+    C --> MB[Синхронизация отображения MacroButtons через STATEONLY]
+    MB --> D[Цикл наблюдения]
+    D --> MB
 
     D --> E[Получение времени бездействия Windows]
     D --> F[Получение состояния питания дисплея]
@@ -94,7 +103,8 @@ flowchart TD
     N --> D
 
     P[Пользователь передаёт /stop через VBS] --> Q[Сигнал именованному событию Windows]
-    Q --> R[Logout, снятие уведомлений и освобождение mutex]
+    Q --> O[Установка OFF на MacroButtons через STATEONLY]
+    O --> R[Logout, снятие уведомлений и освобождение mutex]
     R --> S[Завершение наблюдателя]
 ```
 
@@ -116,6 +126,10 @@ flowchart TD
 - При штатной остановке выполняется Logout из Remote API, снимаются уведомления дисплея, закрываются ресурсы события, освобождается mutex единственного экземпляра, после чего процесс завершается.
 - Остановка наблюдателя **сама по себе не выключает VoiceMeeter**.
 
+### Отображение состояния MacroButtons
+
+Наблюдатель по дополнительной настройке проверяет отображаемое состояние указанной кнопки MacroButtons каждые 10 секунд. Пока процесс наблюдателя работает, он поддерживает ON, а при штатном завершении пытается установить OFF. Режим Remote API STATEONLY меняет отображение, не запуская макрос кнопки. Синхронизация необязательна: недоступность API или кнопки не влияет на основной цикл наблюдения. Сейчас задан логический ID кнопки 1 (ID 0 зарезервирован под кнопку микрофона); значение `$MacroButtonLogicalIndex = -1` отключает синхронизацию.
+
 ### Границы схемы
 
-Это упрощённая схема архитектуры, а не полное отображение всех повторных попыток, тайм-аутов, веток восстановления API и журналирования. Точное поведение следует сверять с актуальными исходниками.
+Это упрощённая схема архитектуры, а не полное отображение всех повторных попыток, тайм-аутов, веток восстановления API и журналирования. Точное поведение следует сверять с актуальными исходниками. Фактическую работу MacroButtons ещё нужно проверить на целевом компьютере.

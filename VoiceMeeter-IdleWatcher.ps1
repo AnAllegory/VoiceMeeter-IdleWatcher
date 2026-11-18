@@ -39,6 +39,17 @@ $StopEventName = 'Local\VoiceMeeter-IdleWatcher.Stop'
 $LogMutexName = 'Local\VoiceMeeter-IdleWatcher.Log'
 $StopWaitTimeoutSec = 20
 
+# Optional MacroButtons displayed-state synchronization.
+# This is the VoiceMeeter Remote API logical button ID (0-79), not a
+# one-based label. Logical ID 0 is reserved by the maintainer for the mic.
+# Set to -1 to disable the optional synchronization.
+$MacroButtonLogicalIndex = 1
+if (($MacroButtonLogicalIndex -lt -1) -or ($MacroButtonLogicalIndex -gt 79)) {
+    throw 'MacroButtonLogicalIndex must be -1 (disabled) or a value from 0 to 79.'
+}
+$MacroButtonSyncIntervalSec = 10
+$MacroButtonStateOnlyMode = 0x00000002
+
 $LocalLogRoot = $env:LOCALAPPDATA
 if ([string]::IsNullOrWhiteSpace($LocalLogRoot)) {
     $LocalLogRoot = [System.IO.Path]::GetTempPath()
@@ -651,6 +662,12 @@ public static class VMRIdleWatcherNative
 
     [DllImport(Dll, EntryPoint = "VBVMR_SetParameterFloat", CallingConvention = CallingConvention.StdCall, ExactSpelling = true, CharSet = CharSet.Ansi)]
     public static extern int SetParameterFloat([MarshalAs(UnmanagedType.LPStr)] string parameter, float value);
+
+    [DllImport(Dll, EntryPoint = "VBVMR_MacroButton_GetStatus", CallingConvention = CallingConvention.StdCall, ExactSpelling = true)]
+    public static extern int MacroButtonGetStatus(int logicalButton, out float value, int bitmode);
+
+    [DllImport(Dll, EntryPoint = "VBVMR_MacroButton_SetStatus", CallingConvention = CallingConvention.StdCall, ExactSpelling = true)]
+    public static extern int MacroButtonSetStatus(int logicalButton, float value, int bitmode);
 }
 "@
 
@@ -676,6 +693,112 @@ function Invoke-VoiceMeeterApiLogin {
     return [int]$loginResult
 }
 
+# ==================== Optional MacroButtons display-state synchronization ====================
+$script:MacroButtonReadStatus = 'NotChecked'
+$script:MacroButtonWriteStatus = 'NotChecked'
+$script:MacroButtonNextSyncAt = [datetime]::MinValue
+
+function Invoke-MacroButtonStateSync {
+    param(
+        [Parameter(Mandatory = $true)]
+        [ValidateSet(0, 1)]
+        [int]$DesiredState,
+
+        [switch]$Force
+    )
+
+    if (($MacroButtonLogicalIndex -lt 0) -or ($script:MacroButtonReadStatus -eq 'Unsupported')) {
+        return
+    }
+
+    $now = Get-Date
+    if ((-not $Force) -and ($now -lt $script:MacroButtonNextSyncAt)) {
+        return
+    }
+
+    $script:MacroButtonNextSyncAt = $now.AddSeconds($MacroButtonSyncIntervalSec)
+    $currentButtonState = [single]0
+
+    try {
+        $getResult = [VMRIdleWatcherNative]::MacroButtonGetStatus(
+            [int]$MacroButtonLogicalIndex,
+            [ref]$currentButtonState,
+            [int]$MacroButtonStateOnlyMode
+        )
+    }
+    catch [System.EntryPointNotFoundException] {
+        if ($script:MacroButtonReadStatus -ne 'Unsupported') {
+            Write-Log 'MacroButtons synchronization functions are not exported by this Remote API DLL. Continuing without optional button synchronization.' -Level 'DEBUG'
+        }
+        $script:MacroButtonReadStatus = 'Unsupported'
+        $script:MacroButtonNextSyncAt = [datetime]::MaxValue
+        return
+    }
+    catch {
+        $readStatus = 'ReadException'
+        if ($script:MacroButtonReadStatus -ne $readStatus) {
+            Write-Log "Could not read MacroButtons logical button $MacroButtonLogicalIndex state: $($_.Exception.Message). The watcher will continue and retry later." -Level 'DEBUG'
+        }
+        $script:MacroButtonReadStatus = $readStatus
+        return
+    }
+
+    if ($getResult -ne 0) {
+        $readStatus = "ReadResult:$getResult"
+        if ($script:MacroButtonReadStatus -ne $readStatus) {
+            Write-Log "MacroButtons logical button $MacroButtonLogicalIndex is not currently available (Remote API code $getResult). The watcher continues normally and will retry later." -Level 'DEBUG'
+        }
+        $script:MacroButtonReadStatus = $readStatus
+        return
+    }
+
+    if (($script:MacroButtonReadStatus -ne 'Available') -and ($script:MacroButtonReadStatus -ne 'NotChecked')) {
+        Write-Log "MacroButtons state access recovered for logical button $MacroButtonLogicalIndex." -Level 'DEBUG'
+    }
+    $script:MacroButtonReadStatus = 'Available'
+
+    $currentState = if ($currentButtonState -ge 0.5) { 1 } else { 0 }
+    if ($currentState -eq $DesiredState) {
+        $script:MacroButtonWriteStatus = 'NoChangeNeeded'
+        return
+    }
+
+    try {
+        $setResult = [VMRIdleWatcherNative]::MacroButtonSetStatus(
+            [int]$MacroButtonLogicalIndex,
+            [single]$DesiredState,
+            [int]$MacroButtonStateOnlyMode
+        )
+    }
+    catch [System.EntryPointNotFoundException] {
+        Write-Log 'MacroButtons SetStatus is not exported by this Remote API DLL. Continuing without optional button synchronization.' -Level 'DEBUG'
+        $script:MacroButtonReadStatus = 'Unsupported'
+        $script:MacroButtonNextSyncAt = [datetime]::MaxValue
+        return
+    }
+    catch {
+        $writeStatus = 'WriteException'
+        if ($script:MacroButtonWriteStatus -ne $writeStatus) {
+            Write-Log "Could not update MacroButtons logical button $MacroButtonLogicalIndex display state: $($_.Exception.Message). The watcher continues normally and will retry later." -Level 'DEBUG'
+        }
+        $script:MacroButtonWriteStatus = $writeStatus
+        return
+    }
+
+    if ($setResult -ne 0) {
+        $writeStatus = "WriteResult:$setResult"
+        if ($script:MacroButtonWriteStatus -ne $writeStatus) {
+            Write-Log "MacroButtons logical button $MacroButtonLogicalIndex display state could not be updated (Remote API code $setResult). The watcher continues normally and will retry later." -Level 'DEBUG'
+        }
+        $script:MacroButtonWriteStatus = $writeStatus
+        return
+    }
+
+    $script:MacroButtonWriteStatus = 'Available'
+    $stateLabel = if ($DesiredState -eq 1) { 'ON' } else { 'OFF' }
+    Write-Log "MacroButtons logical button $MacroButtonLogicalIndex display state synchronized to $stateLabel using STATEONLY." -Level 'INFO'
+}
+
 # ==================== Runtime state and lifecycle resources ====================
 $thresholdMs = [uint32]($IdleMinutes * 60 * 1000)
 $shutdownSentThisIdle = $false
@@ -683,6 +806,7 @@ $engineStoppedAfterShutdown = $false
 $lastShutdownCommandAt = [datetime]::MinValue
 $nextApiAttempt = [datetime]::MinValue
 $loginCompleted = $false
+$watcherIsActive = $false
 $connectionWarningLogged = $false
 $shutdownWarningLogged = $false
 $displayNotificationRegistered = $false
@@ -925,6 +1049,11 @@ try {
         }
 
         $loginCompleted = $true
+        $watcherIsActive = $true
+
+        # Publish the real watcher state. This feature is optional and must
+        # never block startup or the main idle-monitoring function.
+        Invoke-MacroButtonStateSync -DesiredState 1
 
         if ($login -eq 1) {
             Write-Log 'API Login succeeded; VoiceMeeter is not running yet. Waiting for startup.'
@@ -938,6 +1067,10 @@ try {
         # ==================== Main loop ====================
         while (-not [VMRIdleWatcherNative]::IsExitRequested()) {
             try {
+                # Reconcile the configured MacroButtons display state with the
+                # watcher's real process state. STATEONLY does not run its macro.
+                Invoke-MacroButtonStateSync -DesiredState 1
+
                 # 1. Retrieve user idle time and current display power state.
                 $idleMs = [VMRIdleWatcherNative]::GetIdleMilliseconds()
                 $idleSec = [math]::Round($idleMs / 1000, 1)
@@ -1194,6 +1327,18 @@ catch {
 }
 finally {
     Write-Log 'Graceful cleanup started.'
+
+    try {
+        # Show OFF before logging out when a graceful cleanup is possible.
+        # This optional cosmetic update must never interfere with cleanup.
+        if ($watcherIsActive) {
+            Invoke-MacroButtonStateSync -DesiredState 0 -Force
+            $watcherIsActive = $false
+        }
+    }
+    catch {
+        Write-Log "Optional MacroButtons OFF synchronization failed during cleanup: $($_.Exception.Message)" -Level 'DEBUG'
+    }
 
     try {
         # 1. End the VoiceMeeter API session before disposing notification resources.
