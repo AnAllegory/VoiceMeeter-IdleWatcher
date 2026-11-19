@@ -1,6 +1,6 @@
 # VoiceMeeter IdleWatcher — Project Context / Handover
 
-**Last reviewed:** 2026-11-18  
+**Last reviewed:** 2026-11-19  
 **Repository:** AnAllegory/VoiceMeeter-IdleWatcher  
 **Default branch:** main  
 **Visibility:** Private  
@@ -175,13 +175,13 @@ System.Execute("%windir%\System32\cmd.exe","C:\Users\serge\Desktop\VoiceMeeter A
 System.Execute("%windir%\System32\cmd.exe","C:\Users\serge\Desktop\VoiceMeeter Automation","/C wscript.exe VoiceMeeter-IdleWatcher.vbs /stop");
 ~~~
 
-The working directory is specific to the maintainer's current PC. If the project moves, update the working-directory field. Before making this repository public, remove or generalize this personal path in both README files and this context file.
+The working directory is specific to the maintainer's current PC. If the project moves, update the working-directory field. The example path is generic and must be replaced with the actual project directory on each computer.
 
 ## 9. Verified behavior reported by the maintainer
 
 The following behavior was reported as successfully observed on the maintainer's PC:
 
-- The exact MacroButtons START and STOP System.Execute commands above work.
+- The exact MacroButtons START and STOP System.Execute commands above work. MacroButtons STATEONLY display synchronization has also been confirmed: the button indicator follows watcher start/stop without executing the button macro.
 - A normal graceful stop produced log messages including:
   - Logout succeeded (code 0).
   - Single-instance mutex released successfully.
@@ -194,12 +194,12 @@ These are user-reported local runtime observations. They are not the same as an 
 
 ## 10. Known limitations and open items
 
-1. **MacroButtons visual-state synchronization is implemented but not yet fully verified on the maintainer's Windows system.** The watcher asserts the configured button state every 10 seconds with Remote API STATEONLY mode; it does not read the button state first. It does not execute the button macro and creates no helper process. The current target is logical button ID 1; logical ID 0 is reserved for the maintainer's microphone button. Repeated START requests signal the existing watcher for an immediate ON refresh.
+1. **MacroButtons visual-state synchronization has been verified on the maintainer's Windows system.** The watcher asserts the configured button state every 10 seconds with Remote API STATEONLY mode; it does not read the button state first. It does not execute the button macro and creates no helper process. The current target is logical button ID 1; logical ID 0 is reserved for the maintainer's microphone button. Repeated START requests signal the existing watcher for an immediate ON refresh.
 2. If the configured button or MacroButtons API function is unavailable, synchronization is skipped and retried later. Repeated identical failures are suppressed and recorded only at DEBUG level; they do not stop the watcher.
 3. The CI workflow performs syntax and static analyzer checks only. It does not execute the watcher or test actual VoiceMeeter/MacroButtons/display behavior.
-4. No license has been chosen.
-5. The repository currently documents the maintainer's local MacroButtons path. It is private; generalize that path before making the repository public.
-6. Runtime behavior must still be confirmed on the maintainer's Windows system; GitHub Actions cannot independently verify the local VoiceMeeter engine, MacroButtons UI, or display hardware.
+4. The project is licensed under the MIT License; see LICENSE.
+5. Documentation uses a generic example path and contains no maintainer-specific working-directory path.
+6. Long-duration operation and sleep/wake recovery remain under observation on the maintainer's Windows system. GitHub Actions cannot independently verify the local VoiceMeeter engine, MacroButtons UI, or display hardware.
 
 ## 11. Logs and troubleshooting
 
@@ -243,7 +243,7 @@ When assisting with this project:
 ## 14. Change history
 
 - `CHANGELOG.md` records the repository baseline and future notable changes.
-- No numbered release has been declared yet; do not infer software versions from documentation commits.
+- The first release is being prepared as v1.0.0. Do not treat this handover commit as the release tag; the release must be created from the final reviewed commit after checks pass.
 
 ## 15. Architecture documentation
 
