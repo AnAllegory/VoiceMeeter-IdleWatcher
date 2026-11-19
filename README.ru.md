@@ -124,13 +124,13 @@ wscript.exe VoiceMeeter-IdleWatcher.vbs /stop
 **Действие ON (START):**
 
 ~~~vb
-System.Execute("%windir%\\System32\\cmd.exe","C:\\Users\\serge\\Desktop\\VoiceMeeter Automation","/C wscript.exe VoiceMeeter-IdleWatcher.vbs");
+System.Execute("%windir%\\System32\\cmd.exe","C:\\Path\\To\\VoiceMeeter IdleWatcher","/C wscript.exe VoiceMeeter-IdleWatcher.vbs");
 ~~~
 
 **Действие OFF (STOP):**
 
 ~~~vb
-System.Execute("%windir%\\System32\\cmd.exe","C:\\Users\\serge\\Desktop\\VoiceMeeter Automation","/C wscript.exe VoiceMeeter-IdleWatcher.vbs /stop");
+System.Execute("%windir%\\System32\\cmd.exe","C:\\Path\\To\\VoiceMeeter IdleWatcher","/C wscript.exe VoiceMeeter-IdleWatcher.vbs /stop");
 ~~~
 
 Замените пример рабочего каталога на папку, в которой находятся оба файла проекта на вашем компьютере.
