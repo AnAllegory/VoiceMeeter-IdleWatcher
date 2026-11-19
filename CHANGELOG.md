@@ -2,9 +2,13 @@
 
 All notable changes to the repository are documented here.
 
-The first numbered release is being prepared. Until the v1.0.0 tag and GitHub Release are published, entries below describe the current release candidate, not a published release.
+The v1.0.0 release was published on 2026-11-19. Entries are grouped by release.
 
 ## [Unreleased]
+
+No unreleased changes.
+
+## [1.0.0] - 2026-11-19
 
 ### Fixed
 
