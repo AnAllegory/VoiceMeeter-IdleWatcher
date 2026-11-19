@@ -14,20 +14,15 @@ The first numbered release is being prepared. Until the v1.0.0 tag and GitHub Re
 ### Changed
 
 - Renamed `Set-StartupStatus` to `Write-StartupStatus` to describe its file-writing responsibility accurately; no startup-status behavior was changed.
+- Generalized local working-directory examples in documentation so they do not expose maintainer-specific Windows paths.
+- Updated MacroButtons documentation to reflect successful local STATEONLY synchronization testing.
 
 ### Added
 
 - Added the MIT License.
 - Added optional MacroButtons displayed-state synchronization for VoiceMeeter Remote API logical button ID 1 (ID 0 is reserved for the microphone button). The watcher uses VBVMR_MacroButton_SetStatus with STATEONLY, reasserts ON every 10 seconds, and attempts to set OFF during graceful cleanup. A repeated START request signals the running watcher for an immediate refresh. API/button unavailability is non-fatal and only reported in DEBUG mode.
-
-- Added a GitHub Actions workflow that runs on Windows PowerShell 5.1, checks required project files, parses the main PS1 source, and reports PSScriptAnalyzer findings in baseline mode.
-
-### Changed
-
-- Generalized local working-directory examples in documentation so they do not expose maintainer-specific Windows paths.
-- Updated MacroButtons documentation to reflect successful local STATEONLY synchronization testing.
-
-Changes made after the latest dated entry will be recorded here.
+- Added a GitHub Actions workflow that runs on Windows PowerShell 5.1, checks required project files including the license and release notes, parses the main PS1 source, and reports PSScriptAnalyzer findings in baseline mode.
+- Added prepared v1.0.0 release notes.
 
 ## [Repository baseline — 2026-11-18]
 
