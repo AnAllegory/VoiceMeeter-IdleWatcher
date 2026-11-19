@@ -78,6 +78,8 @@ flowchart TD
 | PROJECT_CONTEXT.md | Памятка сопровождающего проекта и точка восстановления контекста. |
 | ARCHITECTURE.md | Двуязычное описание архитектуры и схемы Mermaid. |
 | CHANGELOG.md | История изменений репозитория и исходная точка разработки. |
+| LICENSE | Условия лицензии MIT. |
+| RELEASE_NOTES_v1.0.0.md | Подготовленные примечания к первому релизу. |
 | .gitignore | Исключает из Git локальные логи, временные файлы, резервные копии и базы KeePass. |
 | .github/workflows/powershell-check.yml | Запускает автоматическую проверку синтаксиса и анализ PSScriptAnalyzer в Windows PowerShell 5.1. |
 
