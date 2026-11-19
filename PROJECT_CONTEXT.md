@@ -3,7 +3,7 @@
 **Last reviewed:** 2026-11-19  
 **Repository:** AnAllegory/VoiceMeeter-IdleWatcher  
 **Default branch:** main  
-**Visibility:** Private  
+**Visibility:** Public  
 **Purpose:** let the maintainer and a future ChatGPT conversation restore the working context without relying on old chat history.
 
 > IMPORTANT FOR A NEW CHAT: Read this file first, then read the current contents of both source files in the repository. Treat the repository as the source of truth for code. Treat this document as a handover note, not as a substitute for inspecting the current source. Distinguish facts verified in code from behavior reported by the maintainer on the local PC. Do not assume older chat messages describe the latest files.
@@ -16,9 +16,9 @@ https://github.com/AnAllegory/VoiceMeeter-IdleWatcher
 
 Suggested instruction:
 
-"Please read PROJECT_CONTEXT.md and inspect the current PS1 and VBS files in this private GitHub repository. Restore the project context from the repository. Before suggesting code changes, compare your understanding with the current source. Work one concrete step at a time and do not assume old chat history is available."
+"Please read PROJECT_CONTEXT.md and inspect the current PS1 and VBS files in this public GitHub repository. Restore the project context from the repository. Before suggesting code changes, compare your understanding with the current source. Work one concrete step at a time and do not assume old chat history is available."
 
-The GitHub connection was confirmed able to read this private repository on 2026-11-18. This does not guarantee that every new chat will automatically inspect it: explicitly ask the assistant to read the context file and current source files. Repository access also depends on the GitHub connection and its repository permissions still being enabled.
+The GitHub connection was confirmed able to read this public repository on 2026-11-18. This does not guarantee that every new chat will automatically inspect it: explicitly ask the assistant to read the context file and current source files. Repository access also depends on the GitHub connection and its repository permissions still being enabled.
 
 ## 2. Project purpose
 
@@ -54,7 +54,7 @@ VoiceMeeter-IdleWatcher/
 └── .gitignore
 ~~~
 
-The repository is private. Do not add runtime logs, rotated logs, KeePass databases, passwords, tokens, recovery codes, or other secrets.
+The repository is public. Do not add runtime logs, rotated logs, KeePass databases, passwords, tokens, recovery codes, or other secrets.
 
 ## 4. Source files and responsibilities
 
@@ -245,7 +245,7 @@ When assisting with this project:
 ## 14. Change history
 
 - `CHANGELOG.md` records the repository baseline and future notable changes.
-- The first release is being prepared as v1.0.0. Do not treat this handover commit as the release tag; the release must be created from the final reviewed commit after checks pass.
+- The v1.0.0 GitHub Release was published on 2026-11-19. The `v1.0.0` tag points to commit `44ee9d4f0bd404a4c8d0d4008523010ea2c07a7c`; GitHub Actions run `44515517384` passed on that exact commit. Later documentation corrections on `main` do not change the published tag snapshot.
 
 ## 15. Architecture documentation
 
@@ -258,14 +258,15 @@ When assisting with this project:
 At the time this context file is being prepared:
 
 - Repository: AnAllegory/VoiceMeeter-IdleWatcher.
-- Visibility: Private.
+- Visibility: Public.
 - Default branch: main.
 - The repository contains the current PS1 and VBS source files, bilingual README files, project handover notes, architecture documentation, changelog, and automated PowerShell checks.
-- GitHub connector read access to the private repository was successfully used in the current conversation.
+- GitHub connector read access to the public repository was successfully used in the current conversation.
 - README.md and README.ru.md contain the English and Russian project documentation, including the main Mermaid flow diagram.
 - PROJECT_CONTEXT.md is the handover document for restoring project context in a future chat.
 - ARCHITECTURE.md contains the bilingual detailed architecture overview and Mermaid diagrams.
 - The current source files were fetched back from GitHub for this review; their sizes were about 51 KB (PS1) and 7 KB (VBS).
 - MacroButtons visual-state synchronization is implemented for VoiceMeeter Remote API logical button ID 1 (ID 0 is reserved for the mic), with STATEONLY, a 10-second ON assertion interval, and an immediate refresh event for duplicate START requests. The maintainer confirmed the visual state follows watcher start/stop without executing the button macro.
 - The current PS1 and VBS sources contain no maintainer-specific working-directory path, and no obvious API-token pattern was detected in a basic static scan. Documentation examples use a generic path. This is not a comprehensive security audit.
+- The repository is public. Do not commit runtime logs, credentials, recovery codes, local database files, or other private information.
 
