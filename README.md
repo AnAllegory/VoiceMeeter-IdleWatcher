@@ -124,13 +124,13 @@ A two-state MacroButtons button can start and stop the watcher. The commands bel
 **ON action (START):**
 
 ~~~vb
-System.Execute("%windir%\\System32\\cmd.exe","C:\\Users\\serge\\Desktop\\VoiceMeeter Automation","/C wscript.exe VoiceMeeter-IdleWatcher.vbs");
+System.Execute("%windir%\\System32\\cmd.exe","C:\\Path\\To\\VoiceMeeter IdleWatcher","/C wscript.exe VoiceMeeter-IdleWatcher.vbs");
 ~~~
 
 **OFF action (STOP):**
 
 ~~~vb
-System.Execute("%windir%\\System32\\cmd.exe","C:\\Users\\serge\\Desktop\\VoiceMeeter Automation","/C wscript.exe VoiceMeeter-IdleWatcher.vbs /stop");
+System.Execute("%windir%\\System32\\cmd.exe","C:\\Path\\To\\VoiceMeeter IdleWatcher","/C wscript.exe VoiceMeeter-IdleWatcher.vbs /stop");
 ~~~
 
 Replace the example working directory with the folder containing both project scripts on your own computer.
