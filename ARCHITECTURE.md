@@ -64,7 +64,7 @@ If VoiceMeeter is not running, the watcher continues monitoring. It can detect a
 
 ### MacroButtons state display
 
-The watcher periodically asserts ON for the configured MacroButtons logical ID every 10 seconds and asserts OFF during graceful cleanup. It does not read the button state: the process itself is the source of truth. Remote API STATEONLY changes only the visual state and never executes the button macro. A repeated START request signals the active watcher through an auto-reset event for an immediate refresh. Button synchronization is optional: unavailable API calls or an unavailable button do not affect the main monitoring loop. The configured logical button ID is 1 (ID 0 is reserved for the maintainer's microphone button); set `$MacroButtonLogicalIndex` to -1 to disable synchronization.
+The watcher periodically asserts ON for the configured MacroButtons logical ID every 10 seconds and asserts OFF during graceful cleanup. It does not read the button state: the process itself is the source of truth. Remote API STATEONLY changes only the visual state and never executes the button macro. A repeated START request signals the active watcher through an auto-reset event for an immediate refresh. Button synchronization is optional: unavailable API calls or an unavailable button do not affect the main monitoring loop. The current default logical button ID is 1; choose an ID that matches the local MacroButtons layout. Set `$MacroButtonLogicalIndex` to -1 to disable synchronization.
 
 ### Scope
 
@@ -132,7 +132,7 @@ flowchart TD
 
 ### Отображение состояния MacroButtons
 
-Наблюдатель каждые 10 секунд устанавливает ON для указанного логического ID кнопки MacroButtons, а при штатном завершении устанавливает OFF. Он не читает состояние кнопки: источником истины является состояние самого процесса. Режим Remote API STATEONLY меняет отображение, не запуская макрос. Повторный запрос START посылает работающему экземпляру сигнал через auto-reset событие для немедленного обновления кнопки. Синхронизация необязательна: недоступность API или кнопки не влияет на основной цикл наблюдения. Сейчас задан логический ID кнопки 1 (ID 0 зарезервирован под кнопку микрофона); значение `$MacroButtonLogicalIndex = -1` отключает синхронизацию.
+Наблюдатель каждые 10 секунд устанавливает ON для указанного логического ID кнопки MacroButtons, а при штатном завершении устанавливает OFF. Он не читает состояние кнопки: источником истины является состояние самого процесса. Режим Remote API STATEONLY меняет отображение, не запуская макрос. Повторный запрос START посылает работающему экземпляру сигнал через auto-reset событие для немедленного обновления кнопки. Синхронизация необязательна: недоступность API или кнопки не влияет на основной цикл наблюдения. Текущее значение логического ID кнопки по умолчанию — 1; выберите ID в соответствии с локальной раскладкой MacroButtons. Значение `$MacroButtonLogicalIndex = -1` отключает синхронизацию.
 
 ### Границы схемы
 

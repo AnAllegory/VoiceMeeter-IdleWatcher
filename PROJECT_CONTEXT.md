@@ -1,6 +1,6 @@
 # VoiceMeeter IdleWatcher — Project Context / Handover
 
-**Last reviewed:** 2026-11-19  
+**Last reviewed:** 2026-11-20  
 **Repository:** AnAllegory/VoiceMeeter-IdleWatcher  
 **Default branch:** main  
 **Visibility:** Public  
@@ -60,7 +60,7 @@ The repository is public. Do not add runtime logs, rotated logs, KeePass databas
 
 ### VoiceMeeter-IdleWatcher.ps1
 
-The main watcher. The current source has approximately 1,275 lines. It includes:
+The main watcher. The current source has 1,551 lines (61,595 bytes in the fetched UTF-8 file). It includes:
 
 - Parameters: Mode (Start or Stop), IdleMinutes (default 8; valid range 1–60), DebugMode switch, and StartupStatusFile.
 - Windows idle-time retrieval through GetLastInputInfo.
@@ -73,7 +73,7 @@ The main watcher. The current source has approximately 1,275 lines. It includes:
 - Primary, fallback, and emergency log paths.
 - API login recovery when Login returns -2: perform Logout, then retry Login.
 - VoiceMeeter shutdown through the Remote API parameter Command.Shutdown.
-- Optional MacroButtons displayed-state synchronization through VBVMR_MacroButton_SetStatus in STATEONLY mode. The configured value is VoiceMeeter Remote API logical button ID 1 (ID 0 is reserved for the maintainer's microphone button). While active, the watcher asserts ON every 10 seconds and asserts OFF during graceful cleanup. A repeated START request signals the existing process through an auto-reset named event for an immediate ON refresh. No GetStatus readback is used. API or button unavailability is non-fatal and DEBUG-only.
+- Optional MacroButtons displayed-state synchronization through VBVMR_MacroButton_SetStatus in STATEONLY mode. The current default is VoiceMeeter Remote API logical button ID 1; the value is configurable in the source and -1 disables synchronization. While active, the watcher asserts ON every 10 seconds and asserts OFF during graceful cleanup. A repeated START request signals the existing process through an auto-reset named event for an immediate ON refresh. No GetStatus readback is used. API or button unavailability is non-fatal and DEBUG-only.
 - Revalidation of idle time and display state immediately before dispatching shutdown.
 - Follow-up probes to detect whether VoiceMeeter stopped or restarted after a shutdown request.
 - Cleanup that logs out of the API, unregisters display notifications, closes the stop event, and releases the watcher mutex.
@@ -111,7 +111,7 @@ Verified in the current PS1 source:
 | PostShutdownConfirmationTimeoutSec | 5 seconds | Confirmation window before retry logic. |
 | ApiSessionRecoveryRetryIntervalSec | 5 seconds | Delay before API session recovery retry. |
 | DebugMode | Off by default | Enabled by passing -DebugMode. |
-| MacroButtonLogicalIndex | 1 | VoiceMeeter Remote API logical button ID to synchronize; ID 0 is reserved for the microphone button. Set to -1 to disable. |
+| MacroButtonLogicalIndex | 1 | Default VoiceMeeter Remote API logical button ID to synchronize. Set to -1 to disable; choose an ID that matches the local MacroButtons layout. |
 | MacroButtonSyncIntervalSec | 10 seconds | Interval for reasserting the displayed ON state while the watcher process is active. |
 
 Logging limits in the current code:
@@ -196,7 +196,7 @@ These are user-reported local runtime observations. They are not the same as an 
 
 ## 10. Known limitations and open items
 
-1. **MacroButtons visual-state synchronization has been verified on the maintainer's Windows system.** The watcher asserts the configured button state every 10 seconds with Remote API STATEONLY mode; it does not read the button state first. It does not execute the button macro and creates no helper process. The current target is logical button ID 1; logical ID 0 is reserved for the maintainer's microphone button. Repeated START requests signal the existing watcher for an immediate ON refresh.
+1. **MacroButtons visual-state synchronization has been verified on the maintainer's Windows system.** The watcher asserts the configured button state every 10 seconds with Remote API STATEONLY mode; it does not read the button state first. It does not execute the button macro and creates no helper process. The current source default is logical button ID 1; choose an ID that matches the local MacroButtons layout. Repeated START requests signal the existing watcher for an immediate ON refresh.
 2. If the configured button or MacroButtons API function is unavailable, synchronization is skipped and retried later. Repeated identical failures are suppressed and recorded only at DEBUG level; they do not stop the watcher.
 3. The CI workflow performs syntax and static analyzer checks only. It does not execute the watcher or test actual VoiceMeeter/MacroButtons/display behavior.
 4. The project is licensed under the MIT License; see LICENSE.
@@ -265,8 +265,8 @@ At the time this context file is being prepared:
 - README.md and README.ru.md contain the English and Russian project documentation, including the main Mermaid flow diagram.
 - PROJECT_CONTEXT.md is the handover document for restoring project context in a future chat.
 - ARCHITECTURE.md contains the bilingual detailed architecture overview and Mermaid diagrams.
-- The current source files were fetched back from GitHub for this review; their sizes were about 51 KB (PS1) and 7 KB (VBS).
-- MacroButtons visual-state synchronization is implemented for VoiceMeeter Remote API logical button ID 1 (ID 0 is reserved for the mic), with STATEONLY, a 10-second ON assertion interval, and an immediate refresh event for duplicate START requests. The maintainer confirmed the visual state follows watcher start/stop without executing the button macro.
+- The current source files were fetched back from GitHub for this review: PS1 is 1,551 lines / 61,595 bytes; VBS is 187 lines / 7,109 bytes (UTF-8 content returned by GitHub).
+- MacroButtons visual-state synchronization is implemented with STATEONLY, a 10-second ON assertion interval, and an immediate refresh event for duplicate START requests. The current source default logical ID is 1 and can be changed to match a local MacroButtons layout. The maintainer confirmed the visual state follows watcher start/stop without executing the button macro.
 - The current PS1 and VBS sources contain no maintainer-specific working-directory path, and no obvious API-token pattern was detected in a basic static scan. Documentation examples use a generic path. This is not a comprehensive security audit.
 - The repository is public. Do not commit runtime logs, credentials, recovery codes, local database files, or other private information.
 

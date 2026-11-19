@@ -6,7 +6,12 @@ The v1.0.0 release was published on 2026-11-19. Entries are grouped by release.
 
 ## [Unreleased]
 
-No unreleased changes.
+### Documentation
+
+- Updated `PROJECT_CONTEXT.md` with the current source-file sizes, line counts, and repository handover details.
+- Removed maintainer-specific MacroButtons button assignments from the general documentation; clarified that the logical button ID is configurable and depends on the local layout.
+- Aligned the English and Russian README files and architecture notes with the configurable MacroButtons button-ID description.
+- Kept the published `v1.0.0` release notes and tag snapshot unchanged.
 
 ## [1.0.0] - 2026-11-19
 

@@ -139,7 +139,7 @@ Replace the example working directory with the folder containing both project sc
 
 While the watcher is running, it periodically asserts ON for the configured button through the VoiceMeeter Remote API. It does not read the button state: the watcher already knows its own process state. The API STATEONLY mode changes only the displayed state and never executes the button macro. Graceful watcher shutdown asserts OFF.
 
-The source setting $MacroButtonLogicalIndex is the zero-based VoiceMeeter Remote API button ID. It is currently 1; ID 0 is reserved for the maintainer's microphone button. Set the value to -1 to disable synchronization.
+The source setting $MacroButtonLogicalIndex selects the zero-based VoiceMeeter Remote API button ID. Its current default is 1; choose an ID that matches your local MacroButtons layout. Set the value to -1 to disable synchronization.
 
 A repeated START request does not create another watcher process. It signals the existing watcher through an auto-reset event for an immediate button refresh instead of waiting for the normal 10-second interval. Periodic ON assertions also restore the display if MacroButtons is opened after the watcher has started.
 
