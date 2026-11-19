@@ -46,6 +46,8 @@ VoiceMeeter-IdleWatcher/
 ├── PROJECT_CONTEXT.md
 ├── ARCHITECTURE.md
 ├── CHANGELOG.md
+├── LICENSE
+├── RELEASE_NOTES_v1.0.0.md
 ├── .github/
 │   └── workflows/
 │       └── powershell-check.yml
@@ -264,6 +266,6 @@ At the time this context file is being prepared:
 - PROJECT_CONTEXT.md is the handover document for restoring project context in a future chat.
 - ARCHITECTURE.md contains the bilingual detailed architecture overview and Mermaid diagrams.
 - The current source files were fetched back from GitHub for this review; their sizes were about 51 KB (PS1) and 7 KB (VBS).
-- MacroButtons visual-state synchronization is implemented for VoiceMeeter Remote API logical button ID 1 (ID 0 is reserved for the mic), with STATEONLY, a 10-second ON assertion interval, and an immediate refresh event for duplicate START requests. Target-PC runtime verification is pending.
+- MacroButtons visual-state synchronization is implemented for VoiceMeeter Remote API logical button ID 1 (ID 0 is reserved for the mic), with STATEONLY, a 10-second ON assertion interval, and an immediate refresh event for duplicate START requests. The maintainer confirmed the visual state follows watcher start/stop without executing the button macro.
 - The current PS1 source has no hard-coded C:\Users\serge path and no obvious API-token pattern was detected in a basic static scan. This is not a comprehensive security audit.
 
