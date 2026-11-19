@@ -133,7 +133,11 @@ function Write-Log {
     }
     finally {
         if ($lockAcquired -and ($null -ne $script:LogMutex)) {
-            try { $script:LogMutex.ReleaseMutex() } catch { }
+            try { $script:LogMutex.ReleaseMutex() }
+            catch {
+                # Logging must not recurse while handling a logging failure; mutex cleanup is best-effort here.
+                [void]$_.Exception.Message
+            }
         }
     }
 
@@ -166,7 +170,11 @@ function Write-Log {
     }
     finally {
         if ($fallbackLockAcquired -and ($null -ne $script:LogMutex)) {
-            try { $script:LogMutex.ReleaseMutex() } catch { }
+            try { $script:LogMutex.ReleaseMutex() }
+            catch {
+                # Logging must not recurse while handling a logging failure; mutex cleanup is best-effort here.
+                [void]$_.Exception.Message
+            }
         }
     }
 
@@ -179,7 +187,10 @@ function Write-Log {
         try {
             [Console]::Error.WriteLine("VoiceMeeter IdleWatcher logging failure: $primaryError; fallback failure: $fallbackError; message: $Message")
         }
-        catch { }
+        catch {
+            # No reliable output channel remains if both file logging and Console.Error fail.
+            [void]$_.Exception.Message
+        }
     }
 }
 
@@ -1072,7 +1083,10 @@ try {
 catch {
     if ($null -ne $watcherMutex) {
         if ($mutexOwned) {
-            try { $watcherMutex.ReleaseMutex() } catch { }
+            try { $watcherMutex.ReleaseMutex() }
+            catch {
+                Write-Log "Failed to release single-instance mutex while handling startup failure: $($_.Exception.Message)" -Level 'WARN'
+            }
         }
         $watcherMutex.Dispose()
         $watcherMutex = $null
