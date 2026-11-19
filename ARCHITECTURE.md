@@ -68,7 +68,7 @@ The watcher periodically asserts ON for the configured MacroButtons logical ID e
 
 ### Scope
 
-This is a simplified architecture diagram, not a complete representation of every retry, timeout, API recovery path or logging branch. Consult the current source files for exact behavior. Live MacroButtons behavior still requires verification on the target Windows system.
+This is a simplified architecture diagram, not a complete representation of every retry, timeout, API recovery path or logging branch. Consult the current source files for exact behavior. MacroButtons STATEONLY visual-state synchronization has been confirmed by the maintainer on the target Windows system; GitHub Actions checks the source contract but cannot test the local VoiceMeeter UI.
 
 <a id="русский"></a>
 ## Русский
@@ -136,4 +136,4 @@ flowchart TD
 
 ### Границы схемы
 
-Это упрощённая схема архитектуры, а не полное отображение всех повторных попыток, тайм-аутов, веток восстановления API и журналирования. Точное поведение следует сверять с актуальными исходниками. Фактическую работу MacroButtons ещё нужно проверить на целевом компьютере.
+Это упрощённая схема архитектуры, а не полное отображение всех повторных попыток, тайм-аутов, веток восстановления API и журналирования. Точное поведение следует сверять с актуальными исходниками. Синхронизация отображаемого состояния MacroButtons через STATEONLY подтверждена сопровождающим проекта на целевом компьютере; GitHub Actions проверяет исходный контракт, но не может тестировать локальный интерфейс VoiceMeeter.
