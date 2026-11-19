@@ -78,6 +78,8 @@ The script also uses shorter internal intervals for API recovery and for checkin
 | PROJECT_CONTEXT.md | Maintainer's project handover and context reference. |
 | ARCHITECTURE.md | Bilingual architecture overview and Mermaid diagrams. |
 | CHANGELOG.md | Repository change history and development baseline. |
+| LICENSE | MIT license terms. |
+| RELEASE_NOTES_v1.0.0.md | Prepared notes for the first release candidate. |
 | .gitignore | Excludes local logs, temporary files, backups, and KeePass databases from Git. |
 | .github/workflows/powershell-check.yml | Runs automated Windows PowerShell 5.1 parser and PSScriptAnalyzer checks. |
 
