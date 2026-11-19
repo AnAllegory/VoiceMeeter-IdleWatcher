@@ -26,7 +26,8 @@ Release candidate prepared on 2026-11-19. This file contains the proposed first-
 - Embedded Remote API interop C# compilation passed.
 - PSScriptAnalyzer completed with one known PSReviewUnusedParameter warning for StartupStatusFile. The parameter is used by the nested Write-StartupStatus function; the warning is documented in source.
 - MacroButtons visual-state synchronization was confirmed by the maintainer on the target Windows system.
-- Long-duration operation and Windows sleep/wake recovery remain under observation.
+- The main idle/display/shutdown scenario was observed successfully on the target Windows system.
+- Long-duration operation and Windows sleep/wake recovery remain under observation. These are known limitations, not claims of completed validation.
 
 ## Installation
 
