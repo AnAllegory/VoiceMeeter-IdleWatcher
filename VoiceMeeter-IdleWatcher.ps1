@@ -28,6 +28,8 @@ if ([string]::IsNullOrWhiteSpace($ScriptBaseName)) {
 $LogFile = Join-Path -Path $ScriptDir -ChildPath ($ScriptBaseName + '.log')
 $MaxLogSize = 500KB
 $FallbackMaxLogSize = 2MB
+$WatcherVersion = '1.0.1'
+$ShutdownCommandLimit = 3
 $CheckIntervalSec = 10
 $RetryIntervalSec = 30
 $EngineAbsentProbeIntervalSec = 3
@@ -855,6 +857,8 @@ function Invoke-MacroButtonStateSync {
 # ==================== Runtime state and lifecycle resources ====================
 $thresholdMs = [uint32]($IdleMinutes * 60 * 1000)
 $shutdownSentThisIdle = $false
+$shutdownCommandsSinceEngineStop = 0
+$shutdownRetryExhaustedLogged = $false
 $engineStoppedAfterShutdown = $false
 $lastShutdownCommandAt = [datetime]::MinValue
 $nextApiAttempt = [datetime]::MinValue
@@ -1097,8 +1101,8 @@ catch {
     throw
 }
 
-Write-Log '=== Starting VoiceMeeter-IdleWatcher ==='
-Write-Log "IdleMinutes = $IdleMinutes | CheckInterval = ${CheckIntervalSec}s | RetryInterval = ${RetryIntervalSec}s | DebugMode = $DebugMode"
+Write-Log "=== Starting VoiceMeeter-IdleWatcher v$WatcherVersion ==="
+Write-Log "IdleMinutes = $IdleMinutes | CheckInterval = ${CheckIntervalSec}s | RetryInterval = ${RetryIntervalSec}s | ShutdownCommandLimit = $ShutdownCommandLimit | DebugMode = $DebugMode"
 Write-Log "Primary log: $LogFile | Fallback log: $FallbackLogFile"
 
 try {
@@ -1219,6 +1223,8 @@ try {
                     }
 
                     $shutdownSentThisIdle = $false
+                    $shutdownCommandsSinceEngineStop = 0
+                    $shutdownRetryExhaustedLogged = $false
                     $engineStoppedAfterShutdown = $false
                     $lastShutdownCommandAt = [datetime]::MinValue
                     $nextApiAttempt = [datetime]::MinValue
@@ -1238,7 +1244,7 @@ try {
 
                         if ($relogin -ge 0) {
                             $loginCompleted = $true
-                            $connectionWarningLogged = $true
+                            $connectionWarningLogged = ($relogin -eq 1)
                             if ($relogin -eq 1) {
                                 Write-Log 'VoiceMeeter API session re-established; the engine is not running yet.'
                             }
@@ -1262,6 +1268,8 @@ try {
                                 if (-not $engineStoppedAfterShutdown) {
                                     Write-Log 'VoiceMeeter stopped after the previous Shutdown command. Monitoring for a restart during this idle period.'
                                     $engineStoppedAfterShutdown = $true
+                                    $shutdownCommandsSinceEngineStop = 0
+                                    $shutdownRetryExhaustedLogged = $false
                                 }
                                 else {
                                     Write-Log 'VoiceMeeter remains stopped. Monitoring for a restart during this idle period.' -Level 'DEBUG'
@@ -1347,61 +1355,74 @@ try {
                             $shouldSendShutdown = (-not $shutdownSentThisIdle) -or $engineStoppedAfterShutdown -or $unconfirmedShutdownRetry
 
                             if ($shouldSendShutdown) {
-                                $isRestartAfterShutdown = $shutdownSentThisIdle -and $engineStoppedAfterShutdown
-
-                                if ($isRestartAfterShutdown) {
-                                    Write-Log 'VoiceMeeter has restarted during the same idle period. Sending Command.Shutdown again.'
-                                }
-                                elseif ($unconfirmedShutdownRetry) {
-                                    Write-Log 'VoiceMeeter API remained available after the previous Shutdown request; re-sending Command.Shutdown in the same idle period.' -Level 'WARN'
-                                }
-
-                                # Re-verify conditions immediately before dispatching the command.
-                                $idleMsNow = [VMRIdleWatcherNative]::GetIdleMilliseconds()
-                                $displayStateNow = [VMRIdleWatcherNative]::GetDisplayState()
-
-                                if (($idleMsNow -lt $thresholdMs) -or ($displayStateNow -ne 0)) {
-                                    Write-Log "Conditions changed prior to Shutdown (idle = $([math]::Round($idleMsNow / 1000, 1))s, DisplayState = $displayStateNow). Aborting command." -Level 'DEBUG'
-                                    $nextApiAttempt = (Get-Date).AddSeconds($CheckIntervalSec)
-                                }
-                                elseif ([VMRIdleWatcherNative]::IsExitRequested()) {
-                                    Write-Log 'Stop request received before Command.Shutdown. Aborting command and leaving the main loop.'
-                                    break
-                                }
-                                else {
-                                    Write-Log "Engine available (IsParametersDirty = $connection). Sending Command.Shutdown..." -Level 'DEBUG'
-                                    $result = [VMRIdleWatcherNative]::SetParameterFloat('Command.Shutdown', [single]1)
-
-                                    if ($result -ge 0) {
-                                        if ($isRestartAfterShutdown) {
-                                            Write-Log "Repeated Command.Shutdown = 1 sent successfully after VoiceMeeter restart (code $result, idle = $([math]::Round($idleMsNow / 1000, 1))s)."
-                                        }
-                                        elseif ($unconfirmedShutdownRetry) {
-                                            Write-Log "Repeated Command.Shutdown = 1 sent after no stop notification was observed (code $result, idle = $([math]::Round($idleMsNow / 1000, 1))s)."
-                                        }
-                                        else {
-                                            Write-Log "Command.Shutdown = 1 sent successfully (code $result, idle = $([math]::Round($idleMsNow / 1000, 1))s)."
-                                        }
-
-                                        $shutdownSentThisIdle = $true
-                                        $engineStoppedAfterShutdown = $false
-                                        $lastShutdownCommandAt = Get-Date
-                                        $shutdownWarningLogged = $false
-                                        $connectionWarningLogged = $false
-
-                                        # Always verify the result promptly, including after a retry.
-                                        # A 30-second delay here could miss a fast stop/restart cycle.
-                                        $nextApiAttempt = (Get-Date).AddSeconds($PostShutdownProbeIntervalSec)
+                                if ($unconfirmedShutdownRetry -and ($shutdownCommandsSinceEngineStop -ge $ShutdownCommandLimit)) {
+                                    if (-not $shutdownRetryExhaustedLogged) {
+                                        Write-Log "Command.Shutdown was sent $shutdownCommandsSinceEngineStop times, but the engine is still available. Further retries are suspended until VoiceMeeter stops or the idle cycle resets." -Level 'WARN'
+                                        $shutdownRetryExhaustedLogged = $true
                                     }
                                     else {
-                                        if (-not $shutdownWarningLogged) {
-                                            Write-Log "SetParameterFloat failed (code $result). Retrying in ${RetryIntervalSec}s." -Level 'WARN'
-                                            $shutdownWarningLogged = $true
+                                        Write-Log 'Shutdown retries remain suspended; engine is still available.' -Level 'DEBUG'
+                                    }
+                                    $nextApiAttempt = (Get-Date).AddSeconds($RetryIntervalSec)
+                                }
+                                else {
+                                    $isRestartAfterShutdown = $shutdownSentThisIdle -and $engineStoppedAfterShutdown
+
+                                    if ($isRestartAfterShutdown) {
+                                        Write-Log 'VoiceMeeter has restarted during the same idle period. Sending Command.Shutdown again.'
+                                    }
+                                    elseif ($unconfirmedShutdownRetry) {
+                                        Write-Log 'VoiceMeeter API remained available after the previous Shutdown request; re-sending Command.Shutdown in the same idle period.' -Level 'WARN'
+                                    }
+
+                                    # Re-verify conditions immediately before dispatching the command.
+                                    $idleMsNow = [VMRIdleWatcherNative]::GetIdleMilliseconds()
+                                    $displayStateNow = [VMRIdleWatcherNative]::GetDisplayState()
+
+                                    if (($idleMsNow -lt $thresholdMs) -or ($displayStateNow -ne 0)) {
+                                        Write-Log "Conditions changed prior to Shutdown (idle = $([math]::Round($idleMsNow / 1000, 1))s, DisplayState = $displayStateNow). Aborting command." -Level 'DEBUG'
+                                        $nextApiAttempt = (Get-Date).AddSeconds($CheckIntervalSec)
+                                    }
+                                    elseif ([VMRIdleWatcherNative]::IsExitRequested()) {
+                                        Write-Log 'Stop request received before Command.Shutdown. Aborting command and leaving the main loop.'
+                                        break
+                                    }
+                                    else {
+                                        Write-Log "Engine available (IsParametersDirty = $connection). Sending Command.Shutdown..." -Level 'DEBUG'
+                                        $result = [VMRIdleWatcherNative]::SetParameterFloat('Command.Shutdown', [single]1)
+
+                                        if ($result -ge 0) {
+                                            if ($isRestartAfterShutdown) {
+                                                Write-Log "Repeated Command.Shutdown = 1 sent successfully after VoiceMeeter restart (code $result, idle = $([math]::Round($idleMsNow / 1000, 1))s)."
+                                            }
+                                            elseif ($unconfirmedShutdownRetry) {
+                                                Write-Log "Repeated Command.Shutdown = 1 sent after no stop notification was observed (code $result, idle = $([math]::Round($idleMsNow / 1000, 1))s)."
+                                            }
+                                            else {
+                                                Write-Log "Command.Shutdown = 1 sent successfully (code $result, idle = $([math]::Round($idleMsNow / 1000, 1))s)."
+                                            }
+
+                                            $shutdownCommandsSinceEngineStop++
+                                            $shutdownSentThisIdle = $true
+                                            $engineStoppedAfterShutdown = $false
+                                            $lastShutdownCommandAt = Get-Date
+                                            $shutdownWarningLogged = $false
+                                            $connectionWarningLogged = $false
+
+                                            # Always verify the result promptly, including after a retry.
+                                            # A 30-second delay here could miss a fast stop/restart cycle.
+                                            $nextApiAttempt = (Get-Date).AddSeconds($PostShutdownProbeIntervalSec)
                                         }
                                         else {
-                                            Write-Log "SetParameterFloat still returning error $result." -Level 'DEBUG'
+                                            if (-not $shutdownWarningLogged) {
+                                                Write-Log "SetParameterFloat failed (code $result). Retrying in ${RetryIntervalSec}s." -Level 'WARN'
+                                                $shutdownWarningLogged = $true
+                                            }
+                                            else {
+                                                Write-Log "SetParameterFloat still returning error $result." -Level 'DEBUG'
+                                            }
+                                            $nextApiAttempt = (Get-Date).AddSeconds($RetryIntervalSec)
                                         }
-                                        $nextApiAttempt = (Get-Date).AddSeconds($RetryIntervalSec)
                                     }
                                 }
                             }

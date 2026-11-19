@@ -6,6 +6,15 @@ The v1.0.0 release was published on 2026-11-19. Entries are grouped by release.
 
 ## [Unreleased]
 
+### Fixed
+
+- After a recovered VoiceMeeter API login, the connection-warning flag no longer suppresses the next real status line or reports a restored connection immediately.
+- Limited unconfirmed `Command.Shutdown` repeats to three successful API calls per engine run. A later confirmed stop and restart gets a fresh limit. Idle and display checks are unchanged. When the limit is reached, the watcher logs one `WARN` and records subsequent suspended retries only at `DEBUG` level.
+
+### Changed
+
+- The PowerShell check no longer requires MacroButtons logical ID 1. STATEONLY, no readback, and the refresh event remain required.
+
 ### Documentation
 
 - Updated `PROJECT_CONTEXT.md` with the current source-file sizes, line counts, and repository handover details.

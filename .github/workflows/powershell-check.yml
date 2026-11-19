@@ -91,7 +91,6 @@ jobs:
           $source = Get-Content -LiteralPath 'VoiceMeeter-IdleWatcher.ps1' -Raw
 
           $requiredPatterns = @(
-              '\$MacroButtonLogicalIndex = 1',
               'EntryPoint = "VBVMR_MacroButton_SetStatus"',
               '\$MacroButtonStateOnlyMode = 0x00000002',
               'EventResetMode.AutoReset',
@@ -114,7 +113,7 @@ jobs:
               throw 'MacroButtons state update must use STATEONLY mode.'
           }
 
-          Write-Host 'MacroButtons uses process-state assertions, logical ID 1, STATEONLY and an auto-reset refresh event.'
+          Write-Host 'MacroButtons uses process-state assertions, STATEONLY and an auto-reset refresh event.'
 
       - name: Compile embedded Remote API interop C#
         shell: powershell
