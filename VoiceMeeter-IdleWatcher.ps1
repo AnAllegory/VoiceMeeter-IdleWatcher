@@ -8,6 +8,8 @@ param(
 
     [switch]$DebugMode,
 
+    # Used by the nested Write-StartupStatus function; the VBS launcher passes this path.
+    # PSReviewUnusedParameter may report a false positive because the reference is inside that function.
     [string]$StartupStatusFile = ''
 )
 
