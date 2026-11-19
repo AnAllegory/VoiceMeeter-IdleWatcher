@@ -45,7 +45,9 @@ jobs:
               'README.ru.md',
               'PROJECT_CONTEXT.md',
               'ARCHITECTURE.md',
-              'CHANGELOG.md'
+              'CHANGELOG.md',
+              'LICENSE',
+              'RELEASE_NOTES_v1.0.0.md'
           )
 
           $missingFiles = @($requiredFiles | Where-Object { -not (Test-Path -LiteralPath $_ -PathType Leaf) })
