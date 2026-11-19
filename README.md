@@ -133,7 +133,7 @@ System.Execute("%windir%\\System32\\cmd.exe","C:\\Users\\serge\\Desktop\\VoiceMe
 System.Execute("%windir%\\System32\\cmd.exe","C:\\Users\\serge\\Desktop\\VoiceMeeter Automation","/C wscript.exe VoiceMeeter-IdleWatcher.vbs /stop");
 ~~~
 
-The working-directory path is specific to the maintainer's current computer. Change it to the directory where both project scripts are installed on another system. Before making the repository public, replace this personal local path with a generic example or remove it.
+Replace the example working directory with the folder containing both project scripts on your own computer.
 
 While the watcher is running, it periodically asserts ON for the configured button through the VoiceMeeter Remote API. It does not read the button state: the watcher already knows its own process state. The API STATEONLY mode changes only the displayed state and never executes the button macro. Graceful watcher shutdown asserts OFF.
 
@@ -143,7 +143,7 @@ A repeated START request does not create another watcher process. It signals the
 
 If the configured button or API function is unavailable, synchronization is skipped and retried later. These optional failures are DEBUG-only, do not stop the watcher, and do not generate repeated ERROR entries. No second monitoring process is created.
 
-GitHub Actions checks source syntax, the STATEONLY contract and embedded C# compilation. Live MacroButtons behavior still requires verification on the maintainer's Windows system; GitHub Actions cannot test that local UI.
+GitHub Actions checks source syntax, the STATEONLY contract and embedded C# compilation. The maintainer has also verified MacroButtons state synchronization on the target Windows system. GitHub Actions cannot test that local UI.
 
 ## Logs
 
@@ -159,4 +159,4 @@ This project was developed with substantial and active assistance from ChatGPT, 
 
 ## License
 
-No license has been selected yet. Until a license is added, do not assume that the code is available for reuse, redistribution, or modification by others.
+This project is licensed under the MIT License. See [LICENSE](LICENSE) for details.
