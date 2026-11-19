@@ -43,6 +43,6 @@ Changes made after the latest dated entry will be recorded here.
 ### Notes
 
 - This entry records the initial documented repository baseline, not a numbered software release.
-- Runtime behavior must still be verified on the target Windows system with VoiceMeeter installed.
-- MacroButtons visual-state synchronization is not implemented in the current source.
-- No software license has been selected.
+- Runtime behavior was verified on the maintainer's target Windows system for the reported baseline scenarios; long-duration operation and sleep/wake recovery remain under observation.
+- MacroButtons visual-state synchronization is implemented with STATEONLY and has been confirmed in local runtime testing.
+- The project is licensed under the MIT License.
