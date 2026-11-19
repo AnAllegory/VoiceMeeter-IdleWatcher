@@ -79,7 +79,7 @@ The script also uses shorter internal intervals for API recovery and for checkin
 | ARCHITECTURE.md | Bilingual architecture overview and Mermaid diagrams. |
 | CHANGELOG.md | Repository change history and development baseline. |
 | LICENSE | MIT license terms. |
-| RELEASE_NOTES_v1.0.0.md | Prepared notes for the first release candidate. |
+| RELEASE_NOTES_v1.0.0.md | Release notes for the published v1.0.0 release. |
 | .gitignore | Excludes local logs, temporary files, backups, and KeePass databases from Git. |
 | .github/workflows/powershell-check.yml | Runs automated Windows PowerShell 5.1 parser and PSScriptAnalyzer checks. |
 
