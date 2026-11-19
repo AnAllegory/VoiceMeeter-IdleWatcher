@@ -2,7 +2,7 @@
 
 ## Release status
 
-Release candidate prepared on 2026-11-19. This file contains the proposed first-release notes. The v1.0.0 tag and published GitHub Release must be created only after the final Windows runtime observation and a successful workflow run on the exact release commit.
+Published on 2026-11-19 as GitHub Release v1.0.0. The tag points to commit `44ee9d4f0bd404a4c8d0d4008523010ea2c07a7c`, which passed the Windows PowerShell 5.1 GitHub Actions workflow.
 
 ## Highlights
 
