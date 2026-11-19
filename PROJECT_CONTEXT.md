@@ -166,13 +166,13 @@ The maintainer confirmed that the following exact commands work in the current l
 ### START — Button ON
 
 ~~~vb
-System.Execute("%windir%\System32\cmd.exe","C:\Users\serge\Desktop\VoiceMeeter Automation","/C wscript.exe VoiceMeeter-IdleWatcher.vbs");
+System.Execute("%windir%\System32\cmd.exe","C:\Path\To\VoiceMeeter IdleWatcher","/C wscript.exe VoiceMeeter-IdleWatcher.vbs");
 ~~~
 
 ### STOP — Button OFF
 
 ~~~vb
-System.Execute("%windir%\System32\cmd.exe","C:\Users\serge\Desktop\VoiceMeeter Automation","/C wscript.exe VoiceMeeter-IdleWatcher.vbs /stop");
+System.Execute("%windir%\System32\cmd.exe","C:\Path\To\VoiceMeeter IdleWatcher","/C wscript.exe VoiceMeeter-IdleWatcher.vbs /stop");
 ~~~
 
 The working directory is specific to the maintainer's current PC. If the project moves, update the working-directory field. The example path is generic and must be replaced with the actual project directory on each computer.
