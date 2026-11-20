@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>VoiceMeeter IdleWatcher | Automatic shutdown for Windows</title>
+  <meta name="description" content="VoiceMeeter IdleWatcher is a Windows PowerShell utility that monitors user idle time and display power state, requesting VoiceMeeter shutdown only when the display is fully off and the idle threshold has elapsed.">
+  <meta name="robots" content="index,follow,max-image-preview:large">
+  <link rel="canonical" href="https://anallegory.github.io/VoiceMeeter-IdleWatcher/">
+  <link rel="alternate" hreflang="en" href="https://anallegory.github.io/VoiceMeeter-IdleWatcher/">
+  <link rel="alternate" hreflang="ru" href="https://anallegory.github.io/VoiceMeeter-IdleWatcher/#ru">
+  <link rel="alternate" hreflang="x-default" href="https://anallegory.github.io/VoiceMeeter-IdleWatcher/">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="VoiceMeeter IdleWatcher">
+  <meta property="og:description" content="A small Windows automation utility for safe, idle-aware VoiceMeeter shutdown.">
+  <meta property="og:url" content="https://anallegory.github.io/VoiceMeeter-IdleWatcher/">
+  <meta name="theme-color" content="#172033">
+  <style>
+    :root { color-scheme: light; --ink:#172033; --muted:#526078; --line:#dce3ed; --paper:#f5f7fb; --accent:#2457c5; }
+    * { box-sizing:border-box; }
+    body { margin:0; background:var(--paper); color:var(--ink); font:16px/1.65 system-ui,-apple-system,"Segoe UI",sans-serif; }
+    main { width:min(900px,calc(100% - 32px)); margin:48px auto; }
+    header, section { background:#fff; border:1px solid var(--line); border-radius:16px; padding:clamp(22px,4vw,38px); margin-bottom:18px; }
+    h1 { font-size:clamp(2rem,5vw,3.2rem); line-height:1.12; margin:0 0 14px; letter-spacing:-.035em; }
+    h2 { margin:0 0 12px; font-size:1.45rem; }
+    p { margin:10px 0; }
+    .lead { color:var(--muted); font-size:1.15rem; max-width:720px; }
+    .links { display:flex; flex-wrap:wrap; gap:12px; margin-top:24px; }
+    .links a { display:inline-block; padding:10px 16px; border-radius:9px; background:var(--accent); color:#fff; text-decoration:none; font-weight:650; }
+    .links a.secondary { background:#edf2fc; color:var(--accent); }
+    ul { padding-left:22px; }
+    li { margin:7px 0; }
+    code { background:#f0f3f8; padding:2px 5px; border-radius:5px; }
+    a { color:var(--accent); }
+    footer { color:var(--muted); text-align:center; font-size:.9rem; padding:12px; }
+    .tag { color:var(--muted); font-size:.88rem; text-transform:uppercase; letter-spacing:.08em; font-weight:700; }
+  </style>
+</head>
+<body>
+<main>
+  <header>
+    <div class="tag">Open-source Windows utility</div>
+    <h1>VoiceMeeter IdleWatcher</h1>
+    <p class="lead">Automatic VoiceMeeter shutdown, governed by two conditions: Windows user inactivity and the display being fully off.</p>
+    <div class="links">
+      <a href="https://github.com/AnAllegory/VoiceMeeter-IdleWatcher">View source on GitHub</a>
+      <a class="secondary" href="https://github.com/AnAllegory/VoiceMeeter-IdleWatcher/releases/latest">Latest release</a>
+      <a class="secondary" href="https://github.com/AnAllegory/VoiceMeeter-IdleWatcher/blob/main/README.md">Documentation</a>
+    </div>
+  </header>
+
+  <section>
+    <h2>What it does</h2>
+    <p>VoiceMeeter IdleWatcher is a Windows PowerShell automation tool. It monitors the Windows idle timer and display power state, then requests VoiceMeeter shutdown through the VoiceMeeter Remote API only when the configured idle threshold has elapsed and the display is fully off.</p>
+    <ul>
+      <li>Checks Windows user idle time.</li>
+      <li>Tracks display power notifications.</li>
+      <li>Allows shutdown only when the display state is <strong>Off (0)</strong> and the idle threshold is reached.</li>
+      <li>Blocks shutdown while the display is On, Dimmed, or in an unknown state.</li>
+      <li>Supports graceful stop, single-instance protection, and primary/fallback/emergency logging.</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>Safety behavior</h2>
+    <p>The display state is a hard safety gate, not just an additional idle hint.</p>
+    <ul>
+      <li><strong>Display Off + idle threshold reached:</strong> shutdown is permitted.</li>
+      <li><strong>Display On or Dimmed:</strong> shutdown is blocked.</li>
+      <li><strong>Unknown display state:</strong> shutdown is blocked.</li>
+    </ul>
+    <p>Stopping IdleWatcher stops the automation process. It does not itself shut down VoiceMeeter.</p>
+  </section>
+
+  <section>
+    <h2>Requirements</h2>
+    <ul>
+      <li>Windows and Windows PowerShell 5.1.</li>
+      <li>VoiceMeeter installed.</li>
+      <li>The matching VoiceMeeter Remote API DLL.</li>
+      <li>Windows Script Host for the optional VBS launcher.</li>
+    </ul>
+    <p>The default idle threshold is 8 minutes. The script parameter accepts values from 1 to 60 minutes.</p>
+  </section>
+
+  <section>
+    <h2>Source code and documentation</h2>
+    <p>The project is maintained in a public GitHub repository under the MIT License. The repository contains the PowerShell watcher, hidden VBS launcher, English and Russian documentation, architecture notes, changelog, and automated Windows PowerShell 5.1 checks.</p>
+    <p><a href="https://github.com/AnAllegory/VoiceMeeter-IdleWatcher">AnAllegory / VoiceMeeter-IdleWatcher on GitHub</a></p>
+  </section>
+
+  <section id="ru" lang="ru">
+    <div class="tag">Русская версия</div>
+    <h2>VoiceMeeter IdleWatcher</h2>
+    <p>Небольшая утилита для Windows на PowerShell, которая отслеживает время бездействия пользователя и состояние питания дисплея. Команда выключения VoiceMeeter отправляется только тогда, когда одновременно выполнены два условия: достигнут заданный порог бездействия и дисплей полностью выключен.</p>
+    <ul>
+      <li>Дисплей выключен (Off) и порог бездействия достигнут: выключение разрешено.</li>
+      <li>Дисплей включён (On) или затемнён (Dimmed): выключение заблокировано.</li>
+      <li>Состояние дисплея неизвестно: выключение заблокировано.</li>
+    </ul>
+    <p>Остановка IdleWatcher завершает только саму утилиту и не закрывает VoiceMeeter.</p>
+    <p><a href="https://github.com/AnAllegory/VoiceMeeter-IdleWatcher/blob/main/README.ru.md">Полная документация на русском языке</a></p>
+  </section>
+
+  <footer>VoiceMeeter IdleWatcher · Open source · MIT License</footer>
+</main>
+</body>
+</html>
