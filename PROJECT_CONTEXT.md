@@ -254,6 +254,7 @@ When assisting with this project:
 ## 15. Architecture documentation
 
 - `ARCHITECTURE.md` contains a bilingual high-level description and Mermaid diagrams for the watcher’s main control flow, safety checks, and graceful stop path.
+- `ROADMAP.md` records potential future improvements, deliberately deferred ideas, and the project’s principles for deciding whether changes are warranted. It is a planning note, not a commitment to implement every item.
 - Both README files include a concise overview diagram and link to the detailed architecture document.
 - The diagram is intentionally high-level; retry, timeout, API recovery, and logging details remain defined by the current source code.
 
