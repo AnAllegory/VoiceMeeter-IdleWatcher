@@ -4,6 +4,15 @@ This document records potential future improvements and deliberate scope decisio
 
 The current release is considered stable on the maintainer's observed normal operating path. Changes should be driven by a reproducible issue, a concrete use case, or a clear maintenance benefit. Do not add complexity merely because it is technically possible.
 
+## Implemented improvements
+
+### CI analyzer policy
+
+- PSScriptAnalyzer findings with severity **Error** now fail the GitHub Actions workflow.
+- Findings with severity **Warning** or **Information** remain visible in the log but do not fail the workflow.
+- The current known `PSReviewUnusedParameter` warning for `StartupStatusFile` is retained as non-blocking: the parameter is referenced by the nested `Write-StartupStatus` helper in the current script. Do not remove or change the launcher's startup-status contract just to suppress this analyzer warning.
+- CI also checks that `AGENTS.md` and `SECURITY.md` remain present in the repository.
+
 ## Potential improvements
 
 These items are retained for future reference. None is currently a confirmed defect requiring an immediate code change.
@@ -23,15 +32,7 @@ The code does not currently implement dedicated Sleep / Wake handling.
 - Continue observing normal operation.
 - Do not add dedicated sleep-resume logic unless a reproducible problem is found.
 
-### 3. CI analyzer policy
-
-PSScriptAnalyzer findings are currently reported without failing the workflow.
-
-- Consider making analyzer findings at severity Error fail the workflow.
-- Keep Warning and Information findings non-blocking unless there is a specific reason to change the policy.
-- The known StartupStatusFile warning may be a false positive because the parameter is used by a nested function; verify before treating it as a source defect.
-
-### 4. Logging clarity
+### 3. Logging clarity
 
 If real troubleshooting needs arise, consider making the origin and reason for START / STOP requests easier to identify in the log.
 
@@ -58,4 +59,4 @@ The following ideas were considered and intentionally deferred. Reconsider them 
 
 ## Status
 
-No roadmap item above is an active implementation task. The list is a place to preserve decisions and revisit them when circumstances justify it.
+The CI analyzer policy improvement is implemented. The remaining items are observations or future considerations, not active implementation tasks.
