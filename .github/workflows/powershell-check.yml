@@ -87,6 +87,35 @@ jobs:
 
           Write-Host 'PowerShell parser found no syntax errors.'
 
+      - name: Validate VBScript launcher with Windows Script Host
+        shell: powershell
+        run: |
+          $scriptPath = 'VoiceMeeter-IdleWatcher.vbs'
+          $cscriptPath = Join-Path -Path $env:SystemRoot -ChildPath 'System32\cscript.exe'
+
+          if (-not (Test-Path -LiteralPath $cscriptPath -PathType Leaf)) {
+              throw 'Windows Script Host cscript.exe was not found.'
+          }
+
+          # An intentionally invalid argument exercises the launcher's parser and
+          # exits before it can start the PowerShell watcher.
+          $output = & $cscriptPath //nologo $scriptPath /__syntax_check__ 2>&1
+          $exitCode = $LASTEXITCODE
+          # GitHub Actions' PowerShell wrapper treats a non-zero LASTEXITCODE as step failure.
+          # The expected VBS exit code is 4, so clear the wrapper status after capturing it.
+          $global:LASTEXITCODE = 0
+          $outputText = $output -join [Environment]::NewLine
+
+          if ($exitCode -ne 4) {
+              throw ("VBScript launcher returned exit code {0}, expected 4. Output: {1}" -f $exitCode, $outputText)
+          }
+
+          if ($outputText -notmatch [regex]::Escape('Unknown argument: /__syntax_check__')) {
+              throw ("VBScript launcher did not report the expected invalid-argument message. Output: {0}" -f $outputText)
+          }
+
+          Write-Host 'VBScript launcher parsed successfully and rejected an invalid argument without starting the watcher.'
+
       - name: Verify MacroButtons synchronization safety contract
         shell: powershell
         run: |

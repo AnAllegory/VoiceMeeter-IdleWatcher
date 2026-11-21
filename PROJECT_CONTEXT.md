@@ -244,6 +244,7 @@ When assisting with this project:
 - `.github/workflows/powershell-check.yml` runs on pushes and pull requests targeting `main`, and can also be started manually.
 - It explicitly uses the Windows PowerShell Desktop shell on a Windows GitHub-hosted runner.
 - It checks required repository files, including `AGENTS.md` and `SECURITY.md`, and parses the main PS1 source using the Windows PowerShell 5.1 parser. Missing required files and parser errors fail the workflow.
+- It also invokes `VoiceMeeter-IdleWatcher.vbs` with an intentionally invalid argument through Windows Script Host (`cscript.exe`). The launcher must parse, print the expected argument error, and return exit code 4; this test exits before starting the watcher.
 - It installs PSScriptAnalyzer 1.25.0 and reports Error, Warning, and Information findings.
 - PSScriptAnalyzer findings with severity **Error** fail the workflow. Warning and Information findings remain visible but non-blocking.
 - The current known baseline warning is `PSReviewUnusedParameter` for `StartupStatusFile`. The parameter is used by the nested `Write-StartupStatus` helper; do not remove the startup-status parameter contract merely to silence this analyzer warning.
