@@ -101,6 +101,9 @@ jobs:
           # exits before it can start the PowerShell watcher.
           $output = & $cscriptPath //nologo $scriptPath /__syntax_check__ 2>&1
           $exitCode = $LASTEXITCODE
+          # GitHub Actions' PowerShell wrapper treats a non-zero LASTEXITCODE as step failure.
+          # The expected VBS exit code is 4, so clear the wrapper status after capturing it.
+          $global:LASTEXITCODE = 0
           $outputText = $output -join [Environment]::NewLine
 
           if ($exitCode -ne 4) {
