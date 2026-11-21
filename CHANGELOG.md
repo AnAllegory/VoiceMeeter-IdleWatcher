@@ -10,6 +10,7 @@ The v1.0.0 release was published on 2026-11-19. Entries are grouped by release.
 
 - Made Error-level PSScriptAnalyzer findings fail the GitHub Actions workflow; Warning and Information findings remain visible but non-blocking.
 - Added `AGENTS.md` and `SECURITY.md` to the CI required-file check so repository review and security policies cannot disappear unnoticed.
+- Moved the pre-shutdown log write ahead of the final idle/display revalidation so file logging cannot delay the safety check before `Command.Shutdown`.
 - Added a Windows Script Host check for the VBS launcher. It verifies script parsing and invalid-argument handling without starting the watcher.
 
 
