@@ -11,7 +11,9 @@ The current release is considered stable on the maintainer's observed normal ope
 - PSScriptAnalyzer findings with severity **Error** now fail the GitHub Actions workflow.
 - Findings with severity **Warning** or **Information** remain visible in the log but do not fail the workflow.
 - The current known `PSReviewUnusedParameter` warning for `StartupStatusFile` is retained as non-blocking: the parameter is referenced by the nested `Write-StartupStatus` helper in the current script. Do not remove or change the launcher's startup-status contract just to suppress this analyzer warning.
-- CI also checks that `AGENTS.md` and `SECURITY.md` remain present in the repository.
+- CI checks that `AGENTS.md`, `SECURITY.md`, and `ROADMAP.md` remain present in the repository.
+- The workflow parses the PS1 with Windows PowerShell 5.1, validates the VBS launcher's invalid-argument path without starting the watcher, checks the MacroButtons STATEONLY/no-readback contract and final shutdown-check ordering, and compiles the embedded Remote API interop C# source.
+- PSScriptAnalyzer findings at severity **Error** fail the workflow; Warning and Information findings remain visible but non-blocking.
 
 ## Potential improvements
 
