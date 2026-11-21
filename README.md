@@ -78,12 +78,13 @@ The script also uses shorter internal intervals for API recovery and for checkin
 | PROJECT_CONTEXT.md | Maintainer's project handover and context reference. |
 | AGENTS.md | Instructions for AI coding agents reviewing and changing this repository. |
 | SECURITY.md | Security policy and private vulnerability reporting guidance. |
+| ROADMAP.md | Potential future improvements, deferred ideas, and project change principles. |
 | ARCHITECTURE.md | Bilingual architecture overview and Mermaid diagrams. |
 | CHANGELOG.md | Repository change history and development baseline. |
 | LICENSE | MIT license terms. |
 | RELEASE_NOTES_v1.0.0.md | Release notes for the published v1.0.0 release. |
 | .gitignore | Excludes local logs, temporary files, backups, and KeePass databases from Git. |
-| .github/workflows/powershell-check.yml | Runs automated Windows PowerShell 5.1 parser and PSScriptAnalyzer checks. |
+| .github/workflows/powershell-check.yml | Runs Windows PowerShell 5.1 parsing, VBS launcher validation, source-level safety checks, embedded C# compilation, and PSScriptAnalyzer. |
 
 Keep the PS1 and VBS files in the same directory. The VBS launcher locates the PS1 file beside itself and expects the matching base filename.
 
@@ -147,7 +148,7 @@ A repeated START request does not create another watcher process. It signals the
 
 If the configured button or API function is unavailable, synchronization is skipped and retried later. These optional failures are DEBUG-only, do not stop the watcher, and do not generate repeated ERROR entries. No second monitoring process is created.
 
-GitHub Actions checks source syntax, the STATEONLY contract and embedded C# compilation. The maintainer has also verified MacroButtons state synchronization on the target Windows system. GitHub Actions cannot test that local UI.
+GitHub Actions runs Windows PowerShell 5.1 parsing, validates the VBS launcher's invalid-argument path with `cscript.exe` (without starting the watcher), checks the MacroButtons STATEONLY/no-readback contract, verifies final idle/display revalidation immediately before `Command.Shutdown` with no intervening log write, and compiles the embedded Remote API C# interop. PSScriptAnalyzer findings at **Error** severity fail the workflow; Warning and Information findings are reported but do not block it. The maintainer has also verified MacroButtons state synchronization on the target Windows system. GitHub Actions cannot test that local UI or actual VoiceMeeter/display behavior.
 
 ## Logs
 

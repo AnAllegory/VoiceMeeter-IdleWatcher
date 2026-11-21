@@ -6,12 +6,17 @@ The v1.0.0 release was published on 2026-11-19. Entries are grouped by release.
 
 ## [Unreleased]
 
+### Added
+
+- Added `AGENTS.md`, `SECURITY.md`, and `ROADMAP.md` as separate repository documents for contributor instructions, private vulnerability reporting, and deferred project planning.
+
 ### Changed
 
 - Made Error-level PSScriptAnalyzer findings fail the GitHub Actions workflow; Warning and Information findings remain visible but non-blocking.
 - Added `AGENTS.md` and `SECURITY.md` to the CI required-file check so repository review and security policies cannot disappear unnoticed.
 - Moved the pre-shutdown log write ahead of the final idle/display revalidation so file logging cannot delay the safety check before `Command.Shutdown`.
 - Added a Windows Script Host check for the VBS launcher. It verifies script parsing and invalid-argument handling without starting the watcher.
+- Expanded CI source-level checks to protect the MacroButtons STATEONLY/no-readback contract and the final idle/display revalidation order before `Command.Shutdown`.
 
 
 ## [1.0.1] - 2026-11-19
@@ -28,6 +33,7 @@ The v1.0.0 release was published on 2026-11-19. Entries are grouped by release.
 ### Documentation
 
 - Updated `PROJECT_CONTEXT.md` with the current source-file sizes, line counts, and repository handover details.
+- Added `ROADMAP.md` to the repository file inventories and required-file CI check; aligned both README files and the handover document with the current CI checks and analyzer blocking policy.
 - Removed maintainer-specific MacroButtons button assignments from the general documentation; clarified that the logical button ID is configurable and depends on the local layout.
 - Aligned the English and Russian README files and architecture notes with the configurable MacroButtons button-ID description.
 - Kept the published `v1.0.0` release notes and tag snapshot unchanged.
