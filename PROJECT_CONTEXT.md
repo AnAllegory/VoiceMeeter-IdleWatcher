@@ -44,6 +44,8 @@ VoiceMeeter-IdleWatcher/
 ├── README.md
 ├── README.ru.md
 ├── PROJECT_CONTEXT.md
+├── AGENTS.md
+├── SECURITY.md
 ├── ARCHITECTURE.md
 ├── CHANGELOG.md
 ├── LICENSE
@@ -241,9 +243,11 @@ When assisting with this project:
 
 - `.github/workflows/powershell-check.yml` runs on pushes and pull requests targeting `main`, and can also be started manually.
 - It explicitly uses the Windows PowerShell Desktop shell on a Windows GitHub-hosted runner.
-- It checks required repository files and parses the main PS1 source using the Windows PowerShell 5.1 parser. Parser errors fail the workflow.
+- It checks required repository files, including `AGENTS.md` and `SECURITY.md`, and parses the main PS1 source using the Windows PowerShell 5.1 parser. Missing required files and parser errors fail the workflow.
 - It installs PSScriptAnalyzer 1.25.0 and reports Error, Warning, and Information findings.
-- Initial baseline mode is intentional: PSScriptAnalyzer findings are reported but do not yet fail the workflow. Review the first run before deciding which analyzer rules should become blocking.
+- PSScriptAnalyzer findings with severity **Error** fail the workflow. Warning and Information findings remain visible but non-blocking.
+- The current known baseline warning is `PSReviewUnusedParameter` for `StartupStatusFile`. The parameter is used by the nested `Write-StartupStatus` helper; do not remove the startup-status parameter contract merely to silence this analyzer warning.
+- The most recent baseline observation before enabling Error-level blocking was GitHub Actions run 48: one Warning and no Error-level findings.
 - This is static analysis only. It does not execute the watcher, connect to VoiceMeeter, test MacroButtons, or verify actual display power notifications.
 
 ## 14. Change history
