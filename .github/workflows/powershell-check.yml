@@ -46,6 +46,7 @@ jobs:
               'PROJECT_CONTEXT.md',
               'AGENTS.md',
               'SECURITY.md',
+              'ROADMAP.md',
               'ARCHITECTURE.md',
               'CHANGELOG.md',
               'LICENSE',
