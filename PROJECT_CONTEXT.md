@@ -44,6 +44,9 @@ VoiceMeeter-IdleWatcher/
 ├── README.md
 ├── README.ru.md
 ├── PROJECT_CONTEXT.md
+├── AGENTS.md
+├── SECURITY.md
+├── ROADMAP.md
 ├── ARCHITECTURE.md
 ├── CHANGELOG.md
 ├── LICENSE
@@ -60,7 +63,7 @@ The repository is public. Do not add runtime logs, rotated logs, KeePass databas
 
 ### VoiceMeeter-IdleWatcher.ps1
 
-The main watcher. The current source has 1,572 lines (63,329 bytes in the fetched UTF-8 file). It includes:
+The main watcher. The current source has 1,575 line-break-delimited entries (1,574 actual lines; 63,600 bytes in the fetched UTF-8 file). It includes:
 
 - Parameters: Mode (Start or Stop), IdleMinutes (default 8; valid range 1–60), DebugMode switch, and StartupStatusFile.
 - Windows idle-time retrieval through GetLastInputInfo.
@@ -135,7 +138,7 @@ Logging limits in the current code:
 - API Login return code 1 is treated by the script as a successful API login when the VoiceMeeter engine is not currently running; the watcher then waits for engine startup.
 - API Login return code -2 triggers a Logout-before-retry recovery path.
 - Shutdown is requested through SetParameterFloat('Command.Shutdown', 1).
-- The script rechecks both idle duration and display state immediately before issuing shutdown.
+- The script rechecks both idle duration and display state immediately before issuing shutdown. The potentially blocking pre-dispatch log write occurs before this final revalidation; no log write occurs between the final check and the API call.
 - The code tracks whether the engine stopped after shutdown and whether it restarted during the same idle period.
 - An unknown display state is fail-safe and blocks shutdown.
 
@@ -202,7 +205,7 @@ These are user-reported local runtime observations. They are not the same as an 
 
 1. **MacroButtons visual-state synchronization has been verified on the maintainer's Windows system.** The watcher asserts the configured button state every 10 seconds with Remote API STATEONLY mode; it does not read the button state first. It does not execute the button macro and creates no helper process. The current source default is logical button ID 1; choose an ID that matches the local MacroButtons layout. Repeated START requests signal the existing watcher for an immediate ON refresh.
 2. If the configured button or MacroButtons API function is unavailable, synchronization is skipped and retried later. Repeated identical failures are suppressed and recorded only at DEBUG level; they do not stop the watcher.
-3. The CI workflow performs syntax and static analyzer checks only. It does not execute the watcher or test actual VoiceMeeter/MacroButtons/display behavior.
+3. The CI workflow performs static checks only: PowerShell parsing, VBS argument handling, source-level safety contracts, embedded C# compilation, and PSScriptAnalyzer. It does not execute the watcher or test actual VoiceMeeter/MacroButtons/display behavior.
 4. The project is licensed under the MIT License; see LICENSE.
 5. Documentation uses a generic example path and contains no maintainer-specific working-directory path.
 6. Long-duration operation and sleep/wake recovery remain under observation on the maintainer's Windows system. GitHub Actions cannot independently verify the local VoiceMeeter engine, MacroButtons UI, or display hardware.
@@ -241,9 +244,14 @@ When assisting with this project:
 
 - `.github/workflows/powershell-check.yml` runs on pushes and pull requests targeting `main`, and can also be started manually.
 - It explicitly uses the Windows PowerShell Desktop shell on a Windows GitHub-hosted runner.
-- It checks required repository files and parses the main PS1 source using the Windows PowerShell 5.1 parser. Parser errors fail the workflow.
+- It checks required repository files, including `AGENTS.md` and `SECURITY.md`, and parses the main PS1 source using the Windows PowerShell 5.1 parser. Missing required files and parser errors fail the workflow.
+- It invokes `VoiceMeeter-IdleWatcher.vbs` with an intentionally invalid argument through Windows Script Host (`cscript.exe`). The launcher must parse, print the expected argument error, and return exit code 4; this test exits before starting the watcher.
+- It checks the MacroButtons STATEONLY/no-readback safety contract and verifies that final idle/display revalidation precedes `Command.Shutdown` with no intervening log write.
+- It compiles the embedded Remote API interop C# source.
 - It installs PSScriptAnalyzer 1.25.0 and reports Error, Warning, and Information findings.
-- Initial baseline mode is intentional: PSScriptAnalyzer findings are reported but do not yet fail the workflow. Review the first run before deciding which analyzer rules should become blocking.
+- PSScriptAnalyzer findings with severity **Error** fail the workflow. Warning and Information findings remain visible but non-blocking.
+- The current known baseline warning is `PSReviewUnusedParameter` for `StartupStatusFile`. The parameter is used by the nested `Write-StartupStatus` helper; do not remove the startup-status parameter contract merely to silence this analyzer warning.
+- The most recent baseline observation before enabling Error-level blocking was GitHub Actions run 48: one Warning and no Error-level findings.
 - This is static analysis only. It does not execute the watcher, connect to VoiceMeeter, test MacroButtons, or verify actual display power notifications.
 
 ## 14. Change history
@@ -254,6 +262,7 @@ When assisting with this project:
 ## 15. Architecture documentation
 
 - `ARCHITECTURE.md` contains a bilingual high-level description and Mermaid diagrams for the watcher’s main control flow, safety checks, and graceful stop path.
+- `ROADMAP.md` records potential future improvements, deliberately deferred ideas, and the project’s principles for deciding whether changes are warranted. It is a planning note, not a commitment to implement every item.
 - Both README files include a concise overview diagram and link to the detailed architecture document.
 - The diagram is intentionally high-level; retry, timeout, API recovery, and logging details remain defined by the current source code.
 
@@ -264,12 +273,12 @@ At the time this context file is being prepared:
 - Repository: AnAllegory/VoiceMeeter-IdleWatcher.
 - Visibility: Public.
 - Default branch: main.
-- The repository contains the current PS1 and VBS source files, bilingual README files, project handover notes, architecture documentation, changelog, and automated PowerShell checks.
+- The repository contains the current PS1 and VBS source files, bilingual README files, project handover notes, architecture documentation, changelog, and the roadmap and automated PowerShell checks.
 - GitHub connector read access to the public repository was successfully used in the current conversation.
 - README.md and README.ru.md contain the English and Russian project documentation, including the main Mermaid flow diagram.
 - PROJECT_CONTEXT.md is the handover document for restoring project context in a future chat.
 - ARCHITECTURE.md contains the bilingual detailed architecture overview and Mermaid diagrams.
-- The current source files were fetched back from GitHub for this review: PS1 is 1,572 lines / 63,329 bytes; VBS is 187 lines / 7,109 bytes (UTF-8 content returned by GitHub).
+- The current source files were fetched back from GitHub for this review: PS1 is 1,575 line-break-delimited entries (1,574 actual lines) / 63,600 bytes; VBS is 187 lines / 7,109 bytes (UTF-8 content returned by GitHub).
 - MacroButtons visual-state synchronization is implemented with STATEONLY, a 10-second ON assertion interval, and an immediate refresh event for duplicate START requests. The current source default logical ID is 1 and can be changed to match a local MacroButtons layout. The maintainer confirmed the visual state follows watcher start/stop without executing the button macro.
 - The current PS1 and VBS sources contain no maintainer-specific working-directory path, and no obvious API-token pattern was detected in a basic static scan. Documentation examples use a generic path. This is not a comprehensive security audit.
 - The repository is public. Do not commit runtime logs, credentials, recovery codes, local database files, or other private information.
