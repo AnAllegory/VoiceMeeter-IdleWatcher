@@ -76,6 +76,8 @@ The script also uses shorter internal intervals for API recovery and for checkin
 | README.md | English documentation. |
 | README.ru.md | Russian documentation. |
 | PROJECT_CONTEXT.md | Maintainer's project handover and context reference. |
+| AGENTS.md | Instructions for AI coding agents reviewing and changing this repository. |
+| SECURITY.md | Security policy and private vulnerability reporting guidance. |
 | ARCHITECTURE.md | Bilingual architecture overview and Mermaid diagrams. |
 | CHANGELOG.md | Repository change history and development baseline. |
 | LICENSE | MIT license terms. |
