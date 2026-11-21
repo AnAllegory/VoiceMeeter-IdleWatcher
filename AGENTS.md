@@ -124,7 +124,7 @@ Do not present speculation as a confirmed defect. Do not flag documented, intent
 
 Inspect `.github/workflows/powershell-check.yml` before changing CI behavior.
 
-The repository's automated checks include Windows PowerShell 5.1 parsing and PSScriptAnalyzer. The workflow is static verification; it does not execute the watcher against the maintainer's VoiceMeeter installation or verify real MacroButtons UI and display hardware behavior.
+The workflow checks required repository files (including `AGENTS.md`, `SECURITY.md`, and `ROADMAP.md`), parses the main PS1 source with the Windows PowerShell 5.1 parser, validates the VBS launcher's invalid-argument path through `cscript.exe` without starting the watcher, checks the MacroButtons STATEONLY/no-readback contract, verifies that final idle/display revalidation immediately precedes `Command.Shutdown` without an intervening log write, and compiles the embedded Remote API interop C# source. PSScriptAnalyzer findings at severity **Error** fail the workflow; Warning and Information findings remain visible but non-blocking. The workflow is static verification; it does not execute the watcher against the maintainer's VoiceMeeter installation or verify real MacroButtons UI and display hardware behavior.
 
 Clearly distinguish:
 - Static inspection or CI results.
