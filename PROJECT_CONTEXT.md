@@ -137,7 +137,7 @@ Logging limits in the current code:
 - API Login return code 1 is treated by the script as a successful API login when the VoiceMeeter engine is not currently running; the watcher then waits for engine startup.
 - API Login return code -2 triggers a Logout-before-retry recovery path.
 - Shutdown is requested through SetParameterFloat('Command.Shutdown', 1).
-- The script rechecks both idle duration and display state immediately before issuing shutdown.
+- The script rechecks both idle duration and display state immediately before issuing shutdown. The potentially blocking pre-dispatch log write occurs before this final revalidation; no log write occurs between the final check and the API call.
 - The code tracks whether the engine stopped after shutdown and whether it restarted during the same idle period.
 - An unknown display state is fail-safe and blocks shutdown.
 
