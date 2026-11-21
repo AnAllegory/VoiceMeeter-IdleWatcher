@@ -6,6 +6,12 @@ The v1.0.0 release was published on 2026-11-19. Entries are grouped by release.
 
 ## [Unreleased]
 
+### Changed
+
+- Made Error-level PSScriptAnalyzer findings fail the GitHub Actions workflow; Warning and Information findings remain visible but non-blocking.
+- Added `AGENTS.md` and `SECURITY.md` to the CI required-file check so repository review and security policies cannot disappear unnoticed.
+
+
 ## [1.0.1] - 2026-11-19
 
 ### Fixed

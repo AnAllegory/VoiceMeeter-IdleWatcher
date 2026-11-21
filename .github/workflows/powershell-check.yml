@@ -44,6 +44,8 @@ jobs:
               'README.md',
               'README.ru.md',
               'PROJECT_CONTEXT.md',
+              'AGENTS.md',
+              'SECURITY.md',
               'ARCHITECTURE.md',
               'CHANGELOG.md',
               'LICENSE',
@@ -180,6 +182,12 @@ jobs:
                       $line,
                       $finding.Message)
               }
-
-              Write-Host 'Baseline mode: analyzer findings are reported for review and do not fail the workflow yet.'
           }
+
+          $errorFindings = @($findings | Where-Object { $_.Severity -eq 'Error' })
+
+          if ($errorFindings.Count -gt 0) {
+              throw ("PSScriptAnalyzer reported {0} Error-level finding(s). The workflow cannot pass until they are fixed." -f $errorFindings.Count)
+          }
+
+          Write-Host 'No Error-level findings. Warning and Information findings are reported but remain non-blocking.'
