@@ -1375,7 +1375,10 @@ try {
                                         Write-Log 'VoiceMeeter API remained available after the previous Shutdown request; re-sending Command.Shutdown in the same idle period.' -Level 'WARN'
                                     }
 
-                                    # Re-verify conditions immediately before dispatching the command.
+                                    # Do potentially blocking logging before the final safety checks.
+                                    Write-Log "Engine available (IsParametersDirty = $connection). Checking final idle/display conditions before Command.Shutdown..." -Level 'DEBUG'
+
+                                    # Re-verify after logging and immediately before dispatching the command.
                                     $idleMsNow = [VMRIdleWatcherNative]::GetIdleMilliseconds()
                                     $displayStateNow = [VMRIdleWatcherNative]::GetDisplayState()
 
@@ -1388,7 +1391,7 @@ try {
                                         break
                                     }
                                     else {
-                                        Write-Log "Engine available (IsParametersDirty = $connection). Sending Command.Shutdown..." -Level 'DEBUG'
+                                        # No logging or other potentially blocking work between final validation and dispatch.
                                         $result = [VMRIdleWatcherNative]::SetParameterFloat('Command.Shutdown', [single]1)
 
                                         if ($result -ge 0) {
