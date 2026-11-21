@@ -146,6 +146,38 @@ jobs:
 
           Write-Host 'MacroButtons uses process-state assertions, STATEONLY and an auto-reset refresh event.'
 
+      - name: Verify shutdown dispatch safety ordering
+        shell: powershell
+        run: |
+          $source = Get-Content -LiteralPath 'VoiceMeeter-IdleWatcher.ps1' -Raw
+
+          $preDispatchLogIndex = $source.IndexOf('Checking final idle/display conditions before Command.Shutdown')
+          if ($preDispatchLogIndex -lt 0) {
+              throw 'Missing pre-dispatch log marker.'
+          }
+
+          $idleRevalidationIndex = $source.IndexOf('$idleMsNow = [VMRIdleWatcherNative]::GetIdleMilliseconds()', $preDispatchLogIndex)
+          $displayRevalidationIndex = $source.IndexOf('$displayStateNow = [VMRIdleWatcherNative]::GetDisplayState()', $idleRevalidationIndex)
+          $shutdownDispatchIndex = $source.IndexOf("[VMRIdleWatcherNative]::SetParameterFloat('Command.Shutdown'", $displayRevalidationIndex)
+
+          if (($idleRevalidationIndex -lt 0) -or
+              ($displayRevalidationIndex -le $idleRevalidationIndex) -or
+              ($shutdownDispatchIndex -le $displayRevalidationIndex)) {
+              throw 'Shutdown dispatch must follow the final idle-time and display-state revalidation.'
+          }
+
+          $dispatchElseIndex = $source.LastIndexOf('else {', $shutdownDispatchIndex)
+          if ($dispatchElseIndex -lt $displayRevalidationIndex) {
+              throw 'Could not locate the final shutdown-dispatch branch.'
+          }
+
+          $dispatchBranch = $source.Substring($dispatchElseIndex, $shutdownDispatchIndex - $dispatchElseIndex)
+          if ($dispatchBranch -match 'Write-Log') {
+              throw 'Do not perform potentially blocking logging between final validation and Command.Shutdown.'
+          }
+
+          Write-Host 'Final idle/display revalidation precedes Command.Shutdown with no intervening log write.'
+
       - name: Compile embedded Remote API interop C#
         shell: powershell
         run: |
