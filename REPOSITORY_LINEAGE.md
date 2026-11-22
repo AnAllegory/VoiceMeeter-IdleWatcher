@@ -50,7 +50,7 @@ The modular source additionally preserves Windows PowerShell 5.1 compatibility, 
 
 ## CI history
 
-The original public workflow validated a monolithic source file. The current workflow validates the modular source layout, checks PowerShell 5.1 parsing and project contracts, enforces tabs in source files, compiles the embedded C# interop with a placeholder DLL path, checks the no-log gap between final safety validation and shutdown dispatch, and exercises the VBS invalid-argument path without launching the watcher.
+The original public workflow validated a monolithic source file. The current workflow validates the modular source layout, checks PowerShell 5.1 parsing and project contracts, enforces tabs in source files, compiles the embedded C# interop with a placeholder DLL path, checks the no-log gap between final safety validation and shutdown dispatch, exercises the VBS invalid-argument path without launching the watcher, and runs PSScriptAnalyzer on the orchestrator and PowerShell modules. Error-level analyzer findings block CI; Warning and Information findings remain non-blocking.
 
 The monolithic and modular workflows are not interchangeable. Keep CI aligned with the actual source tree.
 
