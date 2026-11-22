@@ -5,7 +5,7 @@
 **Default branch:** main  
 **Visibility:** Public  
 **Source baseline:** v1.0.5  
-**Status:** Modular source staged in draft PR #10; pending merge to main and a separate public release decision.
+**Status:** Modular v1.0.5 source merged into public main through PR #10; public release decision remains separate.
 
 > For a new review or development session: read this document, REPOSITORY_LINEAGE.md, ARCHITECTURE.md, CHANGELOG.md, ROADMAP.md, SECURITY.md and AGENTS.md, then inspect the actual source files and the public modular workflow. The current source is authoritative if documentation and code ever disagree.
 
@@ -18,7 +18,7 @@ There is one canonical public repository:
 
 The public repository's main branch previously contained the monolithic v1.0.1 source line. The modular implementation was developed in the private workspace through internal milestones v1.0.2, v1.0.3, v1.0.4 and v1.0.5.
 
-The integration branch in the public repository stages the modular source baseline v1.0.5 for review. The proposed integration preserves the original public repository's commit history. After promotion, the private Beta repository can remain as a historical archive; it is not intended to be the canonical source for future public development.
+The modular source baseline v1.0.5 was merged into public main through PR #10 (merge commit `5436b1ccbbd464aa43a4846af53750fafbf126e5`). The merge preserved the original public repository's commit history. The private Beta repository remains a historical workspace and is not the canonical source for future public development.
 
 The repositories do not have asserted direct Git parent/child ancestry. Internal v1.0.2-v1.0.5 milestones are development labels, not public release tags. The public v1.0.0 and v1.0.1 releases remain unchanged; the integrated modular source has not yet been assigned or published as the next public release.
 
@@ -183,7 +183,7 @@ Any proposal to revisit these decisions must identify a reproducible problem and
 
 ## 8. CI and validation
 
-The public modular workflow is .github/workflows/powershell-check.yml. It runs on pushes to main and pull requests targeting main. See the public repository's [Actions page](https://github.com/AnAllegory/VoiceMeeter-IdleWatcher/actions) for the latest result on the commit under review.
+The public modular workflow is .github/workflows/powershell-check.yml. It runs on pushes to main and pull requests targeting main. See the public repository's [Actions page](https://github.com/AnAllegory/VoiceMeeter-IdleWatcher/actions) for the latest main-branch validation result.
 
 The workflow performs:
 - Windows PowerShell 5.1 parsing for the main script and PowerShell modules.
@@ -216,7 +216,7 @@ This repository is the canonical documentation and source location. Keep the bil
 
 - Communicate in Russian unless the maintainer asks otherwise.
 - Use the actual current source files and workflow as the implementation truth.
-- Treat public main as the canonical baseline. Review proposed changes on their integration branch/PR; use the private Beta repository only as historical lineage context.
+- Treat public main as the canonical source baseline. Review proposed changes through pull requests before merging; use the private Beta repository only as historical lineage context.
 - Give one concrete user instruction at a time.
 - Do not ask for information already recorded in this handover or supplied in the current conversation.
 - Do not claim a runtime test was executed by the assistant. Attribute local test results to the maintainer.
