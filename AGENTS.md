@@ -83,7 +83,7 @@ For findings, identify the file and function/section, trigger, impact, evidence 
 
 Inspect .github/workflows/powershell-check.yml before changing CI.
 
-The public workflow checks Windows PowerShell 5.1 parsing for the main PS1, PSD1 and modules; project contracts (including v1.0.5 write gates and the 1000ms shutdown sequence); tab indentation; C# compilation using a placeholder DLL path; the no-log gap between final safety checks and shutdown dispatch; required project documents; and the VBS invalid-argument path without starting the watcher. It does not run VoiceMeeter, connect to a real Remote API server or verify MacroButtons UI/display hardware.
+The public workflow checks Windows PowerShell 5.1 parsing for the main PS1, PSD1 and modules; project contracts (including v1.0.5 write gates and the 1000ms shutdown sequence); tab indentation; C# compilation using a placeholder DLL path; the no-log gap between final safety checks and shutdown dispatch; required project documents; the VBS invalid-argument path without starting the watcher; and PSScriptAnalyzer 1.25.0 across the main script and PowerShell modules, with Error-level findings blocking and Warning/Information findings non-blocking. It does not run VoiceMeeter, connect to a real Remote API server or verify MacroButtons UI/display hardware.
 
 Never describe CI as an end-to-end runtime test. Never claim a local runtime test was executed by the assistant; attribute the 2026-11-22 runtime evidence to the maintainer.
 
