@@ -48,6 +48,22 @@ comments, commits, code, wiki edits, issues, and other contributions that are
 not aligned to this Code of Conduct, and will communicate reasons for moderation
 decisions when appropriate.
 
+## Discussion moderation notice
+
+This rule applies to GitHub Discussions, issue comments, pull-request discussions and other project community spaces.
+
+Direct personal attacks, insults, harassment, threats, slurs, and remarks targeting a participant's family members are not acceptable. Such comments may be removed immediately. Serious or deliberate abuse may result in an immediate permanent ban without a prior warning.
+
+GPT-6 and Grok may be used as AI-assisted moderation reviewers to flag content and recommend action. They do not hold GitHub administrator permissions and cannot independently remove accounts or impose GitHub bans. Enforcement actions are performed by the repository owner or another maintainer who has the required GitHub permissions.
+
+### Правила модерации обсуждений
+
+Это правило действует в GitHub Discussions, комментариях к Issues и Pull Requests, а также в других пространствах сообщества проекта.
+
+Личные оскорбления, травля, угрозы, унизительные высказывания и выпады в адрес родственников участников недопустимы. Такие комментарии могут удаляться немедленно. За серьёзные или намеренные нарушения возможна постоянная блокировка без предварительного предупреждения.
+
+GPT-6 и Grok могут использоваться как AI-помощники модерации: отмечать нарушения и рекомендовать меры. Они не обладают административными правами GitHub и не могут самостоятельно удалять учётные записи или выдавать блокировки. Решения о применении санкций выполняет владелец репозитория либо другой сопровождающий, у которого есть соответствующие права GitHub.
+
 ## Scope
 
 This Code of Conduct applies within all community spaces, and also applies when
