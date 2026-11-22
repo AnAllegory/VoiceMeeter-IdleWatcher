@@ -1,0 +1,71 @@
+name: Bug report / Сообщение об ошибке
+description: Report a reproducible problem / Сообщите о воспроизводимой проблеме
+title: "bug: "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Please check existing Issues first. Do not include passwords, tokens, private keys, recovery codes or unredacted logs.
+        Перед отправкой проверьте существующие Issues. Не добавляйте пароли, токены, закрытые ключи, коды восстановления и неотредактированные журналы.
+  - type: input
+    id: project-version
+    attributes:
+      label: Project version / Версия проекта
+      description: Exact release tag or commit SHA, for example v1.0.5.
+      placeholder: v1.0.5 or full commit SHA
+    validations:
+      required: true
+  - type: input
+    id: windows-version
+    attributes:
+      label: Windows version / Версия Windows
+      placeholder: Windows 11 24H2
+    validations:
+      required: true
+  - type: input
+    id: voicemeeter-version
+    attributes:
+      label: VoiceMeeter version / Версия VoiceMeeter
+      placeholder: Edition and version, if known
+    validations:
+      required: false
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce / Шаги воспроизведения
+      description: List the smallest reliable sequence that reproduces the issue.
+      placeholder: |
+        1.
+        2.
+        3.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior / Ожидаемое поведение
+      placeholder: What should have happened?
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior / Фактическое поведение
+      placeholder: What happened instead? Include the exact error text when available.
+    validations:
+      required: true
+  - type: textarea
+    id: diagnostics
+    attributes:
+      label: Relevant diagnostics / Диагностика
+      description: Add only the relevant, redacted lines. Remove usernames, local paths and unrelated personal information.
+      placeholder: Paste a short sanitized excerpt, not a complete log.
+    validations:
+      required: false
+  - type: checkboxes
+    id: privacy-check
+    attributes:
+      label: Privacy check / Проверка приватности
+      options:
+        - label: I removed secrets and unrelated personal information from the report. / Я удалил из сообщения секреты и посторонние личные данные.
+          required: true
