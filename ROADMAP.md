@@ -84,20 +84,19 @@ Do not add these without a reproducible requirement and a separate design decisi
 7. Do not create or modify public release tags or published releases during routine source development; release operations are separate and require explicit maintainer approval.
 8. Do not create a numbered release merely to make progress on this roadmap.
 
-## Public release preparation
+## Published release v1.0.5
 
-The maintainer has selected **v1.0.5** as the next public release. Preparation state:
+The maintainer published **v1.0.5** as the latest stable GitHub Release on 2026-11-22. The tag points to the validated source commit `ad60060dbe45323fb7c782ba6d4aa6df6b0b502f`. The release is not marked as a pre-release, and GitHub generated its tag-based source archive links automatically.
 
 - [x] Modular source integrated into public `main` through PR #10.
-- [x] Static Windows PowerShell 5.1, project-contract and C# checks pass on the current main branch.
+- [x] Static Windows PowerShell 5.1, project-contract and C# checks passed on the release commit.
 - [x] Maintainer-reported target-PC test completed on 2026-11-22: STATEONLY OFF accepted, 1000ms allowance elapsed, final safety validation passed, Command.Shutdown returned code 0 and engine stop was confirmed.
-- [x] English and Russian README files, CHANGELOG, project handover and version-specific release notes prepared.
-- [x] GitHub-generated source archives will be available automatically from the `v1.0.5` tag; no separate binary installer is part of this source release.
+- [x] English and Russian README files, CHANGELOG, project handover and version-specific release notes published.
 - [x] GitHub Pages distinguishes the current `main` source snapshot from tagged releases and links to the versioned release history.
-- [ ] Create tag `v1.0.5` from the validated `main` branch, publish it as the latest stable GitHub Release, and enable its release discussion in the `Announcements` category.
+- [x] Published as the latest stable release with a linked Announcements discussion: [v1.0.5 discussion #11](https://github.com/AnAllegory/VoiceMeeter-IdleWatcher/discussions/11).
 
 The private Beta workspace should remain an archive unless there is a separate reason to continue development there.
 
 ## Status
 
-The v1.0.2 through v1.0.5 implementation work described above is integrated into public main. PR #10 was merged on 2026-11-22; the main automatic-shutdown path was exercised by the maintainer on that date. Release documentation and website references are prepared. The only remaining release step is the maintainer's final GitHub publication action; runtime observations and future ideas remain separate from release completion.
+The v1.0.2 through v1.0.5 implementation work is integrated into public `main`. PR #10 was merged on 2026-11-22, and the v1.0.5 release was published on the same date. The release tag remains a snapshot of the validated source commit; later documentation-only maintenance commits on `main` do not change the published tag. Runtime observations and future ideas remain separate from release completion.
