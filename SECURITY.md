@@ -4,7 +4,7 @@
 
 This policy applies to the public repository AnAllegory/VoiceMeeter-IdleWatcher.
 
-A formal version support matrix has not been established. The current modular source baseline is v1.0.5; the existing public releases are v1.0.0 and v1.0.1. The integrated source baseline is not a release tag until a new public release is explicitly prepared and published. When reporting an issue, identify the exact commit SHA or public release tag you reviewed or tested.
+A formal version support matrix has not been established. The current modular source baseline and latest stable public release is v1.0.5, published on 2026-11-22. Public releases v1.0.0, v1.0.1 and v1.0.5 are available; v1.0.2 through v1.0.4 were internal development milestones, not separate public releases. The v1.0.5 tag points to the validated source commit ad60060dbe45323fb7c782ba6d4aa6df6b0b502f. Later documentation-only commits on main do not change that tagged release. When reporting an issue, identify the exact commit SHA or public release tag you reviewed or tested.
 
 ## Reporting a vulnerability
 
