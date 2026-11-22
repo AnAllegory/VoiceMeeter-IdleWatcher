@@ -125,6 +125,7 @@ The maintainer also reported a successful v1.0.5 automatic-shutdown cycle on the
 ## Documentation
 
 - [Repository history and modular integration](REPOSITORY_LINEAGE.md)
+- [Contributing guidelines](CONTRIBUTING.md) ([Russian version](CONTRIBUTING.ru.md))
 - [Security policy](SECURITY.md)
 - [Project roadmap and deliberate scope](ROADMAP.md)
 - [Architecture and control flow](ARCHITECTURE.md)
