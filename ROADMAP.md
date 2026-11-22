@@ -86,7 +86,7 @@ Do not add these without a reproducible requirement and a separate design decisi
 
 ## Public release preparation
 
-The modular source has been brought into the canonical public repository. Before a new public release:
+The modular source is staged in an integration branch of the canonical public repository and awaits review. Before a new public release:
 
 - Complete review of the integration Pull Request and its CI result.
 - Confirm maintainer runtime behavior on the target Windows configuration after the integrated files are checked out together.
@@ -99,4 +99,4 @@ The private Beta workspace should remain an archive unless there is a separate r
 
 ## Status
 
-The v1.0.2 through v1.0.5 implementation work described above is complete during private modular development. The main automatic-shutdown path was exercised by the maintainer on 2026-11-22. Remaining items are observations or future considerations, not active code-change tasks.
+The v1.0.2 through v1.0.5 implementation work described above is staged in the public integration branch and awaits review. The main automatic-shutdown path was exercised by the maintainer on 2026-11-22. Remaining items are observations or future considerations, not active code-change tasks.
