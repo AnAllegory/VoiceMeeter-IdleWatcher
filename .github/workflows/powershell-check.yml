@@ -169,5 +169,6 @@ jobs:
             throw "VBS launcher validation failed (exit code $vbsExitCode). Output: $vbsText"
           }
           Write-Host 'VBS launcher invalid-argument path passed without starting the watcher.'
+          $global:LASTEXITCODE = 0
 
           Write-Host 'PowerShell 5.1 parsing, project contracts and C# compilation passed.'
