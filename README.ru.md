@@ -1,5 +1,7 @@
 # VoiceMeeter IdleWatcher
 
+[🌐 Сайт проекта](https://anallegory.github.io/VoiceMeeter-IdleWatcher/)
+
 [English](README.md) | [Русский](README.ru.md)
 
 Утилита автоматизации для Windows на PowerShell. Она отслеживает время бездействия пользователя и состояние питания дисплея, а затем отправляет команду выключения VoiceMeeter только после достижения заданного порога бездействия и при полностью выключенном дисплее.
