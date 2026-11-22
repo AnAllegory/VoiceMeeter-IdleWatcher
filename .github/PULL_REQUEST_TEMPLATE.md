@@ -18,7 +18,7 @@ Closes #
 - [ ] Automatic shutdown still requires the idle threshold and display fully Off (0).
 - [ ] Final idle, display and graceful-stop validation remains immediately before Command.Shutdown.
 - [ ] MacroButtons remains optional and has a single STATEONLY writer.
-- [ ] No GetStatus readback, MacroButton_IsDirty polling, process polling, WMI subscription or second writer was introduced.
+- [ ] No GetStatus readback, MacroButton_IsDirty polling, process polling, WMI subscription, Process.Exited handler or second writer was introduced.
 - [ ] Windows PowerShell 5.1 compatibility is preserved.
 - [ ] Seven runtime files remain together and module import order is unchanged, where applicable.
 
