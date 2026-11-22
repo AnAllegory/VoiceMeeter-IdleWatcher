@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#101a2d">
+  <meta name="theme-color" content="#0d1422">
   <title>VoiceMeeter IdleWatcher | Safe automatic shutdown for Windows</title>
   <meta name="description" content="VoiceMeeter IdleWatcher is a Windows PowerShell utility that requests VoiceMeeter shutdown only after the idle threshold is reached and the display is fully off. Available in English and Russian.">
   <meta name="robots" content="index,follow,max-image-preview:large">
@@ -30,22 +30,22 @@
   </script>
   <style>
     :root {
-      color-scheme: light;
-      --ink: #17243a;
-      --muted: #61708a;
-      --line: #dce4ef;
-      --paper: #f3f6fb;
-      --card: #ffffff;
-      --navy: #101a2d;
-      --blue: #2859c5;
-      --blue-dark: #1d469f;
-      --soft-blue: #edf3ff;
-      --green: #16845b;
-      --soft-green: #eaf7f1;
-      --amber: #a45d08;
-      --soft-amber: #fff4df;
+      color-scheme: dark;
+      --ink: #e7edf7;
+      --muted: #a5b4c9;
+      --line: #2b3a52;
+      --paper: #0d1422;
+      --card: #141f31;
+      --navy: #0a1220;
+      --blue: #a9c5ff;
+      --blue-dark: #c8d9ff;
+      --soft-blue: #1b2d49;
+      --green: #73d9ad;
+      --soft-green: #16362f;
+      --amber: #f3c678;
+      --soft-amber: #392c1b;
       --radius: 20px;
-      --shadow: 0 12px 34px rgba(23, 36, 58, .07);
+      --shadow: 0 14px 38px rgba(0, 0, 0, .28);
     }
     * { box-sizing: border-box; }
     html { scroll-behavior: smooth; }
@@ -292,6 +292,31 @@
       .button { transition: none; }
       .button:hover { transform: none; }
     }
+
+    /* Low-glare dark surfaces and accessible focus states. */
+    .feature, .step, .doc-link { background:#182438; border-color:#2b3c57; }
+    .feature p, .step p, .doc-link span { color:var(--muted); }
+    .doc-link:hover { background:#1d2b41; border-color:#536a8b; }
+    .language a:first-child { background:#263b5b; color:#f0f5ff; }
+    .safety.good { background:#16362f; border-color:#2f6955; }
+    .safety.blocked { background:#392c1b; border-color:#765a32; }
+    .diagram-wrap { background:#141f31; border-color:#2b3c57; }
+    .diagram .node { fill:#1a2940; stroke:#405574; }
+    .diagram .node-blue { fill:#1d3150; stroke:#5876a6; }
+    .diagram .node-green { fill:#163b34; stroke:#3b8168; }
+    .diagram .node-amber { fill:#3b2f1e; stroke:#876a3e; }
+    .diagram .node-title { fill:#edf3ff; }
+    .diagram .node-small { fill:#b4c3d8; }
+    .diagram .edge { stroke:#7389aa; }
+    .diagram .edge-label { fill:#b8ceff; }
+    .diagram .gate { fill:#292646; stroke:#675b9a; }
+    code { background:#26364e; color:#edf3ff; }
+    .note { background:#1b2d49; color:#d7e4fa; }
+    .ru .language-badge { background:#1b2d49; color:#b8ceff; }
+    .button:focus-visible, .top-links a:focus-visible, .doc-link:focus-visible,
+    .brand:focus-visible, .language a:focus-visible {
+      outline:3px solid #8eb5ff; outline-offset:3px;
+    }
   </style>
 </head>
 <body>
@@ -322,9 +347,10 @@
         <span class="release-pill">No installer required</span>
       </div>
       <div class="actions">
-        <a class="button primary" href="https://github.com/AnAllegory/VoiceMeeter-IdleWatcher/archive/refs/heads/main.zip">Download current source ZIP · main</a>
-        <a class="button secondary" href="https://github.com/AnAllegory/VoiceMeeter-IdleWatcher/releases/latest">Published releases</a>
-        <a class="button secondary" href="https://github.com/AnAllegory/VoiceMeeter-IdleWatcher">View on GitHub</a>
+        <a class="button primary" href="https://anallegory.github.io/VoiceMeeter-IdleWatcher/downloads/VoiceMeeter-IdleWatcher-v1.0.5-portable.zip">Download Portable ZIP · v1.0.5</a>
+        <a class="button secondary" href="https://github.com/AnAllegory/VoiceMeeter-IdleWatcher/archive/refs/tags/v1.0.5.zip">Download source ZIP · v1.0.5</a>
+        <a class="button secondary" href="https://github.com/AnAllegory/VoiceMeeter-IdleWatcher/archive/refs/heads/main.zip">Latest source · main</a>
+        <a class="button secondary" href="https://github.com/AnAllegory/VoiceMeeter-IdleWatcher/releases/latest">GitHub Releases</a>
       </div>
     </header>
 
@@ -450,16 +476,16 @@
       <div class="section-head">
         <div class="eyebrow">Getting started</div>
         <h2>Quick start</h2>
-        <p class="muted">The current modular source is available as a ZIP snapshot of the main branch. Use the Published releases link for versioned, tagged source snapshots. There is no separate installer or executable package.</p>
+        <p class="muted">For the easiest setup, download the Portable ZIP v1.0.5. It contains the seven runtime files in one folder plus a bilingual QUICK_START.txt. The tagged source ZIP is available separately for inspection or development.</p>
       </div>
       <div class="steps">
         <article class="step">
           <h3>Download</h3>
-          <p>Download the current main-branch ZIP from the button above for the latest source snapshot. Use Published releases for versioned, tagged snapshots.</p>
+          <p>Choose the Portable ZIP v1.0.5 for a ready-to-run folder. The source ZIP is the exact tagged source snapshot.</p>
         </article>
         <article class="step">
           <h3>Extract</h3>
-          <p>Unpack the archive and keep all files together in one folder: the PS1 and PSD1, VBS launcher, three PowerShell modules and C# interop source.</p>
+          <p>Extract the archive. Keep all seven runtime files together in the same folder; QUICK_START.txt is included alongside them.</p>
         </article>
         <article class="step">
           <h3>Start</h3>
@@ -520,14 +546,15 @@
       <h2>VoiceMeeter IdleWatcher</h2>
       <p class="muted">Автоматическое выключение VoiceMeeter с жёстким правилом безопасности: должен истечь заданный порог бездействия, а дисплей должен быть полностью выключен.</p>
       <div class="release-row">
-        <span class="release-pill" style="color:#17243a;border-color:#dce4ef;background:#f3f6fb"><span class="release-dot"></span>Текущий исходный код: модульная версия v1.0.5</span>
-        <span class="release-pill" style="color:#17243a;border-color:#dce4ef;background:#f3f6fb">Версионированные снимки: раздел релизов GitHub</span>
-        <span class="release-pill" style="color:#17243a;border-color:#dce4ef;background:#f3f6fb">Windows PowerShell 5.1</span>
+        <span class="release-pill" style="color:#e7edf7;border-color:#3a4b64;background:#1b293d"><span class="release-dot"></span>Текущий исходный код: модульная версия v1.0.5</span>
+        <span class="release-pill" style="color:#e7edf7;border-color:#3a4b64;background:#1b293d">Версионированные снимки: раздел релизов GitHub</span>
+        <span class="release-pill" style="color:#e7edf7;border-color:#3a4b64;background:#1b293d">Windows PowerShell 5.1</span>
       </div>
       <div class="actions">
-        <a class="button" style="background:#2859c5;color:#fff" href="https://github.com/AnAllegory/VoiceMeeter-IdleWatcher/archive/refs/heads/main.zip">Скачать актуальные исходники · main</a>
-        <a class="button" style="background:#edf3ff;color:#2859c5" href="https://github.com/AnAllegory/VoiceMeeter-IdleWatcher/releases/latest">Опубликованные релизы</a>
-        <a class="button" style="background:#edf3ff;color:#2859c5" href="https://github.com/AnAllegory/VoiceMeeter-IdleWatcher">Репозиторий GitHub</a>
+        <a class="button" style="background:#2859c5;color:#fff" href="https://anallegory.github.io/VoiceMeeter-IdleWatcher/downloads/VoiceMeeter-IdleWatcher-v1.0.5-portable.zip">Скачать Portable ZIP · v1.0.5</a>
+        <a class="button" style="background:#1a2a43;color:#c2d4ff;border:1px solid #3b5273" href="https://github.com/AnAllegory/VoiceMeeter-IdleWatcher/archive/refs/tags/v1.0.5.zip">Исходный ZIP · v1.0.5</a>
+        <a class="button" style="background:#1a2a43;color:#c2d4ff;border:1px solid #3b5273" href="https://github.com/AnAllegory/VoiceMeeter-IdleWatcher/releases/latest">Релизы GitHub</a>
+        <a class="button" style="background:#1a2a43;color:#c2d4ff;border:1px solid #3b5273" href="https://github.com/AnAllegory/VoiceMeeter-IdleWatcher">Репозиторий</a>
       </div>
 
       <h2 style="margin-top:30px">Что делает программа</h2>
@@ -605,10 +632,10 @@
       <div class="note" style="margin-top:16px"><strong>Важные границы</strong><p>Порядок импорта модулей: Support → Interop → MacroButtons. Перед автоматическим выключением успешная команда STATEONLY OFF сопровождается паузой 1000 мс, после которой выполняется финальная проверка idle/display/STOP. Принятие команды API не является считыванием видимого состояния, а пауза не гарантирует обновление интерфейса.</p></div>
 
       <h2 style="margin-top:30px">Быстрый запуск</h2>
-      <p class="muted">Скачайте ZIP-снимок актуальной ветки main для получения последних исходников. В разделе опубликованных релизов находятся версионированные снимки с тегами.</p>
+      <p class="muted">Для простой установки скачайте Portable ZIP v1.0.5. В нём семь рабочих файлов уже собраны в одной папке, а рядом находится двуязычная инструкция QUICK_START.txt. Отдельно доступен исходный ZIP точного снимка релиза.</p>
       <div class="steps">
-        <article class="step"><h3>Скачать</h3><p>Скачайте текущий ZIP ветки main по кнопке выше для получения последних исходников. Для версионированных снимков используйте раздел опубликованных релизов.</p></article>
-        <article class="step"><h3>Распаковать</h3><p>Все файлы архива должны лежать вместе: PS1, PSD1, VBS, три модуля <code>*.psm1</code> и исходник <code>VMRIdleWatcherNative.cs</code>.</p></article>
+        <article class="step"><h3>Скачать</h3><p>Для готовой папки выберите Portable ZIP v1.0.5. Исходный ZIP содержит точный снимок файлов релиза.</p></article>
+        <article class="step"><h3>Распаковать</h3><p>Распакуйте архив и не разделяйте семь рабочих файлов: PS1, PSD1, VBS, три модуля <code>*.psm1</code> и <code>VMRIdleWatcherNative.cs</code>. Инструкция QUICK_START.txt находится рядом.</p></article>
         <article class="step"><h3>Запустить</h3><p>Дважды щёлкните <code>VoiceMeeter-IdleWatcher.vbs</code>. PowerShell запустится в скрытом режиме.</p></article>
         <article class="step"><h3>Остановить</h3><p>Выполните команду штатной остановки из той же папки:</p><pre>wscript.exe VoiceMeeter-IdleWatcher.vbs /stop</pre></article>
       </div>
