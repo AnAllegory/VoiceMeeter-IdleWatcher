@@ -221,7 +221,10 @@ jobs:
             'VoiceMeeter-IdleWatcher.MacroButtons.psm1'
           )
 
-          $findings = @(Invoke-ScriptAnalyzer -Path $scriptFiles -Severity Error,Warning,Information)
+          $findings = @()
+          foreach ($scriptFile in $scriptFiles) {
+            $findings += @(Invoke-ScriptAnalyzer -Path $scriptFile -Severity Error,Warning,Information)
+          }
 
           if ($findings.Count -eq 0) {
             Write-Host 'PSScriptAnalyzer reported no findings.'
