@@ -23,7 +23,7 @@
     "applicationCategory": "UtilitiesApplication",
     "operatingSystem": "Windows",
     "softwareVersion": "1.0.5",
-    "description": "The current integrated modular source baseline is v1.0.5. VoiceMeeter shutdown is requested only when the idle threshold has elapsed and the display is fully off; the latest tagged public release remains v1.0.1.",
+    "description": "The current modular source baseline is v1.0.5. VoiceMeeter shutdown is requested only when the idle threshold has elapsed and the display is fully off. Versioned source snapshots are published as GitHub Releases.",
     "license": "https://github.com/AnAllegory/VoiceMeeter-IdleWatcher/blob/main/LICENSE",
     "codeRepository": "https://github.com/AnAllegory/VoiceMeeter-IdleWatcher"
   }
@@ -317,7 +317,7 @@
       <p class="hero-copy">Automatic VoiceMeeter shutdown with a strict safety rule: the idle threshold must be reached <strong>and</strong> the display must be fully off.</p>
       <div class="release-row">
         <span class="release-pill"><span class="release-dot"></span>Current source: modular v1.0.5</span>
-        <span class="release-pill">Latest published release: v1.0.1</span>
+        <span class="release-pill">Versioned snapshots: GitHub Releases</span>
         <span class="release-pill">Windows PowerShell 5.1</span>
         <span class="release-pill">No installer required</span>
       </div>
@@ -450,12 +450,12 @@
       <div class="section-head">
         <div class="eyebrow">Getting started</div>
         <h2>Quick start</h2>
-        <p class="muted">The current modular source is available as a ZIP snapshot of the main branch. The v1.0.5 source baseline is integrated but is not yet a tagged public release. There is no separate installer or executable package.</p>
+        <p class="muted">The current modular source is available as a ZIP snapshot of the main branch. Use the Published releases link for versioned, tagged source snapshots. There is no separate installer or executable package.</p>
       </div>
       <div class="steps">
         <article class="step">
           <h3>Download</h3>
-          <p>Download the current main-branch ZIP from the button above. The latest tagged public release remains v1.0.1 and is available under Published releases.</p>
+          <p>Download the current main-branch ZIP from the button above for the latest source snapshot. Use Published releases for versioned, tagged snapshots.</p>
         </article>
         <article class="step">
           <h3>Extract</h3>
@@ -505,7 +505,8 @@
         <a class="doc-link" href="https://github.com/AnAllegory/VoiceMeeter-IdleWatcher/blob/main/README.md"><strong>English guide ↗</strong><span>Features, configuration, launch and stop instructions.</span></a>
         <a class="doc-link" href="https://github.com/AnAllegory/VoiceMeeter-IdleWatcher/blob/main/README.ru.md"><strong>Русская инструкция ↗</strong><span>Описание программы и настройка на русском языке.</span></a>
         <a class="doc-link" href="https://github.com/AnAllegory/VoiceMeeter-IdleWatcher/blob/main/ARCHITECTURE.md"><strong>Architecture ↗</strong><span>Detailed bilingual flow diagrams and safety logic.</span></a>
-        <a class="doc-link" href="https://github.com/AnAllegory/VoiceMeeter-IdleWatcher/blob/main/CHANGELOG.md"><strong>Changelog ↗</strong><span>Repository changes and development history.</span></a>
+        <a class="doc-link" href="https://github.com/AnAllegory/VoiceMeeter-IdleWatcher/blob/main/CHANGELOG.md"><strong>Changelog ↗</strong><span>Repository changes and release history.</span></a>
+        <a class="doc-link" href="https://github.com/AnAllegory/VoiceMeeter-IdleWatcher/blob/main/RELEASE_NOTES_v1.0.5.md"><strong>Release notes v1.0.5 ↗</strong><span>Version highlights, compatibility and verification notes.</span></a>
         <a class="doc-link" href="https://github.com/AnAllegory/VoiceMeeter-IdleWatcher/blob/main/SECURITY.md"><strong>Security policy ↗</strong><span>How to report a security issue privately.</span></a>
         <a class="doc-link" href="https://github.com/AnAllegory/VoiceMeeter-IdleWatcher/blob/main/CODE_OF_CONDUCT.md"><strong>Code of Conduct ↗</strong><span>Community participation and contribution standards.</span></a>
         <a class="doc-link" href="https://github.com/AnAllegory/VoiceMeeter-IdleWatcher/blob/main/ROADMAP.md"><strong>Roadmap ↗</strong><span>Potential improvements and project direction.</span></a>
@@ -520,7 +521,7 @@
       <p class="muted">Автоматическое выключение VoiceMeeter с жёстким правилом безопасности: должен истечь заданный порог бездействия, а дисплей должен быть полностью выключен.</p>
       <div class="release-row">
         <span class="release-pill" style="color:#17243a;border-color:#dce4ef;background:#f3f6fb"><span class="release-dot"></span>Текущий исходный код: модульная версия v1.0.5</span>
-        <span class="release-pill" style="color:#17243a;border-color:#dce4ef;background:#f3f6fb">Последний опубликованный релиз: v1.0.1</span>
+        <span class="release-pill" style="color:#17243a;border-color:#dce4ef;background:#f3f6fb">Версионированные снимки: раздел релизов GitHub</span>
         <span class="release-pill" style="color:#17243a;border-color:#dce4ef;background:#f3f6fb">Windows PowerShell 5.1</span>
       </div>
       <div class="actions">
@@ -604,9 +605,9 @@
       <div class="note" style="margin-top:16px"><strong>Важные границы</strong><p>Порядок импорта модулей: Support → Interop → MacroButtons. Перед автоматическим выключением успешная команда STATEONLY OFF сопровождается паузой 1000 мс, после которой выполняется финальная проверка idle/display/STOP. Принятие команды API не является считыванием видимого состояния, а пауза не гарантирует обновление интерфейса.</p></div>
 
       <h2 style="margin-top:30px">Быстрый запуск</h2>
-      <p class="muted">Скачайте ZIP-снимок актуальной ветки main. Исходная модульная версия v1.0.5 уже находится в публичном репозитории, но пока не оформлена отдельным тегом релиза.</p>
+      <p class="muted">Скачайте ZIP-снимок актуальной ветки main для получения последних исходников. В разделе опубликованных релизов находятся версионированные снимки с тегами.</p>
       <div class="steps">
-        <article class="step"><h3>Скачать</h3><p>Скачайте текущий ZIP ветки main по кнопке выше. Последний тегированный релиз v1.0.1 доступен отдельно в разделе опубликованных релизов.</p></article>
+        <article class="step"><h3>Скачать</h3><p>Скачайте текущий ZIP ветки main по кнопке выше для получения последних исходников. Для версионированных снимков используйте раздел опубликованных релизов.</p></article>
         <article class="step"><h3>Распаковать</h3><p>Все файлы архива должны лежать вместе: PS1, PSD1, VBS, три модуля <code>*.psm1</code> и исходник <code>VMRIdleWatcherNative.cs</code>.</p></article>
         <article class="step"><h3>Запустить</h3><p>Дважды щёлкните <code>VoiceMeeter-IdleWatcher.vbs</code>. PowerShell запустится в скрытом режиме.</p></article>
         <article class="step"><h3>Остановить</h3><p>Выполните команду штатной остановки из той же папки:</p><pre>wscript.exe VoiceMeeter-IdleWatcher.vbs /stop</pre></article>
@@ -629,7 +630,8 @@
         <a class="doc-link" href="https://github.com/AnAllegory/VoiceMeeter-IdleWatcher/blob/main/README.ru.md"><strong>Инструкция на русском ↗</strong><span>Возможности, настройки, запуск и остановка.</span></a>
         <a class="doc-link" href="https://github.com/AnAllegory/VoiceMeeter-IdleWatcher/blob/main/README.md"><strong>English guide ↗</strong><span>Documentation in English.</span></a>
         <a class="doc-link" href="https://github.com/AnAllegory/VoiceMeeter-IdleWatcher/blob/main/ARCHITECTURE.md"><strong>Архитектура ↗</strong><span>Подробные схемы и описание логики безопасности.</span></a>
-        <a class="doc-link" href="https://github.com/AnAllegory/VoiceMeeter-IdleWatcher/blob/main/CHANGELOG.md"><strong>История изменений ↗</strong><span>История разработки и изменений репозитория.</span></a>
+        <a class="doc-link" href="https://github.com/AnAllegory/VoiceMeeter-IdleWatcher/blob/main/CHANGELOG.md"><strong>История изменений ↗</strong><span>История разработки и опубликованных версий.</span></a>
+        <a class="doc-link" href="https://github.com/AnAllegory/VoiceMeeter-IdleWatcher/blob/main/RELEASE_NOTES_v1.0.5.md"><strong>Примечания к v1.0.5 ↗</strong><span>Изменения версии, совместимость и результаты проверки.</span></a>
         <a class="doc-link" href="https://github.com/AnAllegory/VoiceMeeter-IdleWatcher/blob/main/SECURITY.md"><strong>Безопасность ↗</strong><span>Как конфиденциально сообщить об уязвимости.</span></a>
         <a class="doc-link" href="https://github.com/AnAllegory/VoiceMeeter-IdleWatcher/blob/main/CODE_OF_CONDUCT.md"><strong>Правила сообщества ↗</strong><span>Стандарты участия и взаимодействия.</span></a>
         <a class="doc-link" href="https://github.com/AnAllegory/VoiceMeeter-IdleWatcher/blob/main/ROADMAP.md"><strong>Планы проекта ↗</strong><span>Возможные улучшения и направление развития.</span></a>
