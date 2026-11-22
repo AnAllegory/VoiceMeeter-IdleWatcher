@@ -208,6 +208,8 @@ Always distinguish static CI, source inspection and maintainer-reported runtime 
 - AGENTS.md — mandatory rules for future review and maintenance.
 - ROADMAP.md — current project status, follow-up observations and deliberate non-goals.
 - SECURITY.md — vulnerability reporting guidance and safe handling of diagnostic material.
+- CONTRIBUTING.md and CONTRIBUTING.ru.md — contributor workflow, development requirements and project safety contracts.
+- .github/ISSUE_TEMPLATE/ and .github/PULL_REQUEST_TEMPLATE.md — structured issue and pull-request forms.
 - RELEASE_NOTES_v1.0.5.md — prepared release description and verification notes.
 - LICENSE — MIT license terms.
 
