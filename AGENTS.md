@@ -19,7 +19,7 @@ Before reviewing or modifying implementation:
 
 - Canonical repository: AnAllegory/VoiceMeeter-IdleWatcher, branch main, current modular source baseline v1.0.5.
 - The private AnAllegory/VoiceMeeter-IdleWatcher-Beta repository is retained as a historical development workspace; it is not the canonical source.
-- The modular source baseline v1.0.5 is integrated on `main` and prepared as the next public release. The v1.0.2-v1.0.4 numbers remain internal development milestones, not separate public releases.
+- The modular source baseline v1.0.5 is integrated on `main` and published as the latest stable public release. The v1.0.2-v1.0.4 numbers remain internal development milestones, not separate public releases.
 - Preserve the public repository's existing history, tags and releases. Do not create or move tags or publish releases unless the maintainer explicitly authorizes the publication action.
 - Keep the current workflow aligned with the modular source tree; the former monolithic workflow has been replaced.
 

@@ -5,7 +5,7 @@
 **Default branch:** main  
 **Visibility:** Public  
 **Source baseline:** v1.0.5  
-**Status:** Modular v1.0.5 source merged into public main through PR #10; v1.0.5 release materials are prepared, while tag creation and publication remain the final manual release action.
+**Status:** Modular v1.0.5 is published as the latest stable public GitHub Release. Tag `v1.0.5` points to validated `main` commit `ad60060dbe45323fb7c782ba6d4aa6df6b0b502f`; the release discussion is [#11](https://github.com/AnAllegory/VoiceMeeter-IdleWatcher/discussions/11).
 
 > For a new review or development session: read this document, REPOSITORY_LINEAGE.md, ARCHITECTURE.md, CHANGELOG.md, ROADMAP.md, SECURITY.md and AGENTS.md, then inspect the actual source files and the public modular workflow. The current source is authoritative if documentation and code ever disagree.
 
@@ -20,7 +20,7 @@ The public repository's main branch previously contained the monolithic v1.0.1 s
 
 The modular source baseline v1.0.5 was merged into public main through PR #10 (merge commit `5436b1ccbbd464aa43a4846af53750fafbf126e5`). The merge preserved the original public repository's commit history. The private Beta repository remains a historical workspace and is not the canonical source for future public development.
 
-The repositories do not have asserted direct Git parent/child ancestry. The public v1.0.0 and v1.0.1 tags remain unchanged. The v1.0.5 source number originated as an internal development milestone; the maintainer has selected the same number for the next public release. Its release notes and documentation are prepared, but the v1.0.5 tag and GitHub Release have not yet been published.
+The repositories do not have asserted direct Git parent/child ancestry. The public v1.0.0 and v1.0.1 tags remain unchanged historical releases. The modular v1.0.5 baseline was integrated through PR #10 and published as the latest stable public release on 2026-11-22. The `v1.0.5` tag points to validated `main` commit `ad60060dbe45323fb7c782ba6d4aa6df6b0b502f`. The v1.0.2-v1.0.4 numbers remain internal development milestones, not separate public tags. The release includes bilingual notes and a linked Announcements discussion (#11).
 
 The former public monolithic CI workflow was replaced with the modular workflow. Do not restore the old workflow unchanged: it validates a different source layout.
 
