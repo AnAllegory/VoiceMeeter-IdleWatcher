@@ -125,6 +125,7 @@ wscript.exe VoiceMeeter-IdleWatcher.vbs /stop
 ## Документация
 
 - [История проекта и интеграция модульной версии](REPOSITORY_LINEAGE.md)
+- [Правила участия в проекте](CONTRIBUTING.ru.md) ([English version](CONTRIBUTING.md))
 - [Политика безопасности](SECURITY.md)
 - [План развития проекта и отложенные решения](ROADMAP.md)
 - [Архитектура и поток выполнения](ARCHITECTURE.md)
