@@ -6,7 +6,7 @@
 
 A Windows PowerShell utility that monitors user idle time and display power state, then requests VoiceMeeter shutdown only when the configured idle threshold has elapsed and the display is fully Off.
 
-> **Current source baseline:** modular implementation **v1.0.5**, integrated into the public `main` branch. It is not yet a new public release tag; the latest published release remains v1.0.1. See [Releases](https://github.com/AnAllegory/VoiceMeeter-IdleWatcher/releases) for published versions.
+> **Current source baseline:** modular implementation **v1.0.5**, integrated into the public `main` branch. See the [Releases page](https://github.com/AnAllegory/VoiceMeeter-IdleWatcher/releases) for versioned snapshots and [Release notes v1.0.5](RELEASE_NOTES_v1.0.5.md) for this source baseline.
 
 For the history of the transition from the original monolithic implementation to the modular source, read [REPOSITORY_LINEAGE.md](REPOSITORY_LINEAGE.md).
 
@@ -79,6 +79,8 @@ The configuration file is VoiceMeeter-IdleWatcher.psd1.
 | MacroButtonSyncIntervalSec | 10 | Periodic indicator assertion interval |
 | DebugMode | false | Set to true for per-probe, per-write and detailed loop traces |
 
+**Logging note:** Keep `DebugMode = false` for normal use. Setting it to `true` enables high-volume per-probe, per-write and loop diagnostics, which can fill and rotate the default primary log (500 KB) and fallback log (2 MB) much faster. Enable it only temporarily while troubleshooting.
+
 Other timing, timeout, log-size and synchronization-object values are also validated in PSD1. Invalid configuration is logged as a startup failure. MacroButtons failures remain non-fatal.
 
 ## Requirements
@@ -125,6 +127,7 @@ The maintainer also reported a successful v1.0.5 automatic-shutdown cycle on the
 - [Historical technical review brief](GROK_REVIEW_BRIEF.md)
 - [Review and maintenance rules](AGENTS.md)
 - [Contributor Covenant Code of Conduct](CODE_OF_CONDUCT.md)
+- [Release notes v1.0.5](RELEASE_NOTES_v1.0.5.md)
 - [Release notes v1.0.0](RELEASE_NOTES_v1.0.0.md)
 - [MIT License](LICENSE)
 - [Russian README](README.ru.md)
