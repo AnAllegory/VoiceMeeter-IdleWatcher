@@ -24,6 +24,7 @@ The v1.0.0 release was published on 2026-11-19. Entries are grouped by release.
 
 ### Modular source integration
 
+- Merged the modular source baseline into public `main` through PR #10 (merge commit `5436b1ccbbd464aa43a4846af53750fafbf126e5`), preserving the public repository's existing Git history. This source integration is not a new public release.
 - Replaced the monolithic watcher implementation with the modular orchestrator, PSD1 configuration, Support, Interop and MacroButtons modules, native C# interop source and matching VBS launcher.
 - Replaced the monolithic-source CI workflow with Windows PowerShell 5.1 parsing, modular project-contract checks, tab-indentation validation, embedded C# compilation and VBS invalid-argument validation.
 - Preserved the existing public release history and RELEASE_NOTES_v1.0.0.md; internal Beta milestones below are development history, not public tags or releases.
