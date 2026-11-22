@@ -86,17 +86,18 @@ Do not add these without a reproducible requirement and a separate design decisi
 
 ## Public release preparation
 
-The modular v1.0.5 source has been merged into the canonical public main branch through PR #10. Before a new public release:
+The maintainer has selected **v1.0.5** as the next public release. Preparation state:
 
-- Confirm that the merged main branch contains the intended modular source and that its default-branch CI validation succeeds.
-- Before packaging, perform a fresh target-PC check from a clean checkout of main and document exactly what was observed.
-- Select the next public version number. Internal v1.0.2-v1.0.5 milestones are not public tags.
-- Prepare version-specific release notes and a distribution ZIP containing the required source files.
-- Keep GitHub Pages synchronized with the current source layout and clearly distinguish the main-branch source snapshot from the latest published release.
-- Create the tag and GitHub release only after the maintainer explicitly approves publication.
+- [x] Modular source integrated into public `main` through PR #10.
+- [x] Static Windows PowerShell 5.1, project-contract and C# checks pass on the current main branch.
+- [x] Maintainer-reported target-PC test completed on 2026-11-22: STATEONLY OFF accepted, 1000ms allowance elapsed, final safety validation passed, Command.Shutdown returned code 0 and engine stop was confirmed.
+- [x] English and Russian README files, CHANGELOG, project handover and version-specific release notes prepared.
+- [x] GitHub-generated source archives will be available automatically from the `v1.0.5` tag; no separate binary installer is part of this source release.
+- [x] GitHub Pages distinguishes the current `main` source snapshot from tagged releases and links to the versioned release history.
+- [ ] Create tag `v1.0.5` from the validated `main` branch, publish it as the latest stable GitHub Release, and enable its release discussion in the `Announcements` category.
 
 The private Beta workspace should remain an archive unless there is a separate reason to continue development there.
 
 ## Status
 
-The v1.0.2 through v1.0.5 implementation work described above is integrated into public main. PR #10 was merged on 2026-11-22; the main automatic-shutdown path was exercised by the maintainer on that date. Remaining items are observations or future considerations, not active code-change tasks.
+The v1.0.2 through v1.0.5 implementation work described above is integrated into public main. PR #10 was merged on 2026-11-22; the main automatic-shutdown path was exercised by the maintainer on that date. Release documentation and website references are prepared. The only remaining release step is the maintainer's final GitHub publication action; runtime observations and future ideas remain separate from release completion.
