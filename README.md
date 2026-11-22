@@ -77,6 +77,7 @@ The script also uses shorter internal intervals for API recovery and for checkin
 | README.ru.md | Russian documentation. |
 | PROJECT_CONTEXT.md | Maintainer's project handover and context reference. |
 | AGENTS.md | Instructions for AI coding agents reviewing and changing this repository. |
+| CODE_OF_CONDUCT.md | Contributor Covenant Code of Conduct (version 2.1). |
 | SECURITY.md | Security policy and private vulnerability reporting guidance. |
 | ROADMAP.md | Potential future improvements, deferred ideas, and project change principles. |
 | ARCHITECTURE.md | Bilingual architecture overview and Mermaid diagrams. |
