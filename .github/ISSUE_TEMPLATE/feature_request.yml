@@ -1,0 +1,40 @@
+name: Feature request / Предложение функции
+description: Suggest a focused improvement / Предложите конкретное улучшение
+title: "feature: "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Please search existing Issues and Discussions before submitting.
+        Перед отправкой проверьте существующие Issues и Discussions.
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem or use case / Проблема или сценарий использования
+      description: What limitation or user need would this address?
+      placeholder: Describe the problem this proposal is intended to solve.
+    validations:
+      required: true
+  - type: textarea
+    id: proposed-solution
+    attributes:
+      label: Proposed solution / Предлагаемое решение
+      description: Describe the behavior you would like to see.
+      placeholder: Explain the desired behavior without prescribing unnecessary implementation details.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered / Рассмотренные альтернативы
+      placeholder: Describe any alternatives or workarounds you considered.
+    validations:
+      required: false
+  - type: textarea
+    id: safety-compatibility
+    attributes:
+      label: Safety and compatibility considerations / Влияние на безопасность и совместимость
+      description: Could this affect automatic shutdown, Remote API lifecycle, Windows PowerShell 5.1 compatibility or existing users?
+      placeholder: Mention possible risks, or write "Not sure".
+    validations:
+      required: false
