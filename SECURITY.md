@@ -1,55 +1,56 @@
 # Security Policy
 
-## Supported versions
+## Supported versions and repository scope
 
-VoiceMeeter IdleWatcher is a small, actively maintained project. A formal version support matrix has not been established.
+This policy applies to the public repository AnAllegory/VoiceMeeter-IdleWatcher.
 
-When reporting a security issue, please identify the exact release tag or commit you tested. Security fixes, when applicable, are expected to be developed against the current code in the `main` branch. Users should update to the latest available project version after a fix is published.
+A formal version support matrix has not been established. The current modular source baseline is v1.0.5; the existing public releases are v1.0.0 and v1.0.1. The integrated source baseline is not a release tag until a new public release is explicitly prepared and published. When reporting an issue, identify the exact commit SHA or public release tag you reviewed or tested.
 
 ## Reporting a vulnerability
 
-**Please do not report undisclosed security vulnerabilities through public GitHub Issues, Discussions, or pull requests.**
+**Do not disclose an unpatched security vulnerability through public GitHub Issues, pull requests, discussions, chat logs or other public channels.**
 
-Use GitHub's private vulnerability reporting feature for this repository, if it is enabled:
+Use GitHub's private vulnerability reporting feature for this repository if it is enabled:
 
-1. Open the repository's **Security** tab.
-2. Choose **Report a vulnerability**.
-3. Submit the report privately through GitHub's advisory form.
+1. Open the repository's Security tab.
+2. Choose Report a vulnerability, if that option is available.
+3. Submit the report through GitHub's private advisory form.
 
-If private vulnerability reporting is unavailable, contact the repository maintainer privately through the GitHub profile:
+If private vulnerability reporting is unavailable, contact the maintainer privately through the GitHub profile:
 
 https://github.com/AnAllegory
 
-Do not publish vulnerability details until the maintainer has had a reasonable opportunity to investigate and prepare a fix. No response-time or remediation-time guarantee is currently offered.
+Do not publish vulnerability details until the maintainer has had a reasonable opportunity to investigate and prepare a fix. No response-time or remediation-time guarantee is offered.
 
 ## What to include
 
-A useful report should include, where possible:
+Where possible, include:
 
-- The affected release tag or commit SHA.
-- The affected file, component, or workflow.
-- A clear description of the security impact and conditions required to reproduce it.
+- The affected commit SHA or release tag.
+- The affected file, module, workflow or documented release artifact.
+- A clear description of the security impact and the conditions required to reproduce it.
 - Minimal reproduction steps or a safe proof of concept.
-- Relevant logs or error messages, with usernames, local paths, tokens, and other private information removed.
+- Relevant error messages or logs after removing usernames, local paths, tokens and unrelated private information.
 - Any known workaround or mitigation.
 
-Please avoid sending passwords, API tokens, recovery codes, private keys, or unrelated personal data.
+Do not send passwords, API tokens, recovery codes, private keys, KeePass databases, complete unredacted logs or unrelated personal data.
 
 ## Scope
 
-Security reports are relevant to vulnerabilities in the project repository, including:
+Security reports may concern:
 
 - The PowerShell watcher and its Windows API or VoiceMeeter Remote API integration.
-- The VBScript launcher and its process-starting or stop-control behavior.
-- Build, automation, and GitHub Actions workflow configuration.
-- Project release or distribution files maintained in this repository.
+- The VBS launcher and its process-starting or graceful-stop behavior.
+- PowerShell modules, native C# interop and configuration handling.
+- GitHub Actions workflows, build checks and repository automation.
+- Project files and documented distribution artifacts.
 
-Examples of potentially relevant issues include unintended execution of attacker-controlled commands, exposure of secrets, unsafe handling of untrusted input, or a vulnerability that allows an attacker to bypass an important security boundary.
+Examples include unintended execution of attacker-controlled commands, exposure of secrets, unsafe handling of untrusted input, or a weakness that allows an attacker to bypass an important security boundary.
 
-Unexpected application behavior, ordinary bugs, feature requests, and reliability issues that do not have a security impact should be reported through the project's regular GitHub Issues.
+Ordinary bugs, reliability issues without a security impact, documentation corrections and feature requests are not security vulnerabilities. Use the repository's normal issue or pull-request process for those topics.
 
 ## Coordinated disclosure
 
-Please allow the maintainer time to validate a report, assess its impact, and prepare an appropriate fix before publicly disclosing technical details.
+Please allow the maintainer time to validate a report, assess its impact and prepare an appropriate fix before publicly disclosing technical details.
 
-The maintainer may ask follow-up questions or request additional evidence. Reports are assessed individually; submitting a report does not imply that the issue is confirmed or that a particular timeline for a fix can be guaranteed.
+Reports are assessed individually. A report does not imply that the issue is confirmed or that a particular remediation timeline can be guaranteed.

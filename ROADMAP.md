@@ -1,63 +1,102 @@
-# VoiceMeeter IdleWatcher — Roadmap
+# VoiceMeeter IdleWatcher — Project Roadmap
 
-This document records potential future improvements and deliberate scope decisions. It is a planning note, not a promise that every item will be implemented.
+This document records the current project state, possible follow-up observations and deliberate scope decisions. It is a planning note, not a promise that every item will be implemented.
 
-The current release is considered stable on the maintainer's observed normal operating path. Changes should be driven by a reproducible issue, a concrete use case, or a clear maintenance benefit. Do not add complexity merely because it is technically possible.
+The current integrated modular source baseline is v1.0.5. The public project and the project relationship are described in REPOSITORY_LINEAGE.md. Changes should be driven by reproducible behavior, a concrete use case or a clear maintenance benefit. Do not add complexity merely because it is technically possible.
 
-## Implemented improvements
+## Implemented in the modular development line
 
-### CI analyzer policy
+### Modular transition — v1.0.2
 
-- PSScriptAnalyzer findings with severity **Error** now fail the GitHub Actions workflow.
-- Findings with severity **Warning** or **Information** remain visible in the log but do not fail the workflow.
-- The current known `PSReviewUnusedParameter` warning for `StartupStatusFile` is retained as non-blocking: the parameter is referenced by the nested `Write-StartupStatus` helper in the current script. Do not remove or change the launcher's startup-status contract just to suppress this analyzer warning.
-- CI checks that `AGENTS.md`, `SECURITY.md`, and `ROADMAP.md` remain present in the repository.
-- The workflow parses the PS1 with Windows PowerShell 5.1, validates the VBS launcher's invalid-argument path without starting the watcher, checks the MacroButtons STATEONLY/no-readback contract and final shutdown-check ordering, and compiles the embedded Remote API interop C# source.
+- Split the monolithic watcher responsibilities into the orchestrator, PSD1 configuration, Support, Interop and MacroButtons modules, native C# interop and VBS launcher.
+- Kept Windows PowerShell 5.1 as the required runtime.
+- Preserved the established idle/display shutdown safety model and graceful start/stop flow.
 
-## Potential improvements
+### Safety and diagnostics hardening — v1.0.3
 
-These items are retained for future reference. None is currently a confirmed defect requiring an immediate code change.
+- Fixed STATEONLY (0x00000002) inside the MacroButtons module.
+- Added bounded configuration validation and explicit handling for known API absence versus unknown API errors.
+- Strengthened the shutdown validation and graceful cleanup behavior.
+- Preserved one MacroButtons writer and the no-readback rule.
 
-### 1. Remote Desktop (RDP) behavior
+### Pre-shutdown display allowance — v1.0.4
 
-An RDP session disconnect may appear to the session as display Off. In that situation, the existing safety conditions may allow VoiceMeeter shutdown.
+- Added a 1000ms allowance after a successful STATEONLY OFF write.
+- Moved final idle, display and /stop checks after the allowance and immediately before Command.Shutdown.
+- Kept MacroButtons optional and non-fatal.
 
-- Revisit this only if the maintainer uses RDP and this behavior becomes undesirable.
-- Any change should be based on a concrete expected behavior for connected, disconnected, and reconnected sessions.
+### No-server write gate — v1.0.5
 
-### 2. Sleep / Wake observation
+- Periodic and manual-refresh MacroButtons writes now require both a known API state and a confirmed running engine.
+- After IsParametersDirty = -2 confirms server teardown, the watcher retains the last accepted indicator state rather than sending futile writes.
+- Startup/recovery paths no longer attempt OFF when Login indicates that no VoiceMeeter engine is running.
 
-The code does not currently implement dedicated Sleep / Wake handling.
+## Current observations
 
-- Existing logs have shown normal display-state transitions after observed activity, but they do not by themselves prove every Sleep / Wake scenario.
-- Continue observing normal operation.
-- Do not add dedicated sleep-resume logic unless a reproducible problem is found.
+These are observations, not confirmed defects requiring immediate code changes.
 
-### 3. Logging clarity
+### 1. MacroButtons visual timing
 
-If real troubleshooting needs arise, consider making the origin and reason for START / STOP requests easier to identify in the log.
+The maintainer's v1.0.5 test on 2026-11-22 confirmed the OFF command acceptance, 1000ms allowance, final safety validation, successful Shutdown and confirmed engine stop. After waking the PC, the maintainer saw button 1 OFF and VoiceMeeter not running.
 
-Do not expand logging without a concrete diagnostic benefit.
+The exact instant when the visible button extinguished relative to engine shutdown was not directly observed because the display was Off during that interval. The writer intentionally has no UI readback. No change to the delay is justified by the current evidence alone.
+
+### 2. Rapid engine availability transitions
+
+A short engine start/stop sequence was observed in the maintainer's log. The watcher logged the API becoming available and later unavailable, and retained the last accepted state when the server disappeared.
+
+Continue normal observation. Revisit only if a reproducible rapid-restart scenario leaves the indicator or watcher state inconsistent.
+
+### 3. Remote Desktop behavior
+
+An RDP session disconnect may be represented to the session as display Off. If the maintainer adopts RDP and this behavior becomes undesirable, define expected behavior for connected, disconnected and reconnected sessions before changing the shutdown gate.
+
+### 4. Sleep / Wake behavior
+
+The current design does not implement a dedicated Sleep / Wake state machine. The latest test did confirm normal display-On handling after the PC was awakened, but it does not prove every sleep/resume configuration. Add dedicated handling only if a repeatable problem is found.
+
+### 5. Logging clarity
+
+If a real troubleshooting case needs it, consider making the origin and reason for START / STOP requests easier to identify. Avoid adding high-volume logging without a concrete diagnostic benefit.
 
 ## Deliberately out of scope for now
 
-The following ideas were considered and intentionally deferred. Reconsider them only if a real use case appears.
+Do not add these without a reproducible requirement and a separate design decision:
 
-- **Audio signal-level monitoring:** the utility is not an audio activity monitor. No demonstrated scenario currently justifies adding signal analysis.
-- **Sound notifications:** not required for the current workflow.
-- **External configuration file:** current source configuration is sufficient; avoid adding another configuration surface without need.
-- **WhatIf or extra operating modes:** no current workflow requires them.
-- **More elaborate log rotation:** existing limits and rotation are sufficient unless actual log-management problems appear.
-- **Broad architectural refactoring:** do not restructure stable code solely for stylistic or theoretical reasons.
+- VoiceMeeter process polling, WMI subscriptions or Process.Exited handlers.
+- A second independent MacroButtons writer or helper process.
+- GetStatus readback or MacroButton_IsDirty polling in the watcher.
+- A configurable STATEONLY bitmode.
+- DLL selection based on guessed VoiceMeeter process bitness.
+- Audio signal-level monitoring or sound notifications.
+- An external configuration surface, WhatIf mode or extra operating modes without a concrete use case.
+- More elaborate log rotation without demonstrated log-management problems.
+- Broad architectural refactoring for style alone.
 
 ## Working principles
 
 1. Fix demonstrated problems, not hypothetical ones.
-2. Preserve the current fail-safe behavior: unknown, On, or Dimmed display state must not permit automatic shutdown.
-3. Keep changes small and tied to a clear benefit and test scenario.
-4. Treat local runtime observations as maintainer-reported evidence, distinct from CI static checks.
-5. Do not change code, release versions, or tags merely to make progress on this list.
+2. Preserve fail-safe behavior: On, Dimmed, unknown or unavailable display state must not permit automatic shutdown.
+3. Preserve final idle/display/stop revalidation immediately before Command.Shutdown.
+4. Keep MacroButtons optional, with one STATEONLY writer and no readback.
+5. Treat maintainer runtime observations separately from source inspection and static CI.
+6. Keep Windows PowerShell 5.1 compatibility and the existing DLL marker/import-order contracts.
+7. Do not change the public repository, its tags or its releases as part of modular development workspace work.
+8. Do not create a numbered release merely to make progress on this roadmap.
+
+## Public release preparation
+
+The modular source is staged in an integration branch of the canonical public repository and awaits review. Before a new public release:
+
+- Complete review of the integration Pull Request and its CI result.
+- Confirm maintainer runtime behavior on the target Windows configuration after the integrated files are checked out together.
+- Select the next public version number. Internal v1.0.2-v1.0.5 milestones are not public tags.
+- Prepare version-specific release notes and a distribution ZIP containing the required source files.
+- Update the GitHub Pages site to describe the modular source and link to the selected public release.
+- Create the tag and GitHub release only after the maintainer explicitly approves publication.
+
+The private Beta workspace should remain an archive unless there is a separate reason to continue development there.
 
 ## Status
 
-The CI analyzer policy improvement is implemented. The remaining items are observations or future considerations, not active implementation tasks.
+The v1.0.2 through v1.0.5 implementation work described above is staged in the public integration branch and awaits review. The main automatic-shutdown path was exercised by the maintainer on 2026-11-22. Remaining items are observations or future considerations, not active code-change tasks.

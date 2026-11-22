@@ -1,868 +1,225 @@
 [CmdletBinding()]
 param(
-    [ValidateSet('Start', 'Stop')]
-    [string]$Mode = 'Start',
+	[ValidateSet('Start', 'Stop')]
+	[string]$Mode = 'Start',
 
-    [ValidateRange(1, 60)]
-    [int]$IdleMinutes = 8,
+	[ValidateRange(1, 60)]
+	[Nullable[int]]$IdleMinutes = $null,
 
-    [switch]$DebugMode,
+	[switch]$DebugMode,
 
-    # Used by the nested Write-StartupStatus function; the VBS launcher passes this path.
-    # PSReviewUnusedParameter may report a false positive because the reference is inside that function.
-    [string]$StartupStatusFile = ''
+	[string]$StartupStatusFile = ''
 )
 
 $ErrorActionPreference = 'Stop'
 
 if ($MyInvocation.InvocationName -eq '.') {
-    throw 'VoiceMeeter-IdleWatcher.ps1 cannot be dot-sourced. Run it in a fresh powershell.exe process with -File.'
+	throw 'VoiceMeeter-IdleWatcher.ps1 cannot be dot-sourced. Run it in a fresh powershell.exe process with -File.'
 }
 
-# ==================== Settings ====================
+# ==================== Settings & Config ====================
 $ScriptDir = $PSScriptRoot
 $ScriptBaseName = [System.IO.Path]::GetFileNameWithoutExtension($PSCommandPath)
 if ([string]::IsNullOrWhiteSpace($ScriptBaseName)) {
-    $ScriptBaseName = 'VoiceMeeter-IdleWatcher'
+	$ScriptBaseName = 'VoiceMeeter-IdleWatcher'
 }
+
+$ConfigFile = Join-Path -Path $ScriptDir -ChildPath ($ScriptBaseName + '.psd1')
+$ConfigData = @{}
+$ConfigLoadError = $null
+if ([System.IO.File]::Exists($ConfigFile)) {
+	try {
+		$LoadedConfig = Import-PowerShellDataFile -Path $ConfigFile -ErrorAction Stop
+		if ($LoadedConfig -isnot [hashtable]) {
+			throw 'Configuration file must contain a hashtable.'
+		}
+		$ConfigData = $LoadedConfig
+	}
+	catch {
+		$ConfigLoadError = $_.Exception.Message
+	}
+}
+
+function Get-ConfigValue {
+	param(
+		[hashtable]$Map,
+		[string]$Key,
+		$DefaultValue
+	)
+
+	if ($Map.ContainsKey($Key) -and ($null -ne $Map[$Key])) {
+		return $Map[$Key]
+	}
+	return $DefaultValue
+}
+
+function Get-ValidatedConfigInt {
+	param(
+		[hashtable]$Map,
+		[string]$Key,
+		[int]$DefaultValue,
+		[int]$Minimum,
+		[int]$Maximum
+	)
+
+	$rawValue = Get-ConfigValue -Map $Map -Key $Key -DefaultValue $DefaultValue
+	$parsedValue = 0
+	if (($rawValue -is [bool]) -or (-not [int]::TryParse([string]$rawValue, [ref]$parsedValue))) {
+		throw "Configuration '$Key' must be an integer between $Minimum and $Maximum. Value: '$rawValue'."
+	}
+	if (($parsedValue -lt $Minimum) -or ($parsedValue -gt $Maximum)) {
+		throw "Configuration '$Key' must be between $Minimum and $Maximum. Value: $parsedValue."
+	}
+	return $parsedValue
+}
+
+function Get-ValidatedConfigLong {
+	param(
+		[hashtable]$Map,
+		[string]$Key,
+		[long]$DefaultValue,
+		[long]$Minimum,
+		[long]$Maximum
+	)
+
+	$rawValue = Get-ConfigValue -Map $Map -Key $Key -DefaultValue $DefaultValue
+	$parsedValue = [long]0
+	if (($rawValue -is [bool]) -or (-not [long]::TryParse([string]$rawValue, [ref]$parsedValue))) {
+		throw "Configuration '$Key' must be an integer between $Minimum and $Maximum. Value: '$rawValue'."
+	}
+	if (($parsedValue -lt $Minimum) -or ($parsedValue -gt $Maximum)) {
+		throw "Configuration '$Key' must be between $Minimum and $Maximum. Value: $parsedValue."
+	}
+	return $parsedValue
+}
+
+function Get-ValidatedConfigString {
+	param(
+		[hashtable]$Map,
+		[string]$Key,
+		[string]$DefaultValue
+	)
+
+	$value = [string](Get-ConfigValue -Map $Map -Key $Key -DefaultValue $DefaultValue)
+	if ([string]::IsNullOrWhiteSpace($value) -or ($value.Length -gt 240)) {
+		throw "Configuration '$Key' must be a non-empty string of at most 240 characters."
+	}
+	return $value
+}
+
 $LogFile = Join-Path -Path $ScriptDir -ChildPath ($ScriptBaseName + '.log')
-$MaxLogSize = 500KB
-$FallbackMaxLogSize = 2MB
-$WatcherVersion = '1.0.1'
-$ShutdownCommandLimit = 3
-$CheckIntervalSec = 10
-$RetryIntervalSec = 30
-$EngineAbsentProbeIntervalSec = 3
-$DisplayNotificationTimeoutSec = 5
-$PostShutdownProbeIntervalSec = 1
-$PostShutdownRestartProbeIntervalSec = 3
-$PostShutdownConfirmationTimeoutSec = 5
-$ApiSessionRecoveryRetryIntervalSec = 5
-$MutexName = 'Local\VoiceMeeter-IdleWatcher'
-$StopEventName = 'Local\VoiceMeeter-IdleWatcher.Stop'
-$SyncEventName = 'Local\VoiceMeeter-IdleWatcher.Sync'
-$LogMutexName = 'Local\VoiceMeeter-IdleWatcher.Log'
-$StopWaitTimeoutSec = 20
-
-# Optional MacroButtons displayed-state synchronization.
-# This is the VoiceMeeter Remote API logical button ID (0-79), not a
-# one-based label. Logical ID 0 is reserved by the maintainer for the mic.
-# Set to -1 to disable the optional synchronization.
-$MacroButtonLogicalIndex = 1
-if (($MacroButtonLogicalIndex -lt -1) -or ($MacroButtonLogicalIndex -gt 79)) {
-    throw 'MacroButtonLogicalIndex must be -1 (disabled) or a value from 0 to 79.'
-}
-$MacroButtonSyncIntervalSec = 10
-$MacroButtonStateOnlyMode = 0x00000002
-
 $LocalLogRoot = $env:LOCALAPPDATA
 if ([string]::IsNullOrWhiteSpace($LocalLogRoot)) {
-    $LocalLogRoot = [System.IO.Path]::GetTempPath()
+	$LocalLogRoot = [System.IO.Path]::GetTempPath()
 }
 $FallbackLogDirectory = Join-Path -Path $LocalLogRoot -ChildPath 'VoiceMeeter-IdleWatcher'
 $FallbackLogFile = Join-Path -Path $FallbackLogDirectory -ChildPath ($ScriptBaseName + '-fallback.log')
 $EmergencyLogFile = Join-Path -Path ([System.IO.Path]::GetTempPath()) -ChildPath 'VoiceMeeter-IdleWatcher-emergency.log'
-$script:LogMutex = $null
 
-# ==================== Logging ====================
-function Add-LogLineToFile {
-    param(
-        [Parameter(Mandatory = $true)][string]$Path,
-        [Parameter(Mandatory = $true)][string]$Line,
-        [Parameter(Mandatory = $true)][long]$MaxBytes
-    )
+# ==================== Module imports & bootstrap logging ====================
+$SupportModulePath = Join-Path -Path $ScriptDir -ChildPath 'VoiceMeeter-IdleWatcher.Support.psm1'
+$InteropModulePath = Join-Path -Path $ScriptDir -ChildPath 'VoiceMeeter-IdleWatcher.Interop.psm1'
+$MacroButtonsModulePath = Join-Path -Path $ScriptDir -ChildPath 'VoiceMeeter-IdleWatcher.MacroButtons.psm1'
 
-    $directory = [System.IO.Path]::GetDirectoryName($Path)
-    if (-not [string]::IsNullOrWhiteSpace($directory)) {
-        [void][System.IO.Directory]::CreateDirectory($directory)
-    }
+Import-Module -Name $SupportModulePath -Force -DisableNameChecking -ErrorAction Stop
+Import-Module -Name $InteropModulePath -Force -DisableNameChecking -ErrorAction Stop
+Import-Module -Name $MacroButtonsModulePath -Force -DisableNameChecking -ErrorAction Stop
 
-    if ([System.IO.File]::Exists($Path)) {
-        $item = [System.IO.FileInfo]::new($Path)
-        if ($item.Length -ge $MaxBytes) {
-            $archive = "$Path.old"
-            if ([System.IO.File]::Exists($archive)) {
-                [System.IO.File]::Delete($archive)
-            }
-            [System.IO.File]::Move($Path, $archive)
-        }
-    }
+$SupportConfig = @{
+	LogFile = $LogFile
+	FallbackLogFile = $FallbackLogFile
+	EmergencyLogFile = $EmergencyLogFile
+	MaxLogSize = 500KB
+	FallbackMaxLogSize = 2MB
+	LogMutexName = 'Local\VoiceMeeter-IdleWatcher.Log'
+	DebugMode = $false
+	StartupStatusFile = $StartupStatusFile
+}
+Initialize-WatcherSupport @SupportConfig
 
-    $encoding = [System.Text.UTF8Encoding]::new($false)
-    [System.IO.File]::AppendAllText($Path, $Line + [Environment]::NewLine, $encoding)
+if ($null -ne $ConfigLoadError) {
+	Write-Log "Failed to load config file '$ConfigFile': $ConfigLoadError" -Level 'ERROR'
+	Write-StartupStatus -Status 'FAILED'
+	throw "Failed to load config file '$ConfigFile': $ConfigLoadError"
 }
 
-function Write-Log {
-    param(
-        [Parameter(Mandatory = $true)]
-        [string]$Message,
+try {
+	$ResolvedIdleMinutes = Get-ValidatedConfigInt -Map $ConfigData -Key 'IdleMinutes' -DefaultValue 8 -Minimum 1 -Maximum 60
+	if ($PSBoundParameters.ContainsKey('IdleMinutes')) {
+		if ($null -eq $IdleMinutes) {
+			throw 'IdleMinutes cannot be null when explicitly provided.'
+		}
+		$ResolvedIdleMinutes = [int]$IdleMinutes
+	}
 
-        [ValidateSet('DEBUG', 'INFO', 'WARN', 'ERROR')]
-        [string]$Level = 'INFO'
-    )
+	if ($ConfigData.ContainsKey('DebugMode') -and ($ConfigData['DebugMode'] -isnot [bool])) {
+		throw "Configuration 'DebugMode' must be a Boolean value."
+	}
+	$ConfigDebugMode = [bool](Get-ConfigValue -Map $ConfigData -Key 'DebugMode' -DefaultValue $false)
+	if ($PSBoundParameters.ContainsKey('DebugMode')) {
+		$ResolvedDebugMode = [bool]$DebugMode.IsPresent
+	}
+	else {
+		$ResolvedDebugMode = $ConfigDebugMode
+	}
 
-    if (($Level -eq 'DEBUG') -and (-not $DebugMode)) {
-        return
-    }
+	$MaxLogSize = Get-ValidatedConfigLong -Map $ConfigData -Key 'MaxLogSizeBytes' -DefaultValue 500KB -Minimum 4096 -Maximum 104857600
+	$FallbackMaxLogSize = Get-ValidatedConfigLong -Map $ConfigData -Key 'FallbackMaxLogSizeBytes' -DefaultValue 2MB -Minimum 4096 -Maximum 209715200
+	$WatcherVersion = '1.0.5'
+	$ShutdownCommandLimit = Get-ValidatedConfigInt -Map $ConfigData -Key 'ShutdownCommandLimit' -DefaultValue 3 -Minimum 1 -Maximum 10
+	$CheckIntervalSec = Get-ValidatedConfigInt -Map $ConfigData -Key 'CheckIntervalSec' -DefaultValue 10 -Minimum 1 -Maximum 60
+	$RetryIntervalSec = Get-ValidatedConfigInt -Map $ConfigData -Key 'RetryIntervalSec' -DefaultValue 30 -Minimum 1 -Maximum 600
+	$EngineAbsentProbeIntervalSec = Get-ValidatedConfigInt -Map $ConfigData -Key 'EngineAbsentProbeIntervalSec' -DefaultValue 3 -Minimum 1 -Maximum 60
+	$DisplayNotificationTimeoutSec = Get-ValidatedConfigInt -Map $ConfigData -Key 'DisplayNotificationTimeoutSec' -DefaultValue 5 -Minimum 1 -Maximum 30
+	$PostShutdownProbeIntervalSec = Get-ValidatedConfigInt -Map $ConfigData -Key 'PostShutdownProbeIntervalSec' -DefaultValue 1 -Minimum 1 -Maximum 30
+	$PostShutdownRestartProbeIntervalSec = Get-ValidatedConfigInt -Map $ConfigData -Key 'PostShutdownRestartProbeIntervalSec' -DefaultValue 3 -Minimum 1 -Maximum 60
+	$PostShutdownConfirmationTimeoutSec = Get-ValidatedConfigInt -Map $ConfigData -Key 'PostShutdownConfirmationTimeoutSec' -DefaultValue 5 -Minimum 1 -Maximum 120
+	$ApiSessionRecoveryRetryIntervalSec = Get-ValidatedConfigInt -Map $ConfigData -Key 'ApiSessionRecoveryRetryIntervalSec' -DefaultValue 5 -Minimum 1 -Maximum 120
+	$StopWaitTimeoutSec = Get-ValidatedConfigInt -Map $ConfigData -Key 'StopWaitTimeoutSec' -DefaultValue 20 -Minimum 1 -Maximum 120
 
-    $timestamp = Get-Date -Format 'yyyy-MM-dd HH:mm:ss.fff'
-    $line = "[$timestamp] [$Level] $Message"
-    $primaryError = $null
-    $lockAcquired = $false
+	$MacroButtonLogicalIndex = Get-ValidatedConfigInt -Map $ConfigData -Key 'MacroButtonLogicalIndex' -DefaultValue 1 -Minimum -1 -Maximum 79
+	$MacroButtonSyncIntervalSec = Get-ValidatedConfigInt -Map $ConfigData -Key 'MacroButtonSyncIntervalSec' -DefaultValue 10 -Minimum 1 -Maximum 300
 
-    try {
-        if ($null -eq $script:LogMutex) {
-            $script:LogMutex = [System.Threading.Mutex]::new($false, $LogMutexName)
-        }
-
-        try {
-            $lockAcquired = $script:LogMutex.WaitOne(3000)
-        }
-        catch [System.Threading.AbandonedMutexException] {
-            # The abandoned log mutex is now owned by this process.
-            $lockAcquired = $true
-        }
-
-        if (-not $lockAcquired) {
-            throw 'Timed out waiting for the log-file mutex.'
-        }
-
-        Add-LogLineToFile -Path $LogFile -Line $line -MaxBytes $MaxLogSize
-        return
-    }
-    catch {
-        $primaryError = $_.Exception.Message
-    }
-    finally {
-        if ($lockAcquired -and ($null -ne $script:LogMutex)) {
-            try { $script:LogMutex.ReleaseMutex() }
-            catch {
-                # Logging must not recurse while handling a logging failure; mutex cleanup is best-effort here.
-                [void]$_.Exception.Message
-            }
-        }
-    }
-
-    # Never discard a logging failure silently. Preserve the original message
-    # in a per-user fallback file and include the primary-file error.
-    $fallbackLine = "$line [PRIMARY LOG WRITE FAILED: $primaryError]"
-    $fallbackLockAcquired = $false
-
-    try {
-        if ($null -eq $script:LogMutex) {
-            $script:LogMutex = [System.Threading.Mutex]::new($false, $LogMutexName)
-        }
-
-        try {
-            $fallbackLockAcquired = $script:LogMutex.WaitOne(1000)
-        }
-        catch [System.Threading.AbandonedMutexException] {
-            $fallbackLockAcquired = $true
-        }
-
-        if (-not $fallbackLockAcquired) {
-            throw 'Timed out waiting for the log-file mutex before writing the fallback log.'
-        }
-
-        Add-LogLineToFile -Path $FallbackLogFile -Line $fallbackLine -MaxBytes $FallbackMaxLogSize
-        return
-    }
-    catch {
-        $fallbackError = $_.Exception.Message
-    }
-    finally {
-        if ($fallbackLockAcquired -and ($null -ne $script:LogMutex)) {
-            try { $script:LogMutex.ReleaseMutex() }
-            catch {
-                # Logging must not recurse while handling a logging failure; mutex cleanup is best-effort here.
-                [void]$_.Exception.Message
-            }
-        }
-    }
-
-    # Last-resort path. This is intentionally independent of the watcher folder.
-    try {
-        $emergencyLine = "$fallbackLine [FALLBACK LOG WRITE FAILED: $fallbackError]"
-        Add-LogLineToFile -Path $EmergencyLogFile -Line $emergencyLine -MaxBytes $FallbackMaxLogSize
-    }
-    catch {
-        try {
-            [Console]::Error.WriteLine("VoiceMeeter IdleWatcher logging failure: $primaryError; fallback failure: $fallbackError; message: $Message")
-        }
-        catch {
-            # No reliable output channel remains if both file logging and Console.Error fail.
-            [void]$_.Exception.Message
-        }
-    }
+	$MutexName = Get-ValidatedConfigString -Map $ConfigData -Key 'MutexName' -DefaultValue 'Local\VoiceMeeter-IdleWatcher'
+	$StopEventName = Get-ValidatedConfigString -Map $ConfigData -Key 'StopEventName' -DefaultValue 'Local\VoiceMeeter-IdleWatcher.Stop'
+	$SyncEventName = Get-ValidatedConfigString -Map $ConfigData -Key 'SyncEventName' -DefaultValue 'Local\VoiceMeeter-IdleWatcher.Sync'
+	$LogMutexName = Get-ValidatedConfigString -Map $ConfigData -Key 'LogMutexName' -DefaultValue 'Local\VoiceMeeter-IdleWatcher.Log'
+}
+catch {
+	Write-Log "Configuration validation failed: $($_.Exception.Message)" -Level 'ERROR'
+	Write-StartupStatus -Status 'FAILED'
+	throw
 }
 
-# The VBS launcher waits for a short status token, so startup failures are not
-# hidden by WshShell.Run(..., WaitOnReturn=False).
-$script:StartupStatusWritten = $false
-function Write-StartupStatus {
-    param([ValidateSet('READY', 'ALREADY_RUNNING', 'STOPPED', 'FAILED')][string]$Status)
-
-    if ([string]::IsNullOrWhiteSpace($StartupStatusFile) -or $script:StartupStatusWritten) {
-        return
-    }
-
-    try {
-        $statusDirectory = [System.IO.Path]::GetDirectoryName($StartupStatusFile)
-        if (-not [string]::IsNullOrWhiteSpace($statusDirectory)) {
-            [void][System.IO.Directory]::CreateDirectory($statusDirectory)
-        }
-        $temporaryStatusFile = $StartupStatusFile + '.' + $PID + '.tmp'
-        [System.IO.File]::WriteAllText(
-            $temporaryStatusFile,
-            $Status,
-            [System.Text.UTF8Encoding]::new($false)
-        )
-        if ([System.IO.File]::Exists($StartupStatusFile)) {
-            [System.IO.File]::Delete($StartupStatusFile)
-        }
-        [System.IO.File]::Move($temporaryStatusFile, $StartupStatusFile)
-        $script:StartupStatusWritten = $true
-    }
-    catch {
-        Write-Log "Could not write startup status file '$StartupStatusFile': $($_.Exception.Message)" -Level 'ERROR'
-    }
+$SupportConfig = @{
+	LogFile = $LogFile
+	FallbackLogFile = $FallbackLogFile
+	EmergencyLogFile = $EmergencyLogFile
+	MaxLogSize = $MaxLogSize
+	FallbackMaxLogSize = $FallbackMaxLogSize
+	LogMutexName = $LogMutexName
+	DebugMode = $ResolvedDebugMode
+	StartupStatusFile = $StartupStatusFile
 }
+Initialize-WatcherSupport @SupportConfig
 
-# ==================== DLL discovery ====================
-function Get-VoicemeeterRemoteDll {
-    if ([Environment]::Is64BitProcess) {
-        $requiredDll = 'VoicemeeterRemote64.dll'
-    }
-    else {
-        $requiredDll = 'VoicemeeterRemote.dll'
-    }
+Initialize-MacroButtonConfig -LogicalIndex $MacroButtonLogicalIndex -SyncIntervalSec $MacroButtonSyncIntervalSec
 
-    $folders = [System.Collections.Generic.List[string]]::new()
-
-    # Use RegistryKey directly. The product key includes a literal colon
-    # (VB:Voicemeeter), which can be misread as a provider drive separator in HKLM: paths.
-    $uninstallSubKey = 'SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\VB:Voicemeeter {17359A74-1236-5467}'
-    $registryViews = @([Microsoft.Win32.RegistryView]::Registry32)
-    if ([Environment]::Is64BitOperatingSystem) {
-        $registryViews = @(
-            [Microsoft.Win32.RegistryView]::Registry64,
-            [Microsoft.Win32.RegistryView]::Registry32
-        )
-    }
-
-    foreach ($registryView in $registryViews) {
-        $baseKey = $null
-        $entryKey = $null
-        try {
-            $baseKey = [Microsoft.Win32.RegistryKey]::OpenBaseKey(
-                [Microsoft.Win32.RegistryHive]::LocalMachine,
-                $registryView
-            )
-            $entryKey = $baseKey.OpenSubKey($uninstallSubKey)
-            if ($null -eq $entryKey) { continue }
-
-            $installLocation = [string]$entryKey.GetValue('InstallLocation', '')
-            if (-not [string]::IsNullOrWhiteSpace($installLocation)) {
-                $installFolder = [Environment]::ExpandEnvironmentVariables($installLocation.Trim()).Trim('"')
-                if (-not [string]::IsNullOrWhiteSpace($installFolder)) {
-                    $folders.Add($installFolder)
-                }
-            }
-
-            $uninstallString = [string]$entryKey.GetValue('UninstallString', '')
-            if (-not [string]::IsNullOrWhiteSpace($uninstallString)) {
-                $uninstallString = [Environment]::ExpandEnvironmentVariables($uninstallString).Trim()
-                $uninstallExe = $null
-
-                # Accept quoted paths and unquoted Inno Setup paths with spaces.
-                if ($uninstallString -match '^\s*"(?<quotedExe>[^"]+)"') {
-                    $uninstallExe = $Matches['quotedExe']
-                }
-                elseif ($uninstallString -match '^\s*(?<unquotedExe>.+?\.exe)(?:\s|$)') {
-                    $uninstallExe = $Matches['unquotedExe']
-                }
-
-                if ($uninstallExe -and (Test-Path -LiteralPath $uninstallExe -PathType Leaf)) {
-                    $uninstallFolder = Split-Path -LiteralPath $uninstallExe -Parent
-                    if (-not [string]::IsNullOrWhiteSpace($uninstallFolder)) {
-                        $folders.Add($uninstallFolder)
-                    }
-                }
-                elseif ($uninstallExe) {
-                    Write-Log "UninstallString executable was parsed but not found: $uninstallExe" -Level 'DEBUG'
-                }
-                else {
-                    Write-Log "Could not parse Voicemeeter UninstallString: $uninstallString" -Level 'DEBUG'
-                }
-            }
-        }
-        catch {
-            Write-Log "Could not inspect Voicemeeter uninstall registry view '$registryView': $($_.Exception.Message)" -Level 'DEBUG'
-        }
-        finally {
-            if ($null -ne $entryKey) { $entryKey.Dispose() }
-            if ($null -ne $baseKey) { $baseKey.Dispose() }
-        }
-    }
-
-    $programRoots = @(
-        $env:ProgramFiles,
-        ${env:ProgramFiles(x86)},
-        $env:ProgramW6432
-    )
-
-    foreach ($programRoot in $programRoots) {
-        if ($programRoot) {
-            $folders.Add((Join-Path -Path $programRoot -ChildPath 'VB\Voicemeeter'))
-        }
-    }
-
-    foreach ($folder in ($folders | Select-Object -Unique)) {
-        $candidate = Join-Path -Path $folder -ChildPath $requiredDll
-
-        if (Test-Path -LiteralPath $candidate -PathType Leaf) {
-            return $candidate
-        }
-    }
-
-    throw "Compatible DLL $requiredDll not found. Verify Voicemeeter installation and PowerShell process architecture."
-}
-
-# ==================== Native API interop ====================
-function Initialize-VoicemeeterNativeInterop {
-    param(
-        [Parameter(Mandatory = $true)]
-        [string]$DllPath
-    )
-
-    $source = @"
-using System;
-using System.ComponentModel;
-using System.Runtime.InteropServices;
-using System.Threading;
-
-public static class VMRIdleWatcherNative
-{
-    private const string Dll = @"$DllPath";
-
-    private const uint DeviceNotifyCallback = 2;
-    private const uint PowerSettingChange = 0x8013;
-
-    private static readonly Guid SessionDisplayStatusGuid =
-        new Guid("2B84C20E-AD23-4DDF-93DB-05FFBD7EFCA5");
-
-    private static int _displayState = -1;
-    private static IntPtr _displayRegistrationHandle = IntPtr.Zero;
-    private static IntPtr _displaySubscribeParameters = IntPtr.Zero;
-    private static readonly ManualResetEvent DisplayStateReceived = new ManualResetEvent(false);
-
-    private static readonly ManualResetEvent ExitRequested = new ManualResetEvent(false);
-    private static EventWaitHandle _externalStopEvent;
-    private static EventWaitHandle _externalSyncEvent;
-
-    [UnmanagedFunctionPointer(CallingConvention.Winapi)]
-    private delegate uint DeviceNotifyCallbackRoutine(
-        IntPtr context,
-        uint type,
-        IntPtr setting
-    );
-
-    // Keep the unmanaged display callback alive for the entire registration lifetime.
-    private static readonly DeviceNotifyCallbackRoutine DisplayCallback =
-        OnDisplayPowerSettingChanged;
-
-    [DllImport("powrprof.dll", SetLastError = true)]
-    private static extern uint PowerSettingRegisterNotification(
-        ref Guid settingGuid,
-        uint flags,
-        IntPtr recipient,
-        out IntPtr registrationHandle
-    );
-
-    [DllImport("powrprof.dll", SetLastError = true)]
-    private static extern uint PowerSettingUnregisterNotification(
-        IntPtr registrationHandle
-    );
-
-    [StructLayout(LayoutKind.Sequential)]
-    private struct LASTINPUTINFO
-    {
-        public uint cbSize;
-        public uint dwTime;
-    }
-
-    [DllImport("user32.dll", SetLastError = true)]
-    private static extern bool GetLastInputInfo(ref LASTINPUTINFO info);
-
-    public static uint GetIdleMilliseconds()
-    {
-        LASTINPUTINFO info = new LASTINPUTINFO();
-        info.cbSize = (uint)Marshal.SizeOf(typeof(LASTINPUTINFO));
-
-        if (!GetLastInputInfo(ref info))
-        {
-            throw new Win32Exception(Marshal.GetLastWin32Error());
-        }
-
-        // TickCount is 32-bit and wraps approximately every 49.7 days.
-        // unchecked + uint handles wrap-around correctly for idle deltas.
-        return unchecked((uint)Environment.TickCount - info.dwTime);
-    }
-
-    private static uint OnDisplayPowerSettingChanged(
-        IntPtr context,
-        uint type,
-        IntPtr setting
-    )
-    {
-        try
-        {
-            if (type != PowerSettingChange || setting == IntPtr.Zero)
-            {
-                return 0;
-            }
-
-            Guid receivedGuid = (Guid)Marshal.PtrToStructure(
-                setting,
-                typeof(Guid)
-            );
-
-            if (receivedGuid != SessionDisplayStatusGuid)
-            {
-                return 0;
-            }
-
-            // POWERBROADCAST_SETTING:
-            // GUID (16 bytes), DataLength (4 bytes), Data (DWORD).
-            uint dataLength = unchecked((uint)Marshal.ReadInt32(setting, 16));
-            if (dataLength < 4)
-            {
-                return 0;
-            }
-
-            int state = Marshal.ReadInt32(setting, 20);
-
-            // 0 = Off, 1 = On, 2 = Dim.
-            if (state >= 0 && state <= 2)
-            {
-                Interlocked.Exchange(ref _displayState, state);
-                DisplayStateReceived.Set();
-            }
-        }
-        catch
-        {
-            // Never let an exception cross the unmanaged callback boundary.
-        }
-
-        return 0;
-    }
-
-    public static void CreateExternalStopEvent(string eventName)
-    {
-        if (_externalStopEvent != null)
-        {
-            return;
-        }
-
-        bool createdNew;
-        EventWaitHandle stopEvent = new EventWaitHandle(
-            false,
-            EventResetMode.ManualReset,
-            eventName,
-            out createdNew
-        );
-
-        if (!createdNew)
-        {
-            stopEvent.Dispose();
-            throw new InvalidOperationException(
-                "The named stop event already exists. Another watcher may still be active."
-            );
-        }
-
-        _externalStopEvent = stopEvent;
-    }
-
-    public static void CreateExternalSyncEvent(string eventName)
-    {
-        if (_externalSyncEvent != null)
-        {
-            return;
-        }
-
-        bool createdNew;
-        EventWaitHandle syncEvent = new EventWaitHandle(
-            false,
-            EventResetMode.AutoReset,
-            eventName,
-            out createdNew
-        );
-
-        if (!createdNew)
-        {
-            syncEvent.Dispose();
-            throw new InvalidOperationException(
-                "The named sync event already exists. Another watcher may still be active."
-            );
-        }
-
-        _externalSyncEvent = syncEvent;
-    }
-
-    public static void DisposeExternalSyncEvent()
-    {
-        if (_externalSyncEvent != null)
-        {
-            _externalSyncEvent.Dispose();
-            _externalSyncEvent = null;
-        }
-    }
-
-    public static void DisposeExternalStopEvent()
-    {
-        if (_externalStopEvent != null)
-        {
-            _externalStopEvent.Dispose();
-            _externalStopEvent = null;
-        }
-    }
-
-    public static bool IsExitRequested()
-    {
-        if (ExitRequested.WaitOne(0))
-        {
-            return true;
-        }
-
-        if (_externalStopEvent != null && _externalStopEvent.WaitOne(0))
-        {
-            ExitRequested.Set();
-            return true;
-        }
-
-        return false;
-    }
-
-    // Returns 0 on timeout, 1 on graceful stop, and 2 when an existing
-    // Start request asks the running watcher to refresh its MacroButtons state.
-    public static int WaitForWatcherEvent(int timeoutMilliseconds)
-    {
-        if (_externalStopEvent != null && _externalSyncEvent != null)
-        {
-            WaitHandle[] waitHandles = new WaitHandle[]
-            {
-                ExitRequested,
-                _externalStopEvent,
-                _externalSyncEvent
-            };
-
-            int result = WaitHandle.WaitAny(waitHandles, timeoutMilliseconds);
-            if (result == 1)
-            {
-                ExitRequested.Set();
-                return 1;
-            }
-
-            if (result == 2)
-            {
-                return 2;
-            }
-
-            return result == 0 ? 1 : 0;
-        }
-
-        if (_externalStopEvent != null)
-        {
-            WaitHandle[] stopHandles = new WaitHandle[]
-            {
-                ExitRequested,
-                _externalStopEvent
-            };
-
-            int stopResult = WaitHandle.WaitAny(stopHandles, timeoutMilliseconds);
-            if (stopResult == 1)
-            {
-                ExitRequested.Set();
-                return 1;
-            }
-
-            return stopResult == 0 ? 1 : 0;
-        }
-
-        if (_externalSyncEvent != null)
-        {
-            WaitHandle[] syncHandles = new WaitHandle[]
-            {
-                ExitRequested,
-                _externalSyncEvent
-            };
-
-            int syncResult = WaitHandle.WaitAny(syncHandles, timeoutMilliseconds);
-            if (syncResult == 1)
-            {
-                return 2;
-            }
-
-            return syncResult == 0 ? 1 : 0;
-        }
-
-        return ExitRequested.WaitOne(timeoutMilliseconds) ? 1 : 0;
-    }
-
-    // Returns 0 when the first display state arrives, 1 when shutdown was
-    // requested, and -1 on timeout. Unknown display state remains fail-safe.
-    public static int WaitForDisplayState(int timeoutMilliseconds)
-    {
-        WaitHandle[] waitHandles;
-
-        if (_externalStopEvent != null)
-        {
-            waitHandles = new WaitHandle[]
-            {
-                DisplayStateReceived,
-                ExitRequested,
-                _externalStopEvent
-            };
-        }
-        else
-        {
-            waitHandles = new WaitHandle[]
-            {
-                DisplayStateReceived,
-                ExitRequested
-            };
-        }
-
-        int result = WaitHandle.WaitAny(waitHandles, timeoutMilliseconds);
-
-        if (result == 0)
-        {
-            return 0;
-        }
-
-        if (result == 1 || (result == 2 && _externalStopEvent != null))
-        {
-            ExitRequested.Set();
-            return 1;
-        }
-
-        return -1;
-    }
-
-    public static int GetDisplayState()
-    {
-        return Interlocked.CompareExchange(ref _displayState, 0, 0);
-    }
-
-    public static void RegisterDisplayNotification()
-    {
-        if (_displayRegistrationHandle != IntPtr.Zero)
-        {
-            return;
-        }
-
-        DisplayStateReceived.Reset();
-
-        // DEVICE_NOTIFY_SUBSCRIBE_PARAMETERS contains callback and context pointers.
-        IntPtr subscribeParameters = Marshal.AllocHGlobal(IntPtr.Size * 2);
-
-        try
-        {
-            IntPtr callbackPointer = Marshal.GetFunctionPointerForDelegate(
-                DisplayCallback
-            );
-
-            Marshal.WriteIntPtr(subscribeParameters, 0, callbackPointer);
-            Marshal.WriteIntPtr(
-                subscribeParameters,
-                IntPtr.Size,
-                IntPtr.Zero
-            );
-
-            Guid settingGuid = SessionDisplayStatusGuid;
-            IntPtr registrationHandle;
-
-            uint result = PowerSettingRegisterNotification(
-                ref settingGuid,
-                DeviceNotifyCallback,
-                subscribeParameters,
-                out registrationHandle
-            );
-
-            if (result != 0)
-            {
-                throw new Win32Exception(
-                    (int)result,
-                    "Failed to register display power state notification."
-                );
-            }
-
-            if (registrationHandle == IntPtr.Zero)
-            {
-                throw new InvalidOperationException(
-                    "Windows returned a null handle for display notification registration."
-                );
-            }
-
-            _displaySubscribeParameters = subscribeParameters;
-            _displayRegistrationHandle = registrationHandle;
-        }
-        catch
-        {
-            Marshal.FreeHGlobal(subscribeParameters);
-            throw;
-        }
-    }
-
-    public static void UnregisterDisplayNotification()
-    {
-        if (_displayRegistrationHandle == IntPtr.Zero)
-        {
-            return;
-        }
-
-        uint result = PowerSettingUnregisterNotification(
-            _displayRegistrationHandle
-        );
-
-        if (result != 0)
-        {
-            throw new Win32Exception(
-                (int)result,
-                "Failed to unregister display power state notification."
-            );
-        }
-
-        _displayRegistrationHandle = IntPtr.Zero;
-
-        if (_displaySubscribeParameters != IntPtr.Zero)
-        {
-            Marshal.FreeHGlobal(_displaySubscribeParameters);
-            _displaySubscribeParameters = IntPtr.Zero;
-        }
-
-        Interlocked.Exchange(ref _displayState, -1);
-        DisplayStateReceived.Reset();
-    }
-
-    [DllImport(Dll, EntryPoint = "VBVMR_Login", CallingConvention = CallingConvention.StdCall, ExactSpelling = true)]
-    public static extern int Login();
-
-    [DllImport(Dll, EntryPoint = "VBVMR_Logout", CallingConvention = CallingConvention.StdCall, ExactSpelling = true)]
-    public static extern int Logout();
-
-    [DllImport(Dll, EntryPoint = "VBVMR_IsParametersDirty", CallingConvention = CallingConvention.StdCall, ExactSpelling = true)]
-    public static extern int IsParametersDirty();
-
-    [DllImport(Dll, EntryPoint = "VBVMR_SetParameterFloat", CallingConvention = CallingConvention.StdCall, ExactSpelling = true, CharSet = CharSet.Ansi)]
-    public static extern int SetParameterFloat([MarshalAs(UnmanagedType.LPStr)] string parameter, float value);
-
-    [DllImport(Dll, EntryPoint = "VBVMR_MacroButton_SetStatus", CallingConvention = CallingConvention.StdCall, ExactSpelling = true)]
-    public static extern int MacroButtonSetStatus(int logicalButton, float value, int bitmode);
-}
-"@
-
-    if ('VMRIdleWatcherNative' -as [type]) {
-        throw 'VMRIdleWatcherNative is already loaded in this PowerShell process. Run each watcher/test instance in a fresh powershell.exe process; the native DLL path and event handles are process-static.'
-    }
-    Add-Type -TypeDefinition $source -Language CSharp -ErrorAction Stop
-}
-
-function Invoke-VoiceMeeterApiLogin {
-    $loginResult = [VMRIdleWatcherNative]::Login()
-
-    if ($loginResult -eq -2) {
-        # Login -2 explicitly means a Logout was expected before another Login.
-        Write-Log 'VoiceMeeter API Login returned -2 (Logout required). Calling Logout before retrying Login.' -Level 'WARN'
-        $logoutResult = [VMRIdleWatcherNative]::Logout()
-        if ($logoutResult -lt 0) {
-            throw "VoiceMeeter API Logout-before-Login recovery failed (code $logoutResult)."
-        }
-        $loginResult = [VMRIdleWatcherNative]::Login()
-    }
-
-    return [int]$loginResult
-}
-
-# ==================== Optional MacroButtons display-state synchronization ====================
-$script:MacroButtonWriteStatus = 'NotChecked'
-$script:MacroButtonLastSuccessfulState = $null
-$script:MacroButtonNextSyncAt = [datetime]::MinValue
-
-function Invoke-MacroButtonStateSync {
-    param(
-        [Parameter(Mandatory = $true)]
-        [ValidateSet(0, 1)]
-        [int]$DesiredState,
-
-        [switch]$Force
-    )
-
-    if (($MacroButtonLogicalIndex -lt 0) -or ($script:MacroButtonWriteStatus -eq 'Unsupported')) {
-        return
-    }
-
-    $now = Get-Date
-    if ((-not $Force) -and ($now -lt $script:MacroButtonNextSyncAt)) {
-        return
-    }
-
-    $script:MacroButtonNextSyncAt = $now.AddSeconds($MacroButtonSyncIntervalSec)
-
-    # The watcher already knows its real process state. Assert only the
-    # displayed button state; STATEONLY never executes the button macro.
-    try {
-        $setResult = [VMRIdleWatcherNative]::MacroButtonSetStatus(
-            [int]$MacroButtonLogicalIndex,
-            [single]$DesiredState,
-            [int]$MacroButtonStateOnlyMode
-        )
-    }
-    catch [System.EntryPointNotFoundException] {
-        if ($script:MacroButtonWriteStatus -ne 'Unsupported') {
-            Write-Log 'MacroButtons SetStatus is not exported by this Remote API DLL. Continuing without optional button synchronization.' -Level 'DEBUG'
-        }
-        $script:MacroButtonWriteStatus = 'Unsupported'
-        $script:MacroButtonNextSyncAt = [datetime]::MaxValue
-        return
-    }
-    catch {
-        $writeStatus = 'WriteException'
-        if ($script:MacroButtonWriteStatus -ne $writeStatus) {
-            Write-Log "Could not update MacroButtons logical button $MacroButtonLogicalIndex display state: $($_.Exception.Message). The watcher will continue and retry later." -Level 'DEBUG'
-        }
-        $script:MacroButtonWriteStatus = $writeStatus
-        return
-    }
-
-    if ($setResult -ne 0) {
-        $writeStatus = "WriteResult:$setResult"
-        if ($script:MacroButtonWriteStatus -ne $writeStatus) {
-            Write-Log "MacroButtons logical button $MacroButtonLogicalIndex display state could not be asserted (Remote API code $setResult). The watcher continues normally and will retry later." -Level 'DEBUG'
-        }
-        $script:MacroButtonWriteStatus = $writeStatus
-        return
-    }
-
-    $stateLabel = if ($DesiredState -eq 1) { 'ON' } else { 'OFF' }
-    if (($script:MacroButtonWriteStatus -ne 'Available') -or
-        ($script:MacroButtonLastSuccessfulState -ne $DesiredState) -or $Force) {
-        Write-Log "MacroButtons logical button $MacroButtonLogicalIndex display state set to $stateLabel using STATEONLY."
-    }
-
-    $script:MacroButtonWriteStatus = 'Available'
-    $script:MacroButtonLastSuccessfulState = $DesiredState
-}
-
+Write-Log "Resolved configuration: IdleMinutes=$ResolvedIdleMinutes; CheckIntervalSec=$CheckIntervalSec; RetryIntervalSec=$RetryIntervalSec; EngineAbsentProbeIntervalSec=$EngineAbsentProbeIntervalSec; DisplayNotificationTimeoutSec=$DisplayNotificationTimeoutSec; PostShutdownProbeIntervalSec=$PostShutdownProbeIntervalSec; PostShutdownRestartProbeIntervalSec=$PostShutdownRestartProbeIntervalSec; PostShutdownConfirmationTimeoutSec=$PostShutdownConfirmationTimeoutSec; ApiSessionRecoveryRetryIntervalSec=$ApiSessionRecoveryRetryIntervalSec; StopWaitTimeoutSec=$StopWaitTimeoutSec; ShutdownCommandLimit=$ShutdownCommandLimit; MacroButtonLogicalIndex=$MacroButtonLogicalIndex; MacroButtonSyncIntervalSec=$MacroButtonSyncIntervalSec; DebugMode=$ResolvedDebugMode"
 # ==================== Runtime state and lifecycle resources ====================
-$thresholdMs = [uint32]($IdleMinutes * 60 * 1000)
+$thresholdMs = [uint32]($ResolvedIdleMinutes * 60 * 1000)
+$macroButtonRefreshDelayMs = 1000
 $shutdownSentThisIdle = $false
 $shutdownCommandsSinceEngineStop = 0
 $shutdownRetryExhaustedLogged = $false
 $engineStoppedAfterShutdown = $false
 $lastShutdownCommandAt = [datetime]::MinValue
 $nextApiAttempt = [datetime]::MinValue
+$nextEngineStateProbeAt = [datetime]::MinValue
 $loginCompleted = $false
+$voiceMeeterIsRunning = $false
+# Track an OFF state sent before Command.Shutdown while the Remote API is still available.
+$macroButtonOffForPendingShutdown = $false
 $watcherIsActive = $false
 $connectionWarningLogged = $false
 $shutdownWarningLogged = $false
@@ -870,78 +227,9 @@ $displayNotificationRegistered = $false
 $stopEventCreated = $false
 $syncEventCreated = $false
 $lastLoggedDisplayState = -999
-
-function Send-SyncRequestToExistingWatcher {
-    param(
-        [Parameter(Mandatory = $true)]
-        [string]$EventName
-    )
-
-    # Retry briefly to cover the small window between mutex acquisition and
-    # creation of the active watcher's auto-reset synchronization event.
-    $attempts = 20
-
-    for ($attempt = 0; $attempt -lt $attempts; $attempt++) {
-        $eventHandle = $null
-
-        try {
-            $eventHandle = [System.Threading.EventWaitHandle]::OpenExisting($EventName)
-            [void]$eventHandle.Set()
-            return $true
-        }
-        catch [System.Threading.WaitHandleCannotBeOpenedException] {
-            Start-Sleep -Milliseconds 100
-        }
-        catch {
-            Write-Log "Could not request immediate MacroButtons refresh: $($_.Exception.Message). The watcher will keep its normal refresh schedule." -Level 'DEBUG'
-            return $false
-        }
-        finally {
-            if ($null -ne $eventHandle) {
-                $eventHandle.Dispose()
-            }
-        }
-    }
-
-    Write-Log 'Could not find the active watcher sync event. It will keep its normal MacroButtons refresh schedule.' -Level 'DEBUG'
-    return $false
-}
-
-function Send-StopRequestToExistingWatcher {
-    param(
-        [Parameter(Mandatory = $true)]
-        [string]$EventName
-    )
-
-    # The watcher creates this event shortly after acquiring the mutex. Retry
-    # briefly to cover the small window between mutex acquisition and event creation.
-    $attempts = $StopWaitTimeoutSec * 10
-
-    for ($attempt = 0; $attempt -lt $attempts; $attempt++) {
-        $eventHandle = $null
-
-        try {
-            $eventHandle = [System.Threading.EventWaitHandle]::OpenExisting($EventName)
-            [void]$eventHandle.Set()
-            return $true
-        }
-        catch [System.Threading.WaitHandleCannotBeOpenedException] {
-            Start-Sleep -Milliseconds 100
-        }
-        catch {
-            Write-Log "Could not send graceful stop request: $($_.Exception.Message)" -Level 'ERROR'
-            return $false
-        }
-        finally {
-            if ($null -ne $eventHandle) {
-                $eventHandle.Dispose()
-            }
-        }
-    }
-
-    Write-Log "The watcher owns the mutex, but its stop event was not available within $StopWaitTimeoutSec seconds." -Level 'ERROR'
-    return $false
-}
+$lastLoggedApiProbeCategory = 'NotChecked'
+$apiEngineStateKnown = $false
+$lastStatusSummaryAt = [datetime]::MinValue
 
 # ==================== Single-instance protection ====================
 $watcherMutex = $null
@@ -949,626 +237,826 @@ $mutexOwned = $false
 $mutexWasAbandoned = $false
 
 try {
-    $watcherMutex = [System.Threading.Mutex]::new($false, $MutexName)
+	$watcherMutex = [System.Threading.Mutex]::new($false, $MutexName)
 
-    try {
-        $mutexOwned = $watcherMutex.WaitOne(0)
-    }
-    catch [System.Threading.AbandonedMutexException] {
-        # The previous process died without releasing the mutex. This process
-        # now owns it, but that is not evidence that graceful cleanup completed.
-        $mutexOwned = $true
-        $mutexWasAbandoned = $true
-    }
+	try {
+		$mutexOwned = $watcherMutex.WaitOne(0)
+	}
+	catch [System.Threading.AbandonedMutexException] {
+		$mutexOwned = $true
+		$mutexWasAbandoned = $true
+	}
 
-    if ($Mode -eq 'Stop') {
-        $stopFailed = $false
+	if ($Mode -eq 'Stop') {
+		$stopFailed = $false
 
-        if ($mutexOwned) {
-            if ($mutexWasAbandoned) {
-                # No watcher is alive, but the abandoned mutex proves that the
-                # previous process did not complete a confirmed graceful cleanup.
-                # Report this as an abnormal stop rather than a successful Logout.
-                Write-Log 'No running watcher remains, but its mutex was abandoned. The previous process did not confirm graceful Logout.' -Level 'ERROR'
-                $stopFailed = $true
-            }
-            else {
-                Write-Log 'No running VoiceMeeter-IdleWatcher instance found.'
-            }
+		if ($mutexOwned) {
+			if ($mutexWasAbandoned) {
+				Write-Log 'No running watcher remains, but its mutex was abandoned. The previous process did not confirm graceful Logout.' -Level 'ERROR'
+				$stopFailed = $true
+			}
+			else {
+				Write-Log 'No running VoiceMeeter-IdleWatcher instance found.'
+			}
 
-            $watcherMutex.ReleaseMutex()
-            $mutexOwned = $false
-            $watcherMutex.Dispose()
-            $watcherMutex = $null
-            if ($stopFailed) {
-                throw 'The previous watcher terminated unexpectedly; graceful cleanup cannot be confirmed. Check the log.'
-            }
-            return
-        }
+			$watcherMutex.ReleaseMutex()
+			$mutexOwned = $false
+			$watcherMutex.Dispose()
+			$watcherMutex = $null
 
-        Write-Log 'Graceful stop requested. Signalling the running watcher...'
-        $stopRequestSent = Send-StopRequestToExistingWatcher -EventName $StopEventName
+			if ($stopFailed) {
+				throw 'The previous watcher terminated unexpectedly; graceful cleanup cannot be confirmed. Check the log.'
+			}
 
-        if ($stopRequestSent) {
-            Write-Log 'Stop signal delivered. Waiting for the watcher to finish Logout and release its mutex.'
-            $mutexAcquiredAfterStop = $false
-            $mutexAbandonedAfterStop = $false
+			Write-StartupStatus -Status 'STOPPED'
+			return
+		}
 
-            try {
-                $mutexAcquiredAfterStop = $watcherMutex.WaitOne($StopWaitTimeoutSec * 1000)
-            }
-            catch [System.Threading.AbandonedMutexException] {
-                $mutexAcquiredAfterStop = $true
-                $mutexAbandonedAfterStop = $true
-            }
+		Write-Log 'Graceful stop requested. Signalling the running watcher...'
+		$stopRequestSent = Send-StopRequestToExistingWatcher -EventName $StopEventName -TimeoutSec $StopWaitTimeoutSec
 
-            if ($mutexAcquiredAfterStop) {
-                if ($mutexAbandonedAfterStop) {
-                    Write-Log 'The watcher process terminated without releasing its mutex. Graceful cleanup was not completed.' -Level 'ERROR'
-                    $stopFailed = $true
-                }
-                else {
-                    Write-Log 'Stop confirmed: the watcher completed its cleanup sequence and released the mutex. Check preceding ERROR entries for any individual cleanup failures.'
-                }
+		if ($stopRequestSent) {
+			Write-Log 'Stop signal delivered. Waiting for the watcher to finish Logout and release its mutex.'
 
-                $watcherMutex.ReleaseMutex()
-            }
-            else {
-                Write-Log "Timed out after $StopWaitTimeoutSec seconds. The watcher was not forcibly terminated; inspect the log for the reason." -Level 'ERROR'
-                $stopFailed = $true
-            }
-        }
-        else {
-            # The event may disappear if the watcher was already in its final
-            # cleanup steps when this Stop controller started. Check the mutex once
-            # more so that a completed watcher is not misreported as still running.
-            $mutexAcquiredAfterFailedSignal = $false
-            $mutexAbandonedAfterFailedSignal = $false
+			$mutexAcquiredAfterStop = $false
+			$mutexAbandonedAfterStop = $false
 
-            try {
-                $mutexAcquiredAfterFailedSignal = $watcherMutex.WaitOne(0)
-            }
-            catch [System.Threading.AbandonedMutexException] {
-                $mutexAcquiredAfterFailedSignal = $true
-                $mutexAbandonedAfterFailedSignal = $true
-            }
+			try {
+				$mutexAcquiredAfterStop = $watcherMutex.WaitOne($StopWaitTimeoutSec * 1000)
+			}
+			catch [System.Threading.AbandonedMutexException] {
+				$mutexAcquiredAfterStop = $true
+				$mutexAbandonedAfterStop = $true
+			}
 
-            if ($mutexAcquiredAfterFailedSignal) {
-                if ($mutexAbandonedAfterFailedSignal) {
-                    Write-Log 'The watcher mutex was abandoned. The previous process did not complete graceful cleanup.' -Level 'ERROR'
-                    $stopFailed = $true
-                }
-                else {
-                    Write-Log 'The watcher mutex became available while the Stop request was being prepared; the watcher has exited.'
-                }
-                $watcherMutex.ReleaseMutex()
-            }
-            else {
-                $stopFailed = $true
-            }
-        }
+			if ($mutexAcquiredAfterStop) {
+				if ($mutexAbandonedAfterStop) {
+					Write-Log 'The watcher process terminated without releasing its mutex. Graceful cleanup was not completed.' -Level 'ERROR'
+					$stopFailed = $true
+				}
+				else {
+					Write-Log 'Stop confirmed: the watcher completed its cleanup sequence and released the mutex. Check preceding ERROR entries for any individual cleanup failures.'
+				}
 
-        $watcherMutex.Dispose()
-        $watcherMutex = $null
+				$watcherMutex.ReleaseMutex()
+			}
+			else {
+				Write-Log "Timed out after $StopWaitTimeoutSec seconds. The watcher was not forcibly terminated; inspect the log for the reason." -Level 'ERROR'
+				$stopFailed = $true
+			}
+		}
+		else {
+			$mutexAcquiredAfterFailedSignal = $false
+			$mutexAbandonedAfterFailedSignal = $false
 
-        if ($stopFailed) {
-            throw 'Graceful stop was not confirmed. The watcher may still be running or may have terminated unexpectedly. Check the log.'
-        }
-        return
-    }
+			try {
+				$mutexAcquiredAfterFailedSignal = $watcherMutex.WaitOne(0)
+			}
+			catch [System.Threading.AbandonedMutexException] {
+				$mutexAcquiredAfterFailedSignal = $true
+				$mutexAbandonedAfterFailedSignal = $true
+			}
 
-    # Start mode is deliberately non-destructive. A duplicate scheduled launch
-    # must never stop an already-running watcher.
-    if (-not $mutexOwned) {
-        if ($MacroButtonLogicalIndex -ge 0) {
-            $syncRequestSent = Send-SyncRequestToExistingWatcher -EventName $SyncEventName
-            if ($syncRequestSent) {
-                Write-Log 'Watcher is already running. Requested an immediate MacroButtons display-state refresh; no second instance was created.'
-            }
-            else {
-                Write-Log 'Watcher is already running. This Start request will not create a second instance.'
-            }
-        }
-        else {
-            Write-Log 'Watcher is already running. This Start request will not create a second instance.'
-        }
-        Write-StartupStatus -Status 'ALREADY_RUNNING'
-        $watcherMutex.Dispose()
-        $watcherMutex = $null
-        return
-    }
+			if ($mutexAcquiredAfterFailedSignal) {
+				if ($mutexAbandonedAfterFailedSignal) {
+					Write-Log 'The watcher mutex was abandoned. The previous process did not complete graceful cleanup.' -Level 'ERROR'
+					$stopFailed = $true
+				}
+				else {
+					Write-Log 'The watcher mutex became available while the Stop request was being prepared; the watcher has exited.'
+				}
 
-    if ($mutexWasAbandoned) {
-        Write-Log 'Previous watcher terminated unexpectedly. Mutex lock acquired; starting a fresh instance.' -Level 'WARN'
-    }
+				$watcherMutex.ReleaseMutex()
+			}
+			else {
+				$stopFailed = $true
+			}
+		}
 
-    Write-Log 'Single-instance mutex protection enabled.'
+		$watcherMutex.Dispose()
+		$watcherMutex = $null
+
+		if ($stopFailed) {
+			throw 'Graceful stop was not confirmed. The watcher may still be running or may have terminated unexpectedly. Check the log.'
+		}
+
+		Write-StartupStatus -Status 'STOPPED'
+		return
+	}
+
+	if (-not $mutexOwned) {
+		if ($MacroButtonLogicalIndex -ge 0) {
+			$syncRequestSent = Send-SyncRequestToExistingWatcher -EventName $SyncEventName
+			if ($syncRequestSent) {
+				Write-Log 'Watcher is already running. Requested an immediate MacroButtons display-state refresh; no second instance was created.'
+			}
+			else {
+				Write-Log 'Watcher is already running. This Start request will not create a second instance.'
+			}
+		}
+		else {
+			Write-Log 'Watcher is already running. This Start request will not create a second instance.'
+		}
+		Write-StartupStatus -Status 'ALREADY_RUNNING'
+		$watcherMutex.Dispose()
+		$watcherMutex = $null
+		return
+	}
+
+	if ($mutexWasAbandoned) {
+		Write-Log 'Previous watcher terminated unexpectedly. Mutex lock acquired; starting a fresh instance.' -Level 'WARN'
+	}
+
+	Write-Log 'Single-instance mutex protection enabled.'
 }
 catch {
-    if ($null -ne $watcherMutex) {
-        if ($mutexOwned) {
-            try { $watcherMutex.ReleaseMutex() }
-            catch {
-                Write-Log "Failed to release single-instance mutex while handling startup failure: $($_.Exception.Message)" -Level 'WARN'
-            }
-        }
-        $watcherMutex.Dispose()
-        $watcherMutex = $null
-    }
+	if ($null -ne $watcherMutex) {
+		if ($mutexOwned) {
+			try {
+				$watcherMutex.ReleaseMutex()
+			}
+			catch {
+				Write-Log "Failed to release single-instance mutex while handling startup failure: $($_.Exception.Message)" -Level 'WARN'
+			}
+		}
 
-    Write-Log "Failed during single-instance or stop-request handling: $($_.Exception.Message)" -Level 'ERROR'
-    if ($Mode -eq 'Start') { Write-StartupStatus -Status 'FAILED' }
-    throw
+		$watcherMutex.Dispose()
+		$watcherMutex = $null
+	}
+
+	Write-Log "Failed during single-instance or stop-request handling: $($_.Exception.Message)" -Level 'ERROR'
+
+	if (-not (Test-StartupStatusWritten)) {
+		Write-StartupStatus -Status 'FAILED'
+	}
+
+	throw
 }
 
 Write-Log "=== Starting VoiceMeeter-IdleWatcher v$WatcherVersion ==="
-Write-Log "IdleMinutes = $IdleMinutes | CheckInterval = ${CheckIntervalSec}s | RetryInterval = ${RetryIntervalSec}s | ShutdownCommandLimit = $ShutdownCommandLimit | DebugMode = $DebugMode"
+Write-Log "IdleMinutes = $ResolvedIdleMinutes | CheckInterval = ${CheckIntervalSec}s | RetryInterval = ${RetryIntervalSec}s | ShutdownCommandLimit = $ShutdownCommandLimit | DebugMode = $ResolvedDebugMode"
+Write-Log "MacroButtons indicator policy: ON while VoiceMeeter is confirmed available; STATEONLY only; button ID = $MacroButtonLogicalIndex; periodic sync = ${MacroButtonSyncIntervalSec}s."
 Write-Log "Primary log: $LogFile | Fallback log: $FallbackLogFile"
 
 try {
-    $dllPath = Get-VoicemeeterRemoteDll
-    Write-Log "Found DLL: $dllPath"
+	$dllPath = Get-VoicemeeterRemoteDll
+	Write-Log "Found DLL: $dllPath"
 
-    Initialize-VoicemeeterNativeInterop -DllPath $dllPath
-    [VMRIdleWatcherNative]::CreateExternalStopEvent($StopEventName)
-    $stopEventCreated = $true
+	Initialize-VoicemeeterNativeInterop -DllPath $dllPath
+	[VMRIdleWatcherNative]::CreateExternalStopEvent($StopEventName)
+	$stopEventCreated = $true
 
-    if ($MacroButtonLogicalIndex -ge 0) {
-        try {
-            [VMRIdleWatcherNative]::CreateExternalSyncEvent($SyncEventName)
-            $syncEventCreated = $true
-        }
-        catch {
-            Write-Log "Optional MacroButtons refresh event could not be created: $($_.Exception.Message). Periodic refresh remains available." -Level 'DEBUG'
-        }
-    }
+	if ($MacroButtonLogicalIndex -ge 0) {
+		try {
+			[VMRIdleWatcherNative]::CreateExternalSyncEvent($SyncEventName)
+			$syncEventCreated = $true
+		}
+		catch {
+			Write-Log "Optional MacroButtons refresh event could not be created: $($_.Exception.Message). Periodic refresh remains available." -Level 'DEBUG'
+		}
+	}
 
-    Write-Log 'Graceful stop event is ready. Run the VBS file with /stop to request a clean shutdown.'
+	Write-Log 'Graceful stop event is ready. Run the VBS file with /stop to request a clean shutdown.'
 
-    # Register for the display state of this interactive Windows session.
-    [VMRIdleWatcherNative]::RegisterDisplayNotification()
-    $displayNotificationRegistered = $true
+	[VMRIdleWatcherNative]::RegisterDisplayNotification()
+	$displayNotificationRegistered = $true
 
-    # Windows normally sends the current value immediately after registration.
-    # Still wait briefly and explicitly report a missing initial notification.
-    $displayWaitResult = [VMRIdleWatcherNative]::WaitForDisplayState($DisplayNotificationTimeoutSec * 1000)
-    $displayState = [VMRIdleWatcherNative]::GetDisplayState()
-    $lastLoggedDisplayState = $displayState
+	$displayWaitResult = [VMRIdleWatcherNative]::WaitForDisplayState($DisplayNotificationTimeoutSec * 1000)
+	$displayState = [VMRIdleWatcherNative]::GetDisplayState()
+	$lastLoggedDisplayState = $displayState
 
-    if ($displayWaitResult -eq 1 -or [VMRIdleWatcherNative]::IsExitRequested()) {
-        Write-Log 'Stop request received during initialization. Skipping VoiceMeeter API login.'
-        Write-StartupStatus -Status 'STOPPED'
-    }
-    else {
-        if ($displayState -lt 0) {
-            Write-Log "No valid initial display-state notification received within $DisplayNotificationTimeoutSec seconds. Display state remains unknown; auto-shutdown is blocked until a valid notification arrives." -Level 'WARN'
-        }
+	if ($displayWaitResult -eq 1 -or [VMRIdleWatcherNative]::IsExitRequested()) {
+		Write-Log 'Stop request received during initialization. Skipping VoiceMeeter API login.'
+		Write-StartupStatus -Status 'STOPPED'
+	}
+	else {
+		if ($displayState -lt 0) {
+			Write-Log "No valid initial display-state notification received within $DisplayNotificationTimeoutSec seconds. Display state remains unknown; auto-shutdown is blocked until a valid notification arrives." -Level 'WARN'
+		}
 
-        switch ($displayState) {
-            0 {
-                Write-Log 'Display state: Off.'
-            }
-            1 {
-                Write-Log 'Display state: On. VoiceMeeter auto-shutdown blocked.'
-            }
-            2 {
-                Write-Log 'Display state: Dimmed. VoiceMeeter auto-shutdown blocked.'
-            }
-            default {
-                # Unknown state is deliberately fail-safe: never allow shutdown.
-            }
-        }
+		switch ($displayState) {
+			0 { Write-Log 'Display state: Off.' }
+			1 { Write-Log 'Display state: On. VoiceMeeter auto-shutdown blocked.' }
+			2 { Write-Log 'Display state: Dimmed. VoiceMeeter auto-shutdown blocked.' }
+			default { }
+		}
 
-        # Login is required once per watcher process. A return value of 1 means
-        # the API client logged in successfully while Voicemeeter is not running.
-        $login = Invoke-VoiceMeeterApiLogin
+		$login = Invoke-VoiceMeeterApiLogin
+		if ($login -lt 0) {
+			throw "Failed to connect to VoiceMeeter API. Return code: $login"
+		}
 
-        if ($login -lt 0) {
-            throw "Failed to connect to VoiceMeeter API. Return code: $login"
-        }
+		$loginCompleted = $true
+		$voiceMeeterIsRunning = ($login -eq 0)
+		$apiEngineStateKnown = $true
+		$watcherIsActive = $true
+		if ($voiceMeeterIsRunning) {
+			Invoke-MacroButtonStateSync -DesiredState 1 -Force
+		}
+		else {
+			Write-Log 'Initial MacroButtons synchronization skipped because VoiceMeeter is not running and the Remote API cannot accept a button-state write.' -Level 'DEBUG'
+		}
+		$nextEngineStateProbeAt = (Get-Date).AddSeconds($CheckIntervalSec)
 
-        $loginCompleted = $true
-        $watcherIsActive = $true
+		if ($login -eq 1) {
+			Write-Log 'API Login succeeded; VoiceMeeter is not running yet. Waiting for startup.'
+		}
+		else {
+			Write-Log "Successfully logged in to VoiceMeeter API (code $login)."
+		}
 
-        # Publish the real watcher state. This feature is optional and must
-        # never block startup or the main idle-monitoring function.
-        Invoke-MacroButtonStateSync -DesiredState 1
+		Write-StartupStatus -Status 'READY'
 
-        if ($login -eq 1) {
-            Write-Log 'API Login succeeded; VoiceMeeter is not running yet. Waiting for startup.'
-        }
-        else {
-            Write-Log "Successfully logged in to VoiceMeeter API (code $login)."
-        }
+		# ==================== Main loop ====================
+		while (-not [VMRIdleWatcherNative]::IsExitRequested()) {
+			try {
+				if ($loginCompleted -and ((Get-Date) -ge $nextEngineStateProbeAt)) {
+					$engineStateProbe = [VMRIdleWatcherNative]::IsParametersDirty()
+					$nextEngineStateProbeAt = (Get-Date).AddSeconds($CheckIntervalSec)
+					Write-Log "IsParametersDirty probe returned $engineStateProbe." -Level 'DEBUG'
 
-        Write-StartupStatus -Status 'READY'
+					$apiProbeCategory = if ($engineStateProbe -ge 0) {
+						'Available'
+					}
+					elseif ($engineStateProbe -eq -2) {
+						'NoServer'
+					}
+					elseif ($engineStateProbe -eq -1) {
+						'UnexpectedClientError'
+					}
+					else {
+						"UnexpectedCode:$engineStateProbe"
+					}
 
-        # ==================== Main loop ====================
-        while (-not [VMRIdleWatcherNative]::IsExitRequested()) {
-            try {
-                # Reconcile the configured MacroButtons display state with the
-                # watcher's real process state. STATEONLY does not run its macro.
-                Invoke-MacroButtonStateSync -DesiredState 1
+					if ($apiProbeCategory -ne $lastLoggedApiProbeCategory) {
+						switch -Wildcard ($apiProbeCategory) {
+							'Available' {
+								Write-Log "Remote API is available (IsParametersDirty=$engineStateProbe)."
+							}
+							'NoServer' {
+								Write-Log 'Remote API reports no server (IsParametersDirty=-2). VoiceMeeter is not currently confirmed available.' -Level 'WARN'
+							}
+							'UnexpectedClientError' {
+								Write-Log 'Remote API returned -1 (unexpected client error). The previous engine state is retained until a valid probe resolves it.' -Level 'WARN'
+							}
+							default {
+								Write-Log "Remote API returned an undocumented negative result ($engineStateProbe). The previous engine state is retained." -Level 'WARN'
+							}
+						}
+						$lastLoggedApiProbeCategory = $apiProbeCategory
+					}
 
-                # 1. Retrieve user idle time and current display power state.
-                $idleMs = [VMRIdleWatcherNative]::GetIdleMilliseconds()
-                $idleSec = [math]::Round($idleMs / 1000, 1)
-                $displayState = [VMRIdleWatcherNative]::GetDisplayState()
+					if ($engineStateProbe -ge 0) {
+						$apiEngineStateKnown = $true
+						if (-not $voiceMeeterIsRunning) {
+							$voiceMeeterIsRunning = $true
+							$macroButtonOffForPendingShutdown = $false
+							Write-Log 'VoiceMeeter engine availability confirmed. Requesting MacroButtons logical button ON.'
+							Invoke-MacroButtonStateSync -DesiredState 1 -Force
+						}
+					}
+					elseif ($engineStateProbe -eq -2) {
+						$apiEngineStateKnown = $true
+						if ($voiceMeeterIsRunning) {
+							$voiceMeeterIsRunning = $false
+							if ($macroButtonOffForPendingShutdown) {
+								Write-Log "VoiceMeeter engine stop detected. MacroButton OFF command had already been accepted before the watcher's own Shutdown command."
+							}
+							else {
+								Write-Log 'VoiceMeeter engine/API stop detected (Remote API code -2). The server is unavailable, so MacroButtons OFF cannot be sent; the last accepted state is retained.' -Level 'WARN'
+							}
+						}
+					}
+					else {
+						$apiEngineStateKnown = $false
+						# -1 and undocumented errors mean API/client state is unknown, not that the engine stopped.
+						# Keep the last confirmed engine state and do not request a false MacroButton OFF.
+					}
+				}
 
-                if ($displayState -ne $lastLoggedDisplayState) {
-                    switch ($displayState) {
-                        0 {
-                            Write-Log 'Display state changed: Off. VoiceMeeter auto-shutdown permitted upon reaching idle threshold.'
-                        }
-                        1 {
-                            Write-Log 'Display state changed: On. VoiceMeeter auto-shutdown blocked.'
-                        }
-                        2 {
-                            Write-Log 'Display state changed: Dimmed. VoiceMeeter auto-shutdown blocked.'
-                        }
-                        default {
-                            Write-Log 'Display state changed to unknown. VoiceMeeter auto-shutdown remains blocked.' -Level 'WARN'
-                        }
-                    }
+				if ($apiEngineStateKnown -and $voiceMeeterIsRunning) {
+					$macroButtonDesiredState = if (-not $macroButtonOffForPendingShutdown) { 1 } else { 0 }
+					$macroButtonSyncResult = Invoke-MacroButtonStateSync -DesiredState $macroButtonDesiredState -PassThru
+					if ($macroButtonSyncResult -eq $true) {
+						$macroButtonOffForPendingShutdown = ($macroButtonDesiredState -eq 0)
+					}
+				}
+				elseif (-not $apiEngineStateKnown) {
+					Write-Log 'Skipping periodic MacroButtons synchronization because VoiceMeeter/API state is unknown.' -Level 'DEBUG'
+				}
+				else {
+					Write-Log 'Skipping periodic MacroButtons synchronization because VoiceMeeter is confirmed stopped and the Remote API server is unavailable.' -Level 'DEBUG'
+				}
 
-                    $lastLoggedDisplayState = $displayState
-                }
+				$idleMs = [VMRIdleWatcherNative]::GetIdleMilliseconds()
+				$idleSec = [math]::Round($idleMs / 1000, 1)
+				$displayState = [VMRIdleWatcherNative]::GetDisplayState()
 
-                Write-Log "Current idle: ${idleSec}s (threshold: $($IdleMinutes * 60)s) | DisplayState = $displayState | shutdownSentThisIdle = $shutdownSentThisIdle | engineStoppedAfterShutdown = $engineStoppedAfterShutdown" -Level 'DEBUG'
+				$summaryNow = Get-Date
+				if (($lastStatusSummaryAt -eq [datetime]::MinValue) -or (($summaryNow - $lastStatusSummaryAt).TotalSeconds -ge 60)) {
+					$apiStateSummary = if (-not $apiEngineStateKnown) {
+						'Unknown'
+					}
+					elseif ($voiceMeeterIsRunning) {
+						'Available / VoiceMeeter running'
+					}
+					else {
+						'No running VoiceMeeter engine confirmed'
+					}
 
-                # 2. User activity starts a new cycle and resets state flags.
-                if ($idleMs -lt $thresholdMs) {
-                    if ($shutdownSentThisIdle) {
-                        Write-Log "User activity detected (idle = ${idleSec}s). Resetting idle cycle flags."
-                    }
+					$macroButtonDesiredSummary = if ($MacroButtonLogicalIndex -lt 0) {
+						'Disabled'
+					}
+					elseif (-not $apiEngineStateKnown) {
+						'Unknown; writes paused'
+					}
+					elseif ($macroButtonOffForPendingShutdown -or (-not $voiceMeeterIsRunning)) {
+						'OFF'
+					}
+					else {
+						'ON'
+					}
 
-                    $shutdownSentThisIdle = $false
-                    $shutdownCommandsSinceEngineStop = 0
-                    $shutdownRetryExhaustedLogged = $false
-                    $engineStoppedAfterShutdown = $false
-                    $lastShutdownCommandAt = [datetime]::MinValue
-                    $nextApiAttempt = [datetime]::MinValue
-                    $connectionWarningLogged = $false
-                    $shutdownWarningLogged = $false
-                }
-                # 3. Query API only after idle threshold is reached, display is off,
-                #    and retry/probe backoff has elapsed. This continues after a
-                #    successful Shutdown so a later restart in the same idle cycle
-                #    can be detected and shut down again.
-                elseif (($displayState -eq 0) -and ((Get-Date) -ge $nextApiAttempt)) {
-                    Write-Log "Idle threshold reached (${idleSec}s). Checking VoiceMeeter availability..." -Level 'DEBUG'
+					$macroButtonStatus = Get-MacroButtonSyncStatus
+					$macroButtonLastAccepted = if ($null -eq $macroButtonStatus.LastSuccessfulState) {
+						'None'
+					}
+					elseif ($macroButtonStatus.LastSuccessfulState -eq 1) {
+						'ON'
+					}
+					else {
+						'OFF'
+					}
+					$macroButtonLastAcceptedAt = if ($null -eq $macroButtonStatus.LastSuccessfulAt) {
+						'Never'
+					}
+					else {
+						$macroButtonStatus.LastSuccessfulAt.ToString('yyyy-MM-dd HH:mm:ss')
+					}
 
-                    # 4. Recover a broken API client session before querying the engine.
-                    if (-not $loginCompleted) {
-                        $relogin = Invoke-VoiceMeeterApiLogin
+					Write-Log "Status snapshot: API=$apiStateSummary; Idle=$([math]::Round($idleMs / 1000, 1))s/$($ResolvedIdleMinutes * 60)s; DisplayState=$displayState; ShutdownSentThisIdle=$shutdownSentThisIdle; ShutdownCommandsSinceLastEngineStop=$shutdownCommandsSinceEngineStop; MacroButton[$MacroButtonLogicalIndex]: Desired=$macroButtonDesiredSummary; LastAccepted=$macroButtonLastAccepted; WriterStatus=$($macroButtonStatus.WriteStatus); LastAcceptedAt=$macroButtonLastAcceptedAt."
+					$lastStatusSummaryAt = $summaryNow
+				}
 
-                        if ($relogin -ge 0) {
-                            $loginCompleted = $true
-                            $connectionWarningLogged = ($relogin -eq 1)
-                            if ($relogin -eq 1) {
-                                Write-Log 'VoiceMeeter API session re-established; the engine is not running yet.'
-                            }
-                            else {
-                                Write-Log "VoiceMeeter API session re-established (Login code $relogin)."
-                            }
-                            $nextApiAttempt = (Get-Date).AddSeconds($PostShutdownProbeIntervalSec)
-                        }
-                        else {
-                            Write-Log "VoiceMeeter API Login recovery failed (code $relogin). Retrying in ${RetryIntervalSec}s." -Level 'ERROR'
-                            $nextApiAttempt = (Get-Date).AddSeconds($RetryIntervalSec)
-                        }
-                    }
-                    else {
-                        $connection = [VMRIdleWatcherNative]::IsParametersDirty()
+				if ($apiEngineStateKnown -and $voiceMeeterIsRunning -and $macroButtonOffForPendingShutdown -and ($displayState -ne 0)) {
+					Invoke-MacroButtonStateSync -DesiredState 1 -Force -PassThru | Out-Null
+					$macroButtonOffForPendingShutdown = $false
+				}
 
-                        if ($connection -eq -2) {
-                            # -2 means the server is absent. Keep the existing login
-                            # session because the API supports engine restarts in-session.
-                            if ($shutdownSentThisIdle) {
-                                if (-not $engineStoppedAfterShutdown) {
-                                    Write-Log 'VoiceMeeter stopped after the previous Shutdown command. Monitoring for a restart during this idle period.'
-                                    $engineStoppedAfterShutdown = $true
-                                    $shutdownCommandsSinceEngineStop = 0
-                                    $shutdownRetryExhaustedLogged = $false
-                                }
-                                else {
-                                    Write-Log 'VoiceMeeter remains stopped. Monitoring for a restart during this idle period.' -Level 'DEBUG'
-                                }
-                                $connectionWarningLogged = $true
-                                $nextApiAttempt = (Get-Date).AddSeconds($PostShutdownRestartProbeIntervalSec)
-                            }
-                            else {
-                                if (-not $connectionWarningLogged) {
-                                    Write-Log "VoiceMeeter is not running (IsParametersDirty = -2). Nothing to shut down. Next check in ${EngineAbsentProbeIntervalSec}s."
-                                    $connectionWarningLogged = $true
-                                }
-                                else {
-                                    Write-Log 'VoiceMeeter is still not running (IsParametersDirty = -2).' -Level 'DEBUG'
-                                }
-                                $nextApiAttempt = (Get-Date).AddSeconds($EngineAbsentProbeIntervalSec)
-                            }
-                        }
-                        elseif ($connection -eq -1) {
-                            # -1 is an unexpected client/API error. Close the broken
-                            # client session; the next pass performs a fresh Login.
-                            if (-not $connectionWarningLogged) {
-                                Write-Log 'VoiceMeeter API returned -1 (unexpected client error). Closing the client session before re-login.' -Level 'WARN'
-                                $connectionWarningLogged = $true
-                            }
-                            else {
-                                Write-Log 'VoiceMeeter API still returns -1. Attempting client-session recovery.' -Level 'DEBUG'
-                            }
+				if ($displayState -ne $lastLoggedDisplayState) {
+					switch ($displayState) {
+						0 { Write-Log 'Display state changed: Off. VoiceMeeter auto-shutdown permitted upon reaching idle threshold.' }
+						1 { Write-Log 'Display state changed: On. VoiceMeeter auto-shutdown blocked.' }
+						2 { Write-Log 'Display state changed: Dimmed. VoiceMeeter auto-shutdown blocked.' }
+						default { Write-Log 'Display state changed to unknown. VoiceMeeter auto-shutdown remains blocked.' -Level 'WARN' }
+					}
+					$lastLoggedDisplayState = $displayState
+				}
 
-                            try {
-                                $recoveryLogout = [VMRIdleWatcherNative]::Logout()
-                                # Invalidate the local session state even if Logout reports an
-                                # error. The next fresh Login can return -2, which is handled by
-                                # Invoke-VoiceMeeterApiLogin with its required Logout-and-retry path.
-                                $loginCompleted = $false
+				Write-Log "Current idle: ${idleSec}s (threshold: $($ResolvedIdleMinutes * 60)s) | DisplayState = $displayState | shutdownSentThisIdle = $shutdownSentThisIdle | engineStoppedAfterShutdown = $engineStoppedAfterShutdown" -Level 'DEBUG'
 
-                                if ($recoveryLogout -ge 0) {
-                                    Write-Log "VoiceMeeter API client Logout succeeded during recovery (code $recoveryLogout). Re-login scheduled."
-                                }
-                                else {
-                                    Write-Log "VoiceMeeter API recovery Logout returned error $recoveryLogout. Local session state invalidated; a fresh Login will be attempted and may request another Logout." -Level 'ERROR'
-                                }
-                                $nextApiAttempt = (Get-Date).AddSeconds($ApiSessionRecoveryRetryIntervalSec)
-                            }
-                            catch {
-                                # Even when the native Logout call throws, do not remain
-                                # permanently marked as logged in. Try a fresh Login; the
-                                # helper resolves Login -2 by performing Logout first.
-                                $loginCompleted = $false
-                                Write-Log "Exception during VoiceMeeter API recovery Logout: $($_.Exception.Message). Local session state invalidated; fresh Login scheduled." -Level 'ERROR'
-                                $nextApiAttempt = (Get-Date).AddSeconds($ApiSessionRecoveryRetryIntervalSec)
-                            }
-                        }
-                        elseif ($connection -lt 0) {
-                            if (-not $connectionWarningLogged) {
-                                Write-Log "VoiceMeeter API returned unexpected error $connection. Retrying in ${RetryIntervalSec}s." -Level 'WARN'
-                                $connectionWarningLogged = $true
-                            }
-                            else {
-                                Write-Log "VoiceMeeter API still returns unexpected error $connection." -Level 'DEBUG'
-                            }
-                            $nextApiAttempt = (Get-Date).AddSeconds($RetryIntervalSec)
-                        }
-                        else {
-                            if ($connectionWarningLogged) {
-                                Write-Log 'Connection to VoiceMeeter restored.'
-                                $connectionWarningLogged = $false
-                            }
+				if ($idleMs -lt $thresholdMs) {
+					if ($apiEngineStateKnown -and $voiceMeeterIsRunning -and $macroButtonOffForPendingShutdown) {
+						Invoke-MacroButtonStateSync -DesiredState 1 -Force -PassThru | Out-Null
+						$macroButtonOffForPendingShutdown = $false
+					}
+					if ($shutdownSentThisIdle) {
+						Write-Log "User activity detected (idle = ${idleSec}s). Resetting idle cycle flags."
+					}
 
-                            $secondsSinceShutdownCommand = [double]::PositiveInfinity
-                            if ($lastShutdownCommandAt -ne [datetime]::MinValue) {
-                                $secondsSinceShutdownCommand = ((Get-Date) - $lastShutdownCommandAt).TotalSeconds
-                            }
+					$shutdownSentThisIdle = $false
+					$shutdownCommandsSinceEngineStop = 0
+					$shutdownRetryExhaustedLogged = $false
+					$engineStoppedAfterShutdown = $false
+					$lastShutdownCommandAt = [datetime]::MinValue
+					$nextApiAttempt = [datetime]::MinValue
+					$connectionWarningLogged = $false
+					$shutdownWarningLogged = $false
+				}
+				elseif (($displayState -eq 0) -and ((Get-Date) -ge $nextApiAttempt)) {
+					Write-Log "Idle threshold reached (${idleSec}s). Checking VoiceMeeter availability..." -Level 'DEBUG'
 
-                            # A fast stop/restart can happen between two probes, so -2
-                            # may never be observed. Retry if the API remains online
-                            # beyond the confirmation window after an accepted command.
-                            $unconfirmedShutdownRetry = (
-                                $shutdownSentThisIdle -and
-                                (-not $engineStoppedAfterShutdown) -and
-                                ($secondsSinceShutdownCommand -ge $PostShutdownConfirmationTimeoutSec)
-                            )
-                            $shouldSendShutdown = (-not $shutdownSentThisIdle) -or $engineStoppedAfterShutdown -or $unconfirmedShutdownRetry
+					if (-not $loginCompleted) {
+						$relogin = Invoke-VoiceMeeterApiLogin
 
-                            if ($shouldSendShutdown) {
-                                if ($unconfirmedShutdownRetry -and ($shutdownCommandsSinceEngineStop -ge $ShutdownCommandLimit)) {
-                                    if (-not $shutdownRetryExhaustedLogged) {
-                                        Write-Log "Command.Shutdown was sent $shutdownCommandsSinceEngineStop times, but the engine is still available. Further retries are suspended until VoiceMeeter stops or the idle cycle resets." -Level 'WARN'
-                                        $shutdownRetryExhaustedLogged = $true
-                                    }
-                                    else {
-                                        Write-Log 'Shutdown retries remain suspended; engine is still available.' -Level 'DEBUG'
-                                    }
-                                    $nextApiAttempt = (Get-Date).AddSeconds($RetryIntervalSec)
-                                }
-                                else {
-                                    $isRestartAfterShutdown = $shutdownSentThisIdle -and $engineStoppedAfterShutdown
+						if ($relogin -ge 0) {
+							$loginCompleted = $true
+							$voiceMeeterIsRunning = ($relogin -eq 0)
+							$apiEngineStateKnown = $true
+							if ($voiceMeeterIsRunning) {
+								$macroButtonOffForPendingShutdown = $false
+							}
+							if ($voiceMeeterIsRunning) {
+								Invoke-MacroButtonStateSync -DesiredState 1 -Force
+							}
+							else {
+								Write-Log 'API session re-established, but VoiceMeeter is not running. MacroButtons synchronization remains paused until engine availability is confirmed.' -Level 'DEBUG'
+							}
+							$nextEngineStateProbeAt = (Get-Date).AddSeconds($CheckIntervalSec)
+							$connectionWarningLogged = ($relogin -eq 1)
+							if ($relogin -eq 1) {
+								Write-Log 'VoiceMeeter API session re-established; the engine is not running yet.'
+							}
+							else {
+								Write-Log "VoiceMeeter API session re-established (Login code $relogin)."
+							}
+							$nextApiAttempt = (Get-Date).AddSeconds($PostShutdownProbeIntervalSec)
+						}
+						else {
+							$apiEngineStateKnown = $false
+							Write-Log "VoiceMeeter API Login recovery failed (code $relogin). Retrying in ${RetryIntervalSec}s." -Level 'ERROR'
+							$nextApiAttempt = (Get-Date).AddSeconds($RetryIntervalSec)
+						}
+					}
+					else {
+						$connection = [VMRIdleWatcherNative]::IsParametersDirty()
+						Write-Log "Shutdown/recovery IsParametersDirty probe returned $connection." -Level 'DEBUG'
 
-                                    if ($isRestartAfterShutdown) {
-                                        Write-Log 'VoiceMeeter has restarted during the same idle period. Sending Command.Shutdown again.'
-                                    }
-                                    elseif ($unconfirmedShutdownRetry) {
-                                        Write-Log 'VoiceMeeter API remained available after the previous Shutdown request; re-sending Command.Shutdown in the same idle period.' -Level 'WARN'
-                                    }
+						if ($connection -eq -2) {
+							$apiEngineStateKnown = $true
+							if ($voiceMeeterIsRunning) {
+								$voiceMeeterIsRunning = $false
+								if ($macroButtonOffForPendingShutdown) {
+									Write-Log 'VoiceMeeter engine stop confirmed by the shutdown monitor. MacroButtons was already set to OFF before Command.Shutdown.'
+								}
+								else {
+									Write-Log 'VoiceMeeter engine stop confirmed by the shutdown monitor (Remote API code -2). MacroButtons cannot be updated after the server has disappeared; the last accepted state is retained.' -Level 'WARN'
+								}
+							}
+							if ($shutdownSentThisIdle) {
+								if (-not $engineStoppedAfterShutdown) {
+									Write-Log 'VoiceMeeter stopped after the previous Shutdown command. Monitoring for a restart during this idle period.'
+									$engineStoppedAfterShutdown = $true
+									$shutdownCommandsSinceEngineStop = 0
+									$shutdownRetryExhaustedLogged = $false
+								}
+								else {
+									Write-Log 'VoiceMeeter remains stopped. Monitoring for a restart during this idle period.' -Level 'DEBUG'
+								}
+								$connectionWarningLogged = $true
+								$nextApiAttempt = (Get-Date).AddSeconds($PostShutdownRestartProbeIntervalSec)
+							}
+							else {
+								if (-not $connectionWarningLogged) {
+									Write-Log "VoiceMeeter is not running (IsParametersDirty = -2). Nothing to shut down. Next check in ${EngineAbsentProbeIntervalSec}s."
+									$connectionWarningLogged = $true
+								}
+								else {
+									Write-Log 'VoiceMeeter is still not running (IsParametersDirty = -2).' -Level 'DEBUG'
+								}
+								$nextApiAttempt = (Get-Date).AddSeconds($EngineAbsentProbeIntervalSec)
+							}
+						}
+						elseif ($connection -eq -1) {
+							$apiEngineStateKnown = $false
+							if (-not $connectionWarningLogged) {
+								Write-Log 'VoiceMeeter API returned -1 (unexpected client error). Closing the client session before re-login.' -Level 'WARN'
+								$connectionWarningLogged = $true
+							}
+							else {
+								Write-Log 'VoiceMeeter API still returns -1. Attempting client-session recovery.' -Level 'DEBUG'
+							}
 
-                                    # Do potentially blocking logging before the final safety checks.
-                                    Write-Log "Engine available (IsParametersDirty = $connection). Checking final idle/display conditions before Command.Shutdown..." -Level 'DEBUG'
+							try {
+								$recoveryLogout = [VMRIdleWatcherNative]::Logout()
+								$loginCompleted = $false
+								if ($recoveryLogout -ge 0) {
+									Write-Log "VoiceMeeter API client Logout succeeded during recovery (code $recoveryLogout). Re-login scheduled."
+								}
+								else {
+									Write-Log "VoiceMeeter API recovery Logout returned error $recoveryLogout. Local session state invalidated; a fresh Login will be attempted and may request another Logout." -Level 'ERROR'
+								}
+								$nextApiAttempt = (Get-Date).AddSeconds($ApiSessionRecoveryRetryIntervalSec)
+							}
+							catch {
+								$loginCompleted = $false
+								Write-Log "Exception during VoiceMeeter API recovery Logout: $($_.Exception.Message). Local session state invalidated; fresh Login scheduled." -Level 'ERROR'
+								$nextApiAttempt = (Get-Date).AddSeconds($ApiSessionRecoveryRetryIntervalSec)
+							}
+						}
+						elseif ($connection -lt 0) {
+							$apiEngineStateKnown = $false
+							if (-not $connectionWarningLogged) {
+								Write-Log "VoiceMeeter API returned unexpected error $connection. Retrying in ${RetryIntervalSec}s." -Level 'WARN'
+								$connectionWarningLogged = $true
+							}
+							else {
+								Write-Log "VoiceMeeter API still returns unexpected error $connection." -Level 'DEBUG'
+							}
+							$nextApiAttempt = (Get-Date).AddSeconds($RetryIntervalSec)
+						}
+						else {
+							$apiEngineStateKnown = $true
+							if (-not $voiceMeeterIsRunning) {
+								$voiceMeeterIsRunning = $true
+								$macroButtonOffForPendingShutdown = $false
+								Invoke-MacroButtonStateSync -DesiredState 1 -Force
+								Write-Log 'VoiceMeeter engine availability confirmed. MacroButtons ON synchronization requested.'
+							}
+							if ($connectionWarningLogged) {
+								Write-Log 'Connection to VoiceMeeter restored.'
+								$connectionWarningLogged = $false
+							}
 
-                                    # Re-verify after logging and immediately before dispatching the command.
-                                    $idleMsNow = [VMRIdleWatcherNative]::GetIdleMilliseconds()
-                                    $displayStateNow = [VMRIdleWatcherNative]::GetDisplayState()
+							$secondsSinceShutdownCommand = [double]::PositiveInfinity
+							if ($lastShutdownCommandAt -ne [datetime]::MinValue) {
+								$secondsSinceShutdownCommand = ((Get-Date) - $lastShutdownCommandAt).TotalSeconds
+							}
 
-                                    if (($idleMsNow -lt $thresholdMs) -or ($displayStateNow -ne 0)) {
-                                        Write-Log "Conditions changed prior to Shutdown (idle = $([math]::Round($idleMsNow / 1000, 1))s, DisplayState = $displayStateNow). Aborting command." -Level 'DEBUG'
-                                        $nextApiAttempt = (Get-Date).AddSeconds($CheckIntervalSec)
-                                    }
-                                    elseif ([VMRIdleWatcherNative]::IsExitRequested()) {
-                                        Write-Log 'Stop request received before Command.Shutdown. Aborting command and leaving the main loop.'
-                                        break
-                                    }
-                                    else {
-                                        # No logging or other potentially blocking work between final validation and dispatch.
-                                        $result = [VMRIdleWatcherNative]::SetParameterFloat('Command.Shutdown', [single]1)
+							$unconfirmedShutdownRetry = (
+								$shutdownSentThisIdle -and
+								(-not $engineStoppedAfterShutdown) -and
+								($secondsSinceShutdownCommand -ge $PostShutdownConfirmationTimeoutSec)
+							)
+							$shouldSendShutdown = (-not $shutdownSentThisIdle) -or $engineStoppedAfterShutdown -or $unconfirmedShutdownRetry
+							if ($shouldSendShutdown) {
+								if ($unconfirmedShutdownRetry -and ($shutdownCommandsSinceEngineStop -ge $ShutdownCommandLimit)) {
+									if ($macroButtonOffForPendingShutdown) {
+										Invoke-MacroButtonStateSync -DesiredState 1 -Force -PassThru | Out-Null
+										$macroButtonOffForPendingShutdown = $false
+									}
+									if (-not $shutdownRetryExhaustedLogged) {
+										Write-Log "Command.Shutdown was sent $shutdownCommandsSinceEngineStop times, but the engine is still available. Further retries are suspended until VoiceMeeter stops or the idle cycle resets." -Level 'WARN'
+										$shutdownRetryExhaustedLogged = $true
+									}
+									else {
+										Write-Log 'Shutdown retries remain suspended; engine is still available.' -Level 'DEBUG'
+									}
+									$nextApiAttempt = (Get-Date).AddSeconds($RetryIntervalSec)
+								}
+								else {
+									$isRestartAfterShutdown = $shutdownSentThisIdle -and $engineStoppedAfterShutdown
 
-                                        if ($result -ge 0) {
-                                            if ($isRestartAfterShutdown) {
-                                                Write-Log "Repeated Command.Shutdown = 1 sent successfully after VoiceMeeter restart (code $result, idle = $([math]::Round($idleMsNow / 1000, 1))s)."
-                                            }
-                                            elseif ($unconfirmedShutdownRetry) {
-                                                Write-Log "Repeated Command.Shutdown = 1 sent after no stop notification was observed (code $result, idle = $([math]::Round($idleMsNow / 1000, 1))s)."
-                                            }
-                                            else {
-                                                Write-Log "Command.Shutdown = 1 sent successfully (code $result, idle = $([math]::Round($idleMsNow / 1000, 1))s)."
-                                            }
+									if ($isRestartAfterShutdown) {
+										Write-Log 'VoiceMeeter has restarted during the same idle period. Sending Command.Shutdown again.'
+									}
+									elseif ($unconfirmedShutdownRetry) {
+										Write-Log 'VoiceMeeter API remained available after the previous Shutdown request; re-sending Command.Shutdown in the same idle period.' -Level 'WARN'
+									}
 
-                                            $shutdownCommandsSinceEngineStop++
-                                            $shutdownSentThisIdle = $true
-                                            $engineStoppedAfterShutdown = $false
-                                            $lastShutdownCommandAt = Get-Date
-                                            $shutdownWarningLogged = $false
-                                            $connectionWarningLogged = $false
+									Write-Log "Engine available (IsParametersDirty = $connection). Checking final idle/display conditions before Command.Shutdown..." -Level 'DEBUG'
 
-                                            # Always verify the result promptly, including after a retry.
-                                            # A 30-second delay here could miss a fast stop/restart cycle.
-                                            $nextApiAttempt = (Get-Date).AddSeconds($PostShutdownProbeIntervalSec)
-                                        }
-                                        else {
-                                            if (-not $shutdownWarningLogged) {
-                                                Write-Log "SetParameterFloat failed (code $result). Retrying in ${RetryIntervalSec}s." -Level 'WARN'
-                                                $shutdownWarningLogged = $true
-                                            }
-                                            else {
-                                                Write-Log "SetParameterFloat still returning error $result." -Level 'DEBUG'
-                                            }
-                                            $nextApiAttempt = (Get-Date).AddSeconds($RetryIntervalSec)
-                                        }
-                                    }
-                                }
-                            }
-                            else {
-                                Write-Log 'VoiceMeeter still responds after the previous Shutdown request. Waiting for stop confirmation.' -Level 'DEBUG'
-                                $nextApiAttempt = (Get-Date).AddSeconds($PostShutdownProbeIntervalSec)
-                            }
-                        }
-                    }
-                }
-            }
-            catch {
-                Write-Log "Error in main loop: $($_.Exception.Message)" -Level 'ERROR'
-                $nextApiAttempt = (Get-Date).AddSeconds($RetryIntervalSec)
-            }
+									$idleMsNow = [VMRIdleWatcherNative]::GetIdleMilliseconds()
+									$displayStateNow = [VMRIdleWatcherNative]::GetDisplayState()
 
-            # This wait is interrupted by the named stop event, allowing the
-            # main PowerShell thread to enter finally promptly.
-            # Sleep only until the next scheduled API probe, capped by the normal
-            # loop interval. This keeps fast restart checks responsive without spinning.
-            $waitMilliseconds = $CheckIntervalSec * 1000
-            if ($nextApiAttempt -gt (Get-Date)) {
-                $millisecondsUntilApiAttempt = [int][math]::Ceiling(($nextApiAttempt - (Get-Date)).TotalMilliseconds)
-                $waitMilliseconds = [Math]::Min($waitMilliseconds, [Math]::Max(100, $millisecondsUntilApiAttempt))
-            }
+									if (($idleMsNow -lt $thresholdMs) -or ($displayStateNow -ne 0)) {
+										Write-Log "Conditions changed prior to Shutdown (idle = $([math]::Round($idleMsNow / 1000, 1))s, DisplayState = $displayStateNow). Aborting command." -Level 'DEBUG'
+										$nextApiAttempt = (Get-Date).AddSeconds($CheckIntervalSec)
+									}
+									elseif ([VMRIdleWatcherNative]::IsExitRequested()) {
+										Write-Log 'Stop request received before Command.Shutdown. Aborting command and leaving the main loop.'
+										break
+									}
+									else {
+										$shutdownFinalCheckFailed = $false
 
-            $waitResult = [VMRIdleWatcherNative]::WaitForWatcherEvent($waitMilliseconds)
-            if ($waitResult -eq 1) {
-                Write-Log 'Stop request received. Leaving main loop for graceful cleanup.'
-                break
-            }
-            elseif ($waitResult -eq 2) {
-                Invoke-MacroButtonStateSync -DesiredState 1 -Force
-            }
-        }
-    }
+										if ($MacroButtonLogicalIndex -ge 0) {
+											$macroButtonOffResult = Invoke-MacroButtonStateSync -DesiredState 0 -Force -PassThru
+											if ($macroButtonOffResult -eq $true) {
+												$macroButtonOffForPendingShutdown = $true
+												Write-Log "MacroButtons logical button $MacroButtonLogicalIndex OFF command accepted by Remote API before Command.Shutdown."
+												Write-Log "Allowing ${macroButtonRefreshDelayMs}ms for the MacroButtons application to process the OFF state change."
+												Start-Sleep -Milliseconds $macroButtonRefreshDelayMs
+											}
+											elseif ($macroButtonOffResult -eq $false) {
+												Write-Log 'MacroButtons OFF command was not accepted before Command.Shutdown. Continuing because MacroButtons is optional; see the preceding warning.' -Level 'WARN'
+											}
+										}
+
+										# Revalidate after the OFF request and UI refresh allowance, immediately before Shutdown.
+										$idleMsAfterOff = [VMRIdleWatcherNative]::GetIdleMilliseconds()
+										$displayStateAfterOff = [VMRIdleWatcherNative]::GetDisplayState()
+										$stopRequestedAfterOff = [VMRIdleWatcherNative]::IsExitRequested()
+										$shutdownFinalCheckFailed = (
+											($idleMsAfterOff -lt $thresholdMs) -or
+											($displayStateAfterOff -ne 0) -or
+											$stopRequestedAfterOff
+										)
+
+										if ($shutdownFinalCheckFailed) {
+											Write-Log "Final pre-Shutdown validation failed after MacroButtons OFF attempt (idle=$([math]::Round($idleMsAfterOff / 1000, 1))s; DisplayState=$displayStateAfterOff; StopRequested=$stopRequestedAfterOff). Command.Shutdown will not be sent." -Level 'WARN'
+
+											if ($macroButtonOffForPendingShutdown) {
+												$macroButtonRestoreResult = Invoke-MacroButtonStateSync -DesiredState 1 -Force -PassThru
+												$macroButtonOffForPendingShutdown = $false
+												if ($macroButtonRestoreResult -eq $true) {
+													Write-Log 'MacroButtons ON command accepted after shutdown was cancelled.'
+												}
+												elseif ($macroButtonRestoreResult -eq $false) {
+													Write-Log 'MacroButtons ON restoration was not accepted after shutdown cancellation. The normal sync path will retry while the watcher remains active.' -Level 'WARN'
+												}
+											}
+
+											$nextApiAttempt = (Get-Date).AddSeconds($CheckIntervalSec)
+											if ($stopRequestedAfterOff) {
+												Write-Log 'Graceful stop request arrived during the pre-Shutdown sequence. Leaving the main loop.'
+												break
+											}
+										}
+										else {
+											$result = [VMRIdleWatcherNative]::SetParameterFloat('Command.Shutdown', [single]1)
+											Write-Log "Final pre-Shutdown validation passed (idle=$([math]::Round($idleMsAfterOff / 1000, 1))s; DisplayState=Off; StopRequested=False). Command.Shutdown returned code $result."
+										}
+
+										if ($shutdownFinalCheckFailed) {
+											# No Shutdown API call was made. Keep the normal monitoring loop active.
+										}
+										elseif ($result -ge 0) {
+											if ($isRestartAfterShutdown) {
+												Write-Log "Repeated Command.Shutdown = 1 sent successfully after VoiceMeeter restart (code $result, idle = $([math]::Round($idleMsNow / 1000, 1))s)."
+											}
+											elseif ($unconfirmedShutdownRetry) {
+												Write-Log "Repeated Command.Shutdown = 1 sent after no stop notification was observed (code $result, idle = $([math]::Round($idleMsNow / 1000, 1))s)."
+											}
+											else {
+												Write-Log "Command.Shutdown = 1 sent successfully (code $result, idle = $([math]::Round($idleMsNow / 1000, 1))s)."
+											}
+
+											$shutdownCommandsSinceEngineStop++
+											$shutdownSentThisIdle = $true
+											$engineStoppedAfterShutdown = $false
+											$lastShutdownCommandAt = Get-Date
+											$shutdownWarningLogged = $false
+											$connectionWarningLogged = $false
+											$nextApiAttempt = (Get-Date).AddSeconds($PostShutdownProbeIntervalSec)
+										}
+										else {
+											if ($macroButtonOffForPendingShutdown) {
+												Invoke-MacroButtonStateSync -DesiredState 1 -Force -PassThru | Out-Null
+												$macroButtonOffForPendingShutdown = $false
+											}
+											if (-not $shutdownWarningLogged) {
+												Write-Log "SetParameterFloat failed (code $result). Retrying in ${RetryIntervalSec}s." -Level 'WARN'
+												$shutdownWarningLogged = $true
+											}
+											else {
+												Write-Log "SetParameterFloat still returning error $result." -Level 'DEBUG'
+											}
+											$nextApiAttempt = (Get-Date).AddSeconds($RetryIntervalSec)
+										}
+									}
+								}
+							}
+							else {
+								Write-Log 'VoiceMeeter still responds after the previous Shutdown request. Waiting for stop confirmation.' -Level 'DEBUG'
+								$nextApiAttempt = (Get-Date).AddSeconds($PostShutdownProbeIntervalSec)
+							}
+						}
+					}
+				}
+			}
+			catch {
+				Write-Log "Error in main loop: $($_.Exception.Message)" -Level 'ERROR'
+				$nextApiAttempt = (Get-Date).AddSeconds($RetryIntervalSec)
+			}
+
+			$waitMilliseconds = $CheckIntervalSec * 1000
+			if ($nextApiAttempt -gt (Get-Date)) {
+				$millisecondsUntilApiAttempt = [int][math]::Ceiling(($nextApiAttempt - (Get-Date)).TotalMilliseconds)
+				$waitMilliseconds = [Math]::Min($waitMilliseconds, [Math]::Max(100, $millisecondsUntilApiAttempt))
+			}
+
+			$waitResult = [VMRIdleWatcherNative]::WaitForWatcherEvent($waitMilliseconds)
+			if ($waitResult -eq 1) {
+				Write-Log 'Stop request received. Leaving main loop for graceful cleanup.'
+				break
+			}
+			elseif ($waitResult -eq 2) {
+				if ($apiEngineStateKnown -and $voiceMeeterIsRunning) {
+					$refreshMacroButtonState = if (-not $macroButtonOffForPendingShutdown) { 1 } else { 0 }
+					Invoke-MacroButtonStateSync -DesiredState $refreshMacroButtonState -Force
+				}
+				elseif (-not $apiEngineStateKnown) {
+					Write-Log 'MacroButtons refresh request ignored because VoiceMeeter/API state is unknown.' -Level 'DEBUG'
+				}
+				else {
+					Write-Log 'MacroButtons refresh request ignored because VoiceMeeter is confirmed stopped and the Remote API server is unavailable.' -Level 'DEBUG'
+				}
+			}
+		}
+	}
 }
 catch {
-    Write-Log "Fatal error: $($_.Exception.Message)" -Level 'ERROR'
-    if (-not $script:StartupStatusWritten) { Write-StartupStatus -Status 'FAILED' }
-    throw
+	Write-Log "Fatal error: $($_.Exception.Message)" -Level 'ERROR'
+	if (-not (Test-StartupStatusWritten)) { Write-StartupStatus -Status 'FAILED' }
+	throw
 }
 finally {
-    Write-Log 'Graceful cleanup started.'
+	Write-Log 'Graceful cleanup started.'
 
-    try {
-        # Show OFF before logging out when a graceful cleanup is possible.
-        # This optional cosmetic update must never interfere with cleanup.
-        if ($watcherIsActive) {
-            Invoke-MacroButtonStateSync -DesiredState 0 -Force
-            $watcherIsActive = $false
-        }
-    }
-    catch {
-        Write-Log "Optional MacroButtons OFF synchronization failed during cleanup: $($_.Exception.Message)" -Level 'DEBUG'
-    }
+	try {
+		if ($watcherIsActive) {
+			if (($MacroButtonLogicalIndex -ge 0) -and $loginCompleted) {
+				$cleanupApiState = [VMRIdleWatcherNative]::IsParametersDirty()
+				$apiEngineStateKnown = ($cleanupApiState -ge 0) -or ($cleanupApiState -eq -2)
+				Write-Log "Cleanup API probe returned $cleanupApiState."
 
-    try {
-        # 1. End the VoiceMeeter API session before disposing notification resources.
-        if ($loginCompleted) {
-            try {
-                $logout = [VMRIdleWatcherNative]::Logout()
-                if ($logout -lt 0) {
-                    Write-Log "VoiceMeeter API Logout failed (code $logout)." -Level 'ERROR'
-                }
-                else {
-                    Write-Log "Logout succeeded (code $logout)."
-                }
-            }
-            catch {
-                Write-Log "Exception during VoiceMeeter API Logout: $($_.Exception.Message)" -Level 'ERROR'
-            }
-        }
-        else {
-            Write-Log 'VoiceMeeter API Logout skipped because Login did not complete.' -Level 'DEBUG'
-        }
+				if ($cleanupApiState -ge 0) {
+					$cleanupButtonResult = Invoke-MacroButtonStateSync -DesiredState 1 -Force -PassThru
+					$macroButtonOffForPendingShutdown = $false
+					if ($cleanupButtonResult -eq $true) {
+						Write-Log 'Watcher is stopping while VoiceMeeter is confirmed available. MacroButtons ON command was accepted by Remote API; no button readback is performed.'
+					}
+					elseif ($cleanupButtonResult -eq $false) {
+						Write-Log 'Watcher is stopping while VoiceMeeter is available, but MacroButtons ON could not be applied. The last accepted indicator state may remain stale.' -Level 'WARN'
+					}
+				}
+				elseif ($cleanupApiState -eq -2) {
+					Write-Log 'Watcher is stopping after the Remote API reported no server. MacroButtons cannot be updated; the last accepted indicator state is retained.' -Level 'WARN'
+				}
+				else {
+					Write-Log "Watcher is stopping while Remote API state is unknown (code $cleanupApiState). MacroButtons is left unchanged rather than asserting a potentially false state." -Level 'WARN'
+				}
+			}
+			elseif (($MacroButtonLogicalIndex -ge 0) -and (-not $loginCompleted)) {
+				Write-Log 'Watcher is stopping without a valid Remote API session. MacroButtons is left at its last accepted state.' -Level 'WARN'
+			}
+			$watcherIsActive = $false
+		}
+	}
+	catch {
+		Write-Log "Optional MacroButtons indicator reconciliation failed during cleanup: $($_.Exception.Message)" -Level 'DEBUG'
+	}
 
-        # 2. Unregister display power-state notifications.
-        if ($displayNotificationRegistered) {
-            try {
-                [VMRIdleWatcherNative]::UnregisterDisplayNotification()
-                $displayNotificationRegistered = $false
-                Write-Log 'Display state notifications unregistered.'
-            }
-            catch {
-                Write-Log "Failed to unregister display state notifications: $($_.Exception.Message)" -Level 'ERROR'
-            }
-        }
+	try {
+		if ($loginCompleted) {
+			try {
+				$logout = [VMRIdleWatcherNative]::Logout()
+				if ($logout -lt 0) {
+					Write-Log "VoiceMeeter API Logout failed (code $logout)." -Level 'ERROR'
+				}
+				else {
+					Write-Log "Logout succeeded (code $logout)."
+				}
+			}
+			catch {
+				Write-Log "Exception during VoiceMeeter API Logout: $($_.Exception.Message)" -Level 'ERROR'
+			}
+		}
+		else {
+			Write-Log 'VoiceMeeter API Logout skipped because Login did not complete.' -Level 'DEBUG'
+		}
 
-        # 3. Close the MacroButtons refresh event before releasing the mutex.
-        if ($syncEventCreated) {
-            try {
-                [VMRIdleWatcherNative]::DisposeExternalSyncEvent()
-                $syncEventCreated = $false
-                Write-Log 'MacroButtons refresh event closed.'
-            }
-            catch {
-                Write-Log "Failed to close MacroButtons refresh event: $($_.Exception.Message)" -Level 'ERROR'
-            }
-        }
+		if ($displayNotificationRegistered) {
+			try {
+				[VMRIdleWatcherNative]::UnregisterDisplayNotification()
+				$displayNotificationRegistered = $false
+				Write-Log 'Display state notifications unregistered.'
+			}
+			catch {
+				Write-Log "Failed to unregister display state notifications: $($_.Exception.Message)" -Level 'ERROR'
+			}
+		}
 
-        # 4. Close the stop event before releasing the mutex.
-        if ($stopEventCreated) {
-            try {
-                [VMRIdleWatcherNative]::DisposeExternalStopEvent()
-                $stopEventCreated = $false
-                Write-Log 'Graceful stop event closed.'
-            }
-            catch {
-                Write-Log "Failed to close graceful stop event: $($_.Exception.Message)" -Level 'ERROR'
-            }
-        }
+		if ($syncEventCreated) {
+			try {
+				[VMRIdleWatcherNative]::DisposeExternalSyncEvent()
+				$syncEventCreated = $false
+				Write-Log 'MacroButtons refresh event closed.'
+			}
+			catch {
+				Write-Log "Failed to close MacroButtons refresh event: $($_.Exception.Message)" -Level 'ERROR'
+			}
+		}
 
-        Write-Log 'Graceful cleanup operations finished. Releasing the single-instance mutex.'
-    }
-    catch {
-        # An unexpected cleanup error must not skip the mutex-release attempt.
-        Write-Log "Unexpected error in graceful cleanup: $($_.Exception.Message)" -Level 'ERROR'
-    }
-    finally {
-        # 5. Release the mutex last. The Stop controller treats a normal mutex
-        #    hand-off as confirmation that this process has completed its cleanup path.
-        if ($null -ne $watcherMutex) {
-            if ($mutexOwned) {
-                try {
-                    $watcherMutex.ReleaseMutex()
-                    $mutexOwned = $false
-                    Write-Log 'Single-instance mutex released successfully.'
-                }
-                catch {
-                    Write-Log "Failed to release single-instance mutex: $($_.Exception.Message)" -Level 'ERROR'
-                }
-            }
+		if ($stopEventCreated) {
+			try {
+				[VMRIdleWatcherNative]::DisposeExternalStopEvent()
+				$stopEventCreated = $false
+				Write-Log 'Graceful stop event closed.'
+			}
+			catch {
+				Write-Log "Failed to close graceful stop event: $($_.Exception.Message)" -Level 'ERROR'
+			}
+		}
 
-            try {
-                $watcherMutex.Dispose()
-            }
-            catch {
-                Write-Log "Failed to dispose single-instance mutex handle: $($_.Exception.Message)" -Level 'WARN'
-            }
-            $watcherMutex = $null
-        }
+		Write-Log 'Graceful cleanup operations finished. Releasing the single-instance mutex.'
+	}
+	catch {
+		Write-Log "Unexpected error in graceful cleanup: $($_.Exception.Message)" -Level 'ERROR'
+	}
+	finally {
+		if ($null -ne $watcherMutex) {
+			if ($mutexOwned) {
+				try {
+					$watcherMutex.ReleaseMutex()
+					$mutexOwned = $false
+					Write-Log 'Single-instance mutex released successfully.'
+				}
+				catch {
+					Write-Log "Failed to release single-instance mutex: $($_.Exception.Message)" -Level 'ERROR'
+				}
+			}
 
-        Write-Log 'Watcher process cleanup sequence has ended.'
-    }
+			try {
+				$watcherMutex.Dispose()
+			}
+			catch {
+				Write-Log "Failed to dispose single-instance mutex handle: $($_.Exception.Message)" -Level 'WARN'
+			}
+			$watcherMutex = $null
+		}
+
+		Write-Log 'Watcher process cleanup sequence has ended.'
+	}
 }
