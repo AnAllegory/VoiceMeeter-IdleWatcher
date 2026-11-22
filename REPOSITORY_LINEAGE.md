@@ -17,9 +17,9 @@ The modular source was developed in the private workspace AnAllegory/VoiceMeeter
 - v1.0.4: pre-shutdown 1000ms allowance followed by final safety revalidation.
 - v1.0.5: no-server write gate for periodic and manual MacroButtons synchronization.
 
-The modular implementation is now being integrated into the original public repository so that users and maintainers have one canonical project location. The private Beta repository may remain as a read-only historical workspace.
+The modular implementation was integrated into the original public repository through PR #10 and is now maintained from the public main branch. The private Beta repository remains a separate historical workspace and is not the canonical source for future public development.
 
-The repositories do not share an asserted direct Git parent/child history. The integration preserves the public repository's existing commit history rather than replacing it with the private Beta history.
+The repositories do not share an asserted direct Git parent/child history. The merge preserved the public repository's existing commit history rather than replacing it with the private Beta history.
 
 ## Modular source layout
 
