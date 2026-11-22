@@ -5,7 +5,7 @@
 **Default branch:** main  
 **Visibility:** Public  
 **Source baseline:** v1.0.5  
-**Status:** Modular v1.0.5 source merged into public main through PR #10; public release decision remains separate.
+**Status:** Modular v1.0.5 source merged into public main through PR #10; v1.0.5 release materials are prepared, while tag creation and publication remain the final manual release action.
 
 > For a new review or development session: read this document, REPOSITORY_LINEAGE.md, ARCHITECTURE.md, CHANGELOG.md, ROADMAP.md, SECURITY.md and AGENTS.md, then inspect the actual source files and the public modular workflow. The current source is authoritative if documentation and code ever disagree.
 
@@ -20,7 +20,7 @@ The public repository's main branch previously contained the monolithic v1.0.1 s
 
 The modular source baseline v1.0.5 was merged into public main through PR #10 (merge commit `5436b1ccbbd464aa43a4846af53750fafbf126e5`). The merge preserved the original public repository's commit history. The private Beta repository remains a historical workspace and is not the canonical source for future public development.
 
-The repositories do not have asserted direct Git parent/child ancestry. Internal v1.0.2-v1.0.5 milestones are development labels, not public release tags. The public v1.0.0 and v1.0.1 releases remain unchanged; the integrated modular source has not yet been assigned or published as the next public release.
+The repositories do not have asserted direct Git parent/child ancestry. The public v1.0.0 and v1.0.1 tags remain unchanged. The v1.0.5 source number originated as an internal development milestone; the maintainer has selected the same number for the next public release. Its release notes and documentation are prepared, but the v1.0.5 tag and GitHub Release have not yet been published.
 
 The former public monolithic CI workflow was replaced with the modular workflow. Do not restore the old workflow unchanged: it validates a different source layout.
 
@@ -76,7 +76,7 @@ Values verified in the current PSD1/source:
 | MaxLogSizeBytes | 512000 | Primary log size threshold |
 | FallbackMaxLogSizeBytes | 2097152 | Fallback log size threshold |
 
-Numeric and named configuration values are bounded and validated at startup. STATEONLY mode is not a PSD1 setting.
+Numeric and named configuration values are bounded and validated at startup. STATEONLY mode is not a PSD1 setting. Keep `DebugMode = false` for normal operation; `true` enables high-volume diagnostic traces and can trigger log rotation quickly. The default primary and fallback log thresholds are 500 KB and 2 MB.
 
 ## 5. Critical implementation contracts
 
@@ -202,12 +202,13 @@ Always distinguish static CI, source inspection and maintainer-reported runtime 
 - README.md and README.ru.md — user-facing overview, requirements, configuration and start/stop instructions.
 - REPOSITORY_LINEAGE.md — history of the public monolithic source and its modular development workspace.
 - ARCHITECTURE.md — module boundaries, state flow and safety contracts.
-- CHANGELOG.md — public change history and internal modular development milestones.
+- CHANGELOG.md — public change history and the v1.0.5 release record.
 - PROJECT_CONTEXT.md — this handover, source invariants and runtime evidence.
 - GROK_REVIEW_BRIEF.md — historical technical review request and its disposition.
 - AGENTS.md — mandatory rules for future review and maintenance.
 - ROADMAP.md — current project status, follow-up observations and deliberate non-goals.
 - SECURITY.md — vulnerability reporting guidance and safe handling of diagnostic material.
+- RELEASE_NOTES_v1.0.5.md — prepared release description and verification notes.
 - LICENSE — MIT license terms.
 
 This repository is the canonical documentation and source location. Keep the bilingual guides and project records synchronized with implementation changes.
