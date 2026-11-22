@@ -1,6 +1,6 @@
 @{
 	IdleMinutes                         = 8
-	DebugMode                           = $false
+	DebugMode                           = $false # Keep false for normal use; true enables high-volume diagnostic logging.
 
 	MaxLogSizeBytes                     = 512000   # 500KB
 	FallbackMaxLogSizeBytes             = 2097152  # 2MB
