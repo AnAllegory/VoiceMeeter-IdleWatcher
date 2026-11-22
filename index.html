@@ -3,106 +3,613 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>VoiceMeeter IdleWatcher | Automatic shutdown for Windows</title>
-  <meta name="description" content="VoiceMeeter IdleWatcher is a Windows PowerShell utility that monitors user idle time and display power state, requesting VoiceMeeter shutdown only when the display is fully off and the idle threshold has elapsed.">
+  <meta name="theme-color" content="#101a2d">
+  <title>VoiceMeeter IdleWatcher | Safe automatic shutdown for Windows</title>
+  <meta name="description" content="VoiceMeeter IdleWatcher is a Windows PowerShell utility that requests VoiceMeeter shutdown only after the idle threshold is reached and the display is fully off. Available in English and Russian.">
   <meta name="robots" content="index,follow,max-image-preview:large">
   <link rel="canonical" href="https://anallegory.github.io/VoiceMeeter-IdleWatcher/">
-  <link rel="alternate" hreflang="en" href="https://anallegory.github.io/VoiceMeeter-IdleWatcher/">
-  <link rel="alternate" hreflang="ru" href="https://anallegory.github.io/VoiceMeeter-IdleWatcher/#ru">
-  <link rel="alternate" hreflang="x-default" href="https://anallegory.github.io/VoiceMeeter-IdleWatcher/">
   <meta property="og:type" content="website">
+  <meta property="og:site_name" content="VoiceMeeter IdleWatcher">
   <meta property="og:title" content="VoiceMeeter IdleWatcher">
-  <meta property="og:description" content="A small Windows automation utility for safe, idle-aware VoiceMeeter shutdown.">
+  <meta property="og:description" content="Safe, idle-aware VoiceMeeter shutdown for Windows. The display must be fully off.">
   <meta property="og:url" content="https://anallegory.github.io/VoiceMeeter-IdleWatcher/">
-  <meta name="theme-color" content="#172033">
+  <meta property="og:locale" content="en_US">
+  <meta property="og:locale:alternate" content="ru_RU">
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "VoiceMeeter IdleWatcher",
+    "applicationCategory": "UtilitiesApplication",
+    "operatingSystem": "Windows",
+    "softwareVersion": "1.0.1",
+    "description": "A Windows PowerShell utility that requests VoiceMeeter shutdown only when the idle threshold has elapsed and the display is fully off.",
+    "license": "https://github.com/AnAllegory/VoiceMeeter-IdleWatcher/blob/main/LICENSE",
+    "codeRepository": "https://github.com/AnAllegory/VoiceMeeter-IdleWatcher"
+  }
+  </script>
   <style>
-    :root { color-scheme: light; --ink:#172033; --muted:#526078; --line:#dce3ed; --paper:#f5f7fb; --accent:#2457c5; }
-    * { box-sizing:border-box; }
-    body { margin:0; background:var(--paper); color:var(--ink); font:16px/1.65 system-ui,-apple-system,"Segoe UI",sans-serif; }
-    main { width:min(900px,calc(100% - 32px)); margin:48px auto; }
-    header, section { background:#fff; border:1px solid var(--line); border-radius:16px; padding:clamp(22px,4vw,38px); margin-bottom:18px; }
-    h1 { font-size:clamp(2rem,5vw,3.2rem); line-height:1.12; margin:0 0 14px; letter-spacing:-.035em; }
-    h2 { margin:0 0 12px; font-size:1.45rem; }
-    p { margin:10px 0; }
-    .lead { color:var(--muted); font-size:1.15rem; max-width:720px; }
-    .links { display:flex; flex-wrap:wrap; gap:12px; margin-top:24px; }
-    .links a { display:inline-block; padding:10px 16px; border-radius:9px; background:var(--accent); color:#fff; text-decoration:none; font-weight:650; }
-    .links a.secondary { background:#edf2fc; color:var(--accent); }
-    ul { padding-left:22px; }
-    li { margin:7px 0; }
-    code { background:#f0f3f8; padding:2px 5px; border-radius:5px; }
-    a { color:var(--accent); }
-    footer { color:var(--muted); text-align:center; font-size:.9rem; padding:12px; }
-    .tag { color:var(--muted); font-size:.88rem; text-transform:uppercase; letter-spacing:.08em; font-weight:700; }
+    :root {
+      color-scheme: light;
+      --ink: #17243a;
+      --muted: #61708a;
+      --line: #dce4ef;
+      --paper: #f3f6fb;
+      --card: #ffffff;
+      --navy: #101a2d;
+      --blue: #2859c5;
+      --blue-dark: #1d469f;
+      --soft-blue: #edf3ff;
+      --green: #16845b;
+      --soft-green: #eaf7f1;
+      --amber: #a45d08;
+      --soft-amber: #fff4df;
+      --radius: 20px;
+      --shadow: 0 12px 34px rgba(23, 36, 58, .07);
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      background: var(--paper);
+      color: var(--ink);
+      font: 16px/1.65 system-ui, -apple-system, "Segoe UI", sans-serif;
+    }
+    a { color: var(--blue); }
+    a:hover { color: var(--blue-dark); }
+    .shell { width: min(1100px, calc(100% - 36px)); margin: 0 auto; }
+    .topbar { background: var(--navy); color: #e9efff; }
+    .topbar-inner {
+      min-height: 66px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+    }
+    .brand {
+      color: #fff;
+      text-decoration: none;
+      font-weight: 750;
+      letter-spacing: -.02em;
+    }
+    .brand-mark { color: #82aaff; margin-right: 8px; }
+    .top-links { display: flex; align-items: center; flex-wrap: wrap; gap: 18px; }
+    .top-links a { color: #d8e2f7; text-decoration: none; font-size: .93rem; }
+    .top-links a:hover { color: #fff; }
+    .language { display: inline-flex; gap: 5px; padding: 4px; border: 1px solid #42506a; border-radius: 999px; }
+    .language a { padding: 3px 9px; border-radius: 999px; font-weight: 700; }
+    .language a:first-child { background: #fff; color: var(--navy); }
+    .hero {
+      margin: 28px auto 20px;
+      padding: clamp(28px, 5vw, 58px);
+      border-radius: 26px;
+      color: #fff;
+      background:
+        radial-gradient(ellipse at 85% 10%, rgba(83, 133, 255, .3), transparent 35%),
+        linear-gradient(135deg, #172846, #101a2d 72%);
+      box-shadow: 0 20px 48px rgba(16, 26, 45, .18);
+    }
+    .eyebrow {
+      color: #a9c1ff;
+      text-transform: uppercase;
+      letter-spacing: .12em;
+      font-size: .78rem;
+      font-weight: 800;
+    }
+    h1 {
+      max-width: 800px;
+      margin: 12px 0 15px;
+      font-size: clamp(2.35rem, 6vw, 4.25rem);
+      line-height: 1.04;
+      letter-spacing: -.055em;
+    }
+    .hero-copy { max-width: 740px; color: #d3def2; font-size: clamp(1.05rem, 2vw, 1.2rem); }
+    .release-row { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-top: 22px; }
+    .release-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      border: 1px solid rgba(189, 211, 255, .3);
+      border-radius: 999px;
+      padding: 6px 12px;
+      color: #e8efff;
+      background: rgba(255,255,255,.07);
+      font-size: .9rem;
+      font-weight: 650;
+    }
+    .release-dot { width: 8px; height: 8px; border-radius: 50%; background: #63d5a4; }
+    .actions { display: flex; flex-wrap: wrap; gap: 11px; margin-top: 28px; }
+    .button {
+      display: inline-flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 46px;
+      padding: 10px 17px;
+      border-radius: 11px;
+      text-decoration: none;
+      font-weight: 750;
+      transition: transform .15s ease, background .15s ease;
+    }
+    .button:hover { transform: translateY(-1px); }
+    .button.primary { background: #fff; color: #172846; }
+    .button.primary:hover { background: #eaf0ff; }
+    .button.secondary { color: #fff; border: 1px solid #647895; background: rgba(255,255,255,.06); }
+    .button.secondary:hover { background: rgba(255,255,255,.13); }
+    .facts {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin: 18px 0 30px;
+    }
+    .fact {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 15px;
+      padding: 15px 18px;
+    }
+    .fact strong { display: block; font-size: 1.08rem; }
+    .fact span { color: var(--muted); font-size: .9rem; }
+    .section {
+      margin: 18px 0;
+      padding: clamp(22px, 4vw, 36px);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--card);
+      box-shadow: var(--shadow);
+    }
+    .section-head { max-width: 760px; margin-bottom: 22px; }
+    h2 { margin: 0 0 9px; font-size: clamp(1.5rem, 3vw, 2rem); line-height: 1.2; letter-spacing: -.03em; }
+    h3 { margin: 0 0 7px; font-size: 1.08rem; }
+    p { margin: 9px 0; }
+    .muted { color: var(--muted); }
+    .feature-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 13px; }
+    .feature {
+      padding: 18px;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: #fbfcff;
+    }
+    .feature p { margin-bottom: 0; color: var(--muted); font-size: .94rem; }
+    .safety-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 18px; }
+    .safety {
+      padding: 16px 17px;
+      border-radius: 13px;
+      border: 1px solid var(--line);
+    }
+    .safety.good { background: var(--soft-green); border-color: #c8eadb; }
+    .safety.blocked { background: var(--soft-amber); border-color: #f0dfbd; }
+    .safety strong { display: block; margin-bottom: 4px; }
+    .safety p { margin: 0; font-size: .93rem; }
+    .diagram-wrap {
+      overflow-x: auto;
+      padding: 12px;
+      border: 1px solid #dce5f3;
+      border-radius: 16px;
+      background: #f7f9fd;
+    }
+    .diagram { display: block; width: 100%; min-width: 640px; height: auto; }
+    .diagram .node { fill: #fff; stroke: #bfd0ec; stroke-width: 2; }
+    .diagram .node-blue { fill: #edf3ff; stroke: #91afea; }
+    .diagram .node-green { fill: #eaf7f1; stroke: #8bcab0; }
+    .diagram .node-amber { fill: #fff4df; stroke: #e7c58d; }
+    .diagram .node-title { fill: #17243a; font: 700 18px system-ui, sans-serif; text-anchor: middle; }
+    .diagram .node-small { fill: #61708a; font: 14px system-ui, sans-serif; text-anchor: middle; }
+    .diagram .edge { fill: none; stroke: #7a8eae; stroke-width: 2.5; }
+    .diagram .edge-label { fill: #2859c5; font: 700 14px system-ui, sans-serif; }
+    .diagram .gate { fill: #f0edff; stroke: #afa3e7; stroke-width: 2; }
+    .steps { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; counter-reset: step; }
+    .step {
+      counter-increment: step;
+      position: relative;
+      padding: 18px;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: #fbfcff;
+    }
+    .step::before {
+      content: counter(step, decimal-leading-zero);
+      display: inline-grid;
+      place-items: center;
+      width: 34px;
+      height: 34px;
+      margin-bottom: 13px;
+      border-radius: 10px;
+      background: var(--soft-blue);
+      color: var(--blue);
+      font-weight: 850;
+      font-size: .85rem;
+    }
+    .step p { color: var(--muted); font-size: .92rem; margin-bottom: 0; }
+    code {
+      padding: 2px 6px;
+      border-radius: 6px;
+      background: #eef2f8;
+      color: #213451;
+      font: .92em ui-monospace, Consolas, monospace;
+      overflow-wrap: anywhere;
+    }
+    pre {
+      margin: 12px 0 0;
+      padding: 13px 15px;
+      overflow-x: auto;
+      border-radius: 11px;
+      background: #101a2d;
+      color: #edf3ff;
+      font: .9rem/1.5 ui-monospace, Consolas, monospace;
+    }
+    .requirements {
+      display: grid;
+      grid-template-columns: 1.1fr .9fr;
+      gap: 18px;
+      align-items: start;
+    }
+    ul { padding-left: 21px; margin: 10px 0; }
+    li { margin: 7px 0; }
+    .note {
+      padding: 17px 18px;
+      border-radius: 13px;
+      background: var(--soft-blue);
+      color: #28436f;
+    }
+    .docs-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+    .doc-link {
+      display: block;
+      height: 100%;
+      padding: 17px;
+      border: 1px solid var(--line);
+      border-radius: 13px;
+      text-decoration: none;
+      background: #fbfcff;
+    }
+    .doc-link strong { display: block; margin-bottom: 5px; color: var(--blue); }
+    .doc-link span { color: var(--muted); font-size: .9rem; }
+    .ru {
+      margin-top: 34px;
+      padding-top: 30px;
+      border-top: 2px solid var(--line);
+      scroll-margin-top: 20px;
+    }
+    .ru .language-badge {
+      display: inline-block;
+      margin-bottom: 10px;
+      padding: 4px 10px;
+      border-radius: 999px;
+      background: var(--soft-blue);
+      color: var(--blue);
+      font-size: .8rem;
+      font-weight: 800;
+    }
+    footer { padding: 25px 12px 42px; color: var(--muted); text-align: center; font-size: .9rem; }
+    footer a { text-decoration: none; }
+    @media (max-width: 760px) {
+      .topbar-inner { align-items: flex-start; flex-direction: column; justify-content: center; padding: 13px 0; }
+      .top-links { gap: 12px; }
+      .facts, .feature-grid, .safety-grid, .steps, .docs-grid, .requirements { grid-template-columns: 1fr; }
+      .hero { margin-top: 16px; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
+      .button { transition: none; }
+      .button:hover { transform: none; }
+    }
   </style>
 </head>
 <body>
-<main>
-  <header>
-    <div class="tag">Open-source Windows utility</div>
-    <h1>VoiceMeeter IdleWatcher</h1>
-    <p class="lead">Automatic VoiceMeeter shutdown, governed by two conditions: Windows user inactivity and the display being fully off.</p>
-    <div class="links">
-      <a href="https://github.com/AnAllegory/VoiceMeeter-IdleWatcher">View source on GitHub</a>
-      <a class="secondary" href="https://github.com/AnAllegory/VoiceMeeter-IdleWatcher/releases/latest">Latest release</a>
-      <a class="secondary" href="https://github.com/AnAllegory/VoiceMeeter-IdleWatcher/blob/main/README.md">Documentation</a>
+  <div class="topbar">
+    <div class="shell topbar-inner">
+      <a class="brand" href="#top"><span class="brand-mark">●</span>VoiceMeeter IdleWatcher</a>
+      <nav class="top-links" aria-label="Main navigation">
+        <a href="#how-it-works">How it works</a>
+        <a href="#quick-start">Quick start</a>
+        <a href="#documentation">Docs</a>
+        <span class="language" aria-label="Language">
+          <a href="#en" lang="en">EN</a>
+          <a href="#ru" lang="ru">RU</a>
+        </span>
+      </nav>
     </div>
-  </header>
+  </div>
 
-  <section>
-    <h2>What it does</h2>
-    <p>VoiceMeeter IdleWatcher is a Windows PowerShell automation tool. It monitors the Windows idle timer and display power state, then requests VoiceMeeter shutdown through the VoiceMeeter Remote API only when the configured idle threshold has elapsed and the display is fully off.</p>
-    <ul>
-      <li>Checks Windows user idle time.</li>
-      <li>Tracks display power notifications.</li>
-      <li>Allows shutdown only when the display state is <strong>Off (0)</strong> and the idle threshold is reached.</li>
-      <li>Blocks shutdown while the display is On, Dimmed, or in an unknown state.</li>
-      <li>Supports graceful stop, single-instance protection, and primary/fallback/emergency logging.</li>
-    </ul>
-  </section>
+  <main id="top" class="shell">
+    <header id="en" class="hero">
+      <div class="eyebrow">Open-source Windows utility · MIT License</div>
+      <h1>VoiceMeeter IdleWatcher</h1>
+      <p class="hero-copy">Automatic VoiceMeeter shutdown with a strict safety rule: the idle threshold must be reached <strong>and</strong> the display must be fully off.</p>
+      <div class="release-row">
+        <span class="release-pill"><span class="release-dot"></span>Latest published release: v1.0.1</span>
+        <span class="release-pill">Windows PowerShell 5.1</span>
+        <span class="release-pill">No installer required</span>
+      </div>
+      <div class="actions">
+        <a class="button primary" href="https://github.com/AnAllegory/VoiceMeeter-IdleWatcher/archive/refs/tags/v1.0.1.zip">Download source ZIP · v1.0.1</a>
+        <a class="button secondary" href="https://github.com/AnAllegory/VoiceMeeter-IdleWatcher/releases/latest">Release notes</a>
+        <a class="button secondary" href="https://github.com/AnAllegory/VoiceMeeter-IdleWatcher">View on GitHub</a>
+      </div>
+    </header>
 
-  <section>
-    <h2>Safety behavior</h2>
-    <p>The display state is a hard safety gate, not just an additional idle hint.</p>
-    <ul>
-      <li><strong>Display Off + idle threshold reached:</strong> shutdown is permitted.</li>
-      <li><strong>Display On or Dimmed:</strong> shutdown is blocked.</li>
-      <li><strong>Unknown display state:</strong> shutdown is blocked.</li>
-    </ul>
-    <p>Stopping IdleWatcher stops the automation process. It does not itself shut down VoiceMeeter.</p>
-  </section>
+    <div class="facts" aria-label="Project at a glance">
+      <div class="fact"><strong>8 minutes</strong><span>Default idle threshold</span></div>
+      <div class="fact"><strong>Display Off only</strong><span>Required safety condition</span></div>
+      <div class="fact"><strong>PowerShell + VBS</strong><span>Portable script-based utility</span></div>
+    </div>
 
-  <section>
-    <h2>Requirements</h2>
-    <ul>
-      <li>Windows and Windows PowerShell 5.1.</li>
-      <li>VoiceMeeter installed.</li>
-      <li>The matching VoiceMeeter Remote API DLL.</li>
-      <li>Windows Script Host for the optional VBS launcher.</li>
-    </ul>
-    <p>The default idle threshold is 8 minutes. The script parameter accepts values from 1 to 60 minutes.</p>
-  </section>
+    <section class="section">
+      <div class="section-head">
+        <div class="eyebrow">Purpose</div>
+        <h2>What it does</h2>
+        <p class="muted">IdleWatcher watches Windows inactivity and display power state. When both safety conditions are met, it sends a shutdown request through the VoiceMeeter Remote API.</p>
+      </div>
+      <div class="feature-grid">
+        <article class="feature">
+          <h3>Idle-aware</h3>
+          <p>Checks how long Windows has been inactive. The default threshold is 8 minutes and can be configured from 1 to 60 minutes.</p>
+        </article>
+        <article class="feature">
+          <h3>Display-aware</h3>
+          <p>Uses Windows display power notifications. A darkened or unknown display state is not treated as fully off.</p>
+        </article>
+        <article class="feature">
+          <h3>VoiceMeeter-aware</h3>
+          <p>Uses the Remote API and keeps monitoring if the VoiceMeeter engine is not running.</p>
+        </article>
+      </div>
+    </section>
 
-  <section>
-    <h2>Source code and documentation</h2>
-    <p>The project is maintained in a public GitHub repository under the MIT License. The repository contains the PowerShell watcher, hidden VBS launcher, English and Russian documentation, architecture notes, changelog, and automated Windows PowerShell 5.1 checks.</p>
-    <p><a href="https://github.com/AnAllegory/VoiceMeeter-IdleWatcher">AnAllegory / VoiceMeeter-IdleWatcher on GitHub</a></p>
-  </section>
+    <section class="section">
+      <div class="section-head">
+        <div class="eyebrow">Safety first</div>
+        <h2>Two conditions. Both must be true.</h2>
+        <p class="muted">The display state is a hard safety gate. Idle time alone can never trigger automatic shutdown.</p>
+      </div>
+      <div class="safety-grid">
+        <div class="safety good">
+          <strong>✓ Display Off (0) + idle threshold reached</strong>
+          <p>The watcher performs a final re-check and may send the shutdown command.</p>
+        </div>
+        <div class="safety blocked">
+          <strong>× Display On (1) or Dimmed (2)</strong>
+          <p>Automatic shutdown is blocked, even when the idle threshold has elapsed.</p>
+        </div>
+        <div class="safety blocked">
+          <strong>× Unknown display state</strong>
+          <p>Uncertainty means no shutdown. The watcher keeps monitoring.</p>
+        </div>
+      </div>
+      <p class="muted">Stopping IdleWatcher stops the automation process. It does not itself shut down VoiceMeeter.</p>
+    </section>
 
-  <section id="ru" lang="ru">
-    <div class="tag">Русская версия</div>
-    <h2>VoiceMeeter IdleWatcher</h2>
-    <p>Небольшая утилита для Windows на PowerShell, которая отслеживает время бездействия пользователя и состояние питания дисплея. Команда выключения VoiceMeeter отправляется только тогда, когда одновременно выполнены два условия: достигнут заданный порог бездействия и дисплей полностью выключен.</p>
-    <ul>
-      <li>Дисплей выключен (Off) и порог бездействия достигнут: выключение разрешено.</li>
-      <li>Дисплей включён (On) или затемнён (Dimmed): выключение заблокировано.</li>
-      <li>Состояние дисплея неизвестно: выключение заблокировано.</li>
-    </ul>
-    <p>Остановка IdleWatcher завершает только саму утилиту и не закрывает VoiceMeeter.</p>
-    <p><a href="https://github.com/AnAllegory/VoiceMeeter-IdleWatcher/blob/main/README.ru.md">Полная документация на русском языке</a></p>
-  </section>
+    <section id="how-it-works" class="section">
+      <div class="section-head">
+        <div class="eyebrow">Control flow</div>
+        <h2>How the watcher makes its decision</h2>
+        <p class="muted">A simplified view of the actual project flow. The final idle and display checks happen again immediately before the shutdown request.</p>
+      </div>
+      <div class="diagram-wrap">
+        <svg class="diagram" viewBox="0 0 900 735" role="img" aria-labelledby="diagram-title-en diagram-desc-en" xmlns="http://www.w3.org/2000/svg">
+          <title id="diagram-title-en">VoiceMeeter IdleWatcher control flow</title>
+          <desc id="diagram-desc-en">The VBS launcher starts a hidden PowerShell watcher. The watcher monitors idle time, display state and VoiceMeeter. Shutdown is allowed only when the idle threshold is reached and the display is off, followed by a final re-check.</desc>
+          <defs>
+            <marker id="arrow-en" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L0,6 L9,3 z" fill="#7a8eae"/></marker>
+          </defs>
+          <path class="edge" marker-end="url(#arrow-en)" d="M450 82 V112"/>
+          <path class="edge" marker-end="url(#arrow-en)" d="M450 172 V202"/>
+          <path class="edge" marker-end="url(#arrow-en)" d="M450 294 V326"/>
+          <path class="edge" marker-end="url(#arrow-en)" d="M450 432 V470"/>
+          <path class="edge" marker-end="url(#arrow-en)" d="M450 532 V564"/>
+          <path class="edge" marker-end="url(#arrow-en)" d="M450 626 V658"/>
+          <path class="edge" marker-end="url(#arrow-en)" d="M342 379 H220"/>
+          <path class="edge" marker-end="url(#arrow-en)" d="M115 335 V248 H250"/>
+          <text class="edge-label" x="468" y="454">YES</text>
+          <text class="edge-label" x="256" y="365">NO</text>
+          <rect class="node node-blue" x="310" y="22" width="280" height="60" rx="13"/>
+          <text class="node-title" x="450" y="58">Start VBS launcher</text>
+          <rect class="node" x="310" y="112" width="280" height="60" rx="13"/>
+          <text class="node-title" x="450" y="148">Hidden PowerShell watcher</text>
+          <rect class="node" x="250" y="202" width="400" height="92" rx="13"/>
+          <text class="node-title" x="450" y="231">Monitoring loop</text>
+          <text class="node-small" x="450" y="257">Windows idle time · Display state</text>
+          <text class="node-small" x="450" y="278">VoiceMeeter engine / Remote API</text>
+          <polygon class="gate" points="450,326 558,379 450,432 342,379"/>
+          <text class="node-title" x="450" y="371">Idle threshold</text>
+          <text class="node-title" x="450" y="394">reached AND</text>
+          <text class="node-small" x="450" y="414">display is Off?</text>
+          <rect class="node node-amber" x="20" y="335" width="200" height="88" rx="13"/>
+          <text class="node-title" x="120" y="369">Keep monitoring</text>
+          <text class="node-small" x="120" y="393">No shutdown</text>
+          <rect class="node node-blue" x="310" y="470" width="280" height="62" rx="13"/>
+          <text class="node-title" x="450" y="497">Final safety re-check</text>
+          <text class="node-small" x="450" y="518">Idle + display state</text>
+          <rect class="node node-green" x="310" y="564" width="280" height="62" rx="13"/>
+          <text class="node-title" x="450" y="602">Request VoiceMeeter shutdown</text>
+          <rect class="node" x="310" y="658" width="280" height="62" rx="13"/>
+          <text class="node-title" x="450" y="685">Check engine stop / restart</text>
+          <text class="node-small" x="450" y="705">Then continue monitoring</text>
+        </svg>
+      </div>
+    </section>
 
-  <footer>VoiceMeeter IdleWatcher · Open source · MIT License</footer>
-</main>
+    <section id="quick-start" class="section">
+      <div class="section-head">
+        <div class="eyebrow">Getting started</div>
+        <h2>Quick start</h2>
+        <p class="muted">The published release is distributed as source files. There is no separate installer or executable package.</p>
+      </div>
+      <div class="steps">
+        <article class="step">
+          <h3>Download</h3>
+          <p>Get the v1.0.1 source ZIP from the button at the top of this page.</p>
+        </article>
+        <article class="step">
+          <h3>Extract</h3>
+          <p>Unpack the archive. Keep <code>VoiceMeeter-IdleWatcher.ps1</code> and <code>VoiceMeeter-IdleWatcher.vbs</code> in the same folder.</p>
+        </article>
+        <article class="step">
+          <h3>Start</h3>
+          <p>Double-click <code>VoiceMeeter-IdleWatcher.vbs</code>. The watcher starts PowerShell hidden.</p>
+        </article>
+        <article class="step">
+          <h3>Stop</h3>
+          <p>Send the graceful stop request from the same folder:</p>
+          <pre>wscript.exe VoiceMeeter-IdleWatcher.vbs /stop</pre>
+        </article>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="section-head">
+        <div class="eyebrow">Compatibility</div>
+        <h2>Requirements</h2>
+      </div>
+      <div class="requirements">
+        <div>
+          <ul>
+            <li>Windows.</li>
+            <li>Windows PowerShell 5.1.</li>
+            <li>VoiceMeeter installed.</li>
+            <li>The matching VoiceMeeter Remote API DLL.</li>
+            <li>Windows Script Host enabled for the VBS launcher.</li>
+          </ul>
+        </div>
+        <div class="note">
+          <strong>Optional MacroButtons indicator</strong>
+          <p>The watcher can synchronize a MacroButtons visual state through Remote API STATEONLY mode. This changes the displayed state without executing the button macro. If MacroButtons synchronization is unavailable, the main watcher continues to work.</p>
+        </div>
+      </div>
+    </section>
+
+    <section id="documentation" class="section">
+      <div class="section-head">
+        <div class="eyebrow">Explore the project</div>
+        <h2>Documentation and community</h2>
+        <p class="muted">Read the guides, inspect the source, or follow project changes on GitHub.</p>
+      </div>
+      <div class="docs-grid">
+        <a class="doc-link" href="https://github.com/AnAllegory/VoiceMeeter-IdleWatcher/blob/main/README.md"><strong>English guide ↗</strong><span>Features, configuration, launch and stop instructions.</span></a>
+        <a class="doc-link" href="https://github.com/AnAllegory/VoiceMeeter-IdleWatcher/blob/main/README.ru.md"><strong>Русская инструкция ↗</strong><span>Описание программы и настройка на русском языке.</span></a>
+        <a class="doc-link" href="https://github.com/AnAllegory/VoiceMeeter-IdleWatcher/blob/main/ARCHITECTURE.md"><strong>Architecture ↗</strong><span>Detailed bilingual flow diagrams and safety logic.</span></a>
+        <a class="doc-link" href="https://github.com/AnAllegory/VoiceMeeter-IdleWatcher/blob/main/CHANGELOG.md"><strong>Changelog ↗</strong><span>Repository changes and development history.</span></a>
+        <a class="doc-link" href="https://github.com/AnAllegory/VoiceMeeter-IdleWatcher/blob/main/SECURITY.md"><strong>Security policy ↗</strong><span>How to report a security issue privately.</span></a>
+        <a class="doc-link" href="https://github.com/AnAllegory/VoiceMeeter-IdleWatcher/blob/main/CODE_OF_CONDUCT.md"><strong>Code of Conduct ↗</strong><span>Community participation and contribution standards.</span></a>
+        <a class="doc-link" href="https://github.com/AnAllegory/VoiceMeeter-IdleWatcher/blob/main/ROADMAP.md"><strong>Roadmap ↗</strong><span>Potential improvements and project direction.</span></a>
+        <a class="doc-link" href="https://github.com/AnAllegory/VoiceMeeter-IdleWatcher/discussions"><strong>Discussions ↗</strong><span>Questions and project conversations.</span></a>
+        <a class="doc-link" href="https://github.com/AnAllegory/VoiceMeeter-IdleWatcher/blob/main/LICENSE"><strong>MIT License ↗</strong><span>Open-source license terms.</span></a>
+      </div>
+    </section>
+
+    <section class="section ru" id="ru" lang="ru">
+      <span class="language-badge">Русская версия</span>
+      <div class="eyebrow">Открытая утилита для Windows · Лицензия MIT</div>
+      <h2>VoiceMeeter IdleWatcher</h2>
+      <p class="muted">Автоматическое выключение VoiceMeeter с жёстким правилом безопасности: должен истечь заданный порог бездействия, а дисплей должен быть полностью выключен.</p>
+      <div class="release-row">
+        <span class="release-pill" style="color:#17243a;border-color:#dce4ef;background:#f3f6fb"><span class="release-dot"></span>Последний опубликованный релиз: v1.0.1</span>
+        <span class="release-pill" style="color:#17243a;border-color:#dce4ef;background:#f3f6fb">Windows PowerShell 5.1</span>
+      </div>
+      <div class="actions">
+        <a class="button" style="background:#2859c5;color:#fff" href="https://github.com/AnAllegory/VoiceMeeter-IdleWatcher/archive/refs/tags/v1.0.1.zip">Скачать исходники ZIP · v1.0.1</a>
+        <a class="button" style="background:#edf3ff;color:#2859c5" href="https://github.com/AnAllegory/VoiceMeeter-IdleWatcher/releases/latest">Примечания к релизу</a>
+        <a class="button" style="background:#edf3ff;color:#2859c5" href="https://github.com/AnAllegory/VoiceMeeter-IdleWatcher">Репозиторий GitHub</a>
+      </div>
+
+      <h2 style="margin-top:30px">Что делает программа</h2>
+      <p>IdleWatcher следит за временем бездействия Windows и состоянием питания дисплея. Когда одновременно выполнены оба условия безопасности, утилита отправляет команду на выключение VoiceMeeter через Remote API.</p>
+      <div class="feature-grid">
+        <article class="feature"><h3>Контроль бездействия</h3><p>Порог по умолчанию: 8 минут. Его можно настроить в диапазоне от 1 до 60 минут.</p></article>
+        <article class="feature"><h3>Контроль дисплея</h3><p>Используются системные уведомления Windows. Затемнённый или неизвестный статус не считается выключенным экраном.</p></article>
+        <article class="feature"><h3>Контроль VoiceMeeter</h3><p>Работа идёт через Remote API. Если движок VoiceMeeter не запущен, наблюдатель продолжает мониторинг.</p></article>
+      </div>
+
+      <h2 style="margin-top:30px">Два условия. Оба обязательны.</h2>
+      <div class="safety-grid">
+        <div class="safety good"><strong>✓ Дисплей Off (0) + истёк порог бездействия</strong><p>Перед отправкой команды выполняется финальная повторная проверка.</p></div>
+        <div class="safety blocked"><strong>× Дисплей On (1) или Dimmed (2)</strong><p>Автоматическое выключение заблокировано, даже если компьютер давно бездействует.</p></div>
+        <div class="safety blocked"><strong>× Состояние дисплея неизвестно</strong><p>Неопределённость означает запрет выключения. Наблюдатель продолжает работу.</p></div>
+      </div>
+      <p class="muted">Остановка IdleWatcher завершает только саму утилиту. Она не выключает VoiceMeeter.</p>
+
+      <h2 style="margin-top:30px">Как принимается решение</h2>
+      <p class="muted">Упрощённая схема реального потока работы. Непосредственно перед командой отключения порог бездействия и состояние дисплея проверяются ещё раз.</p>
+      <div class="diagram-wrap">
+        <svg class="diagram" viewBox="0 0 900 735" role="img" aria-labelledby="diagram-title-ru diagram-desc-ru" xmlns="http://www.w3.org/2000/svg">
+          <title id="diagram-title-ru">Схема работы VoiceMeeter IdleWatcher</title>
+          <desc id="diagram-desc-ru">VBS запускает скрытый процесс PowerShell. Наблюдатель проверяет время бездействия, состояние дисплея и VoiceMeeter. Выключение разрешено только при достижении порога бездействия и выключенном дисплее, после повторной проверки.</desc>
+          <defs>
+            <marker id="arrow-ru" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L0,6 L9,3 z" fill="#7a8eae"/></marker>
+          </defs>
+          <path class="edge" marker-end="url(#arrow-ru)" d="M450 82 V112"/>
+          <path class="edge" marker-end="url(#arrow-ru)" d="M450 172 V202"/>
+          <path class="edge" marker-end="url(#arrow-ru)" d="M450 294 V326"/>
+          <path class="edge" marker-end="url(#arrow-ru)" d="M450 432 V470"/>
+          <path class="edge" marker-end="url(#arrow-ru)" d="M450 532 V564"/>
+          <path class="edge" marker-end="url(#arrow-ru)" d="M450 626 V658"/>
+          <path class="edge" marker-end="url(#arrow-ru)" d="M342 379 H220"/>
+          <path class="edge" marker-end="url(#arrow-ru)" d="M115 335 V248 H250"/>
+          <text class="edge-label" x="468" y="454">ДА</text>
+          <text class="edge-label" x="256" y="365">НЕТ</text>
+          <rect class="node node-blue" x="310" y="22" width="280" height="60" rx="13"/>
+          <text class="node-title" x="450" y="58">Запуск VBS</text>
+          <rect class="node" x="310" y="112" width="280" height="60" rx="13"/>
+          <text class="node-title" x="450" y="148">Скрытый процесс PowerShell</text>
+          <rect class="node" x="250" y="202" width="400" height="92" rx="13"/>
+          <text class="node-title" x="450" y="231">Цикл наблюдения</text>
+          <text class="node-small" x="450" y="257">Время бездействия · Состояние дисплея</text>
+          <text class="node-small" x="450" y="278">Движок VoiceMeeter / Remote API</text>
+          <polygon class="gate" points="450,326 558,379 450,432 342,379"/>
+          <text class="node-title" x="450" y="371">Порог достигнут</text>
+          <text class="node-title" x="450" y="394">И дисплей</text>
+          <text class="node-small" x="450" y="414">полностью выключен?</text>
+          <rect class="node node-amber" x="20" y="335" width="200" height="88" rx="13"/>
+          <text class="node-title" x="120" y="369">Продолжить</text>
+          <text class="node-title" x="120" y="391">наблюдение</text>
+          <rect class="node node-blue" x="310" y="470" width="280" height="62" rx="13"/>
+          <text class="node-title" x="450" y="497">Финальная проверка</text>
+          <text class="node-small" x="450" y="518">Бездействие + дисплей</text>
+          <rect class="node node-green" x="310" y="564" width="280" height="62" rx="13"/>
+          <text class="node-title" x="450" y="602">Команда выключения</text>
+          <rect class="node" x="310" y="658" width="280" height="62" rx="13"/>
+          <text class="node-title" x="450" y="685">Проверка остановки движка</text>
+          <text class="node-small" x="450" y="705">Затем новый цикл наблюдения</text>
+        </svg>
+      </div>
+
+      <h2 style="margin-top:30px">Быстрый запуск</h2>
+      <div class="steps">
+        <article class="step"><h3>Скачать</h3><p>Скачайте ZIP с исходниками версии v1.0.1 по кнопке выше.</p></article>
+        <article class="step"><h3>Распаковать</h3><p>Файлы <code>VoiceMeeter-IdleWatcher.ps1</code> и <code>VoiceMeeter-IdleWatcher.vbs</code> должны лежать в одной папке.</p></article>
+        <article class="step"><h3>Запустить</h3><p>Дважды щёлкните <code>VoiceMeeter-IdleWatcher.vbs</code>. PowerShell запустится в скрытом режиме.</p></article>
+        <article class="step"><h3>Остановить</h3><p>Выполните команду штатной остановки из той же папки:</p><pre>wscript.exe VoiceMeeter-IdleWatcher.vbs /stop</pre></article>
+      </div>
+
+      <h2 style="margin-top:30px">Требования</h2>
+      <div class="requirements">
+        <ul>
+          <li>Windows.</li>
+          <li>Windows PowerShell 5.1.</li>
+          <li>Установленный VoiceMeeter.</li>
+          <li>Подходящая DLL VoiceMeeter Remote API.</li>
+          <li>Включённый Windows Script Host для VBS-запускателя.</li>
+        </ul>
+        <div class="note"><strong>Необязательный индикатор MacroButtons</strong><p>Наблюдатель может синхронизировать отображаемое состояние кнопки через режим Remote API STATEONLY. Он меняет только индикацию, не запуская макрос. Недоступность MacroButtons не мешает основной работе наблюдателя.</p></div>
+      </div>
+
+      <h2 style="margin-top:30px">Документация и сообщество</h2>
+      <div class="docs-grid">
+        <a class="doc-link" href="https://github.com/AnAllegory/VoiceMeeter-IdleWatcher/blob/main/README.ru.md"><strong>Инструкция на русском ↗</strong><span>Возможности, настройки, запуск и остановка.</span></a>
+        <a class="doc-link" href="https://github.com/AnAllegory/VoiceMeeter-IdleWatcher/blob/main/README.md"><strong>English guide ↗</strong><span>Documentation in English.</span></a>
+        <a class="doc-link" href="https://github.com/AnAllegory/VoiceMeeter-IdleWatcher/blob/main/ARCHITECTURE.md"><strong>Архитектура ↗</strong><span>Подробные схемы и описание логики безопасности.</span></a>
+        <a class="doc-link" href="https://github.com/AnAllegory/VoiceMeeter-IdleWatcher/blob/main/CHANGELOG.md"><strong>История изменений ↗</strong><span>История разработки и изменений репозитория.</span></a>
+        <a class="doc-link" href="https://github.com/AnAllegory/VoiceMeeter-IdleWatcher/blob/main/SECURITY.md"><strong>Безопасность ↗</strong><span>Как конфиденциально сообщить об уязвимости.</span></a>
+        <a class="doc-link" href="https://github.com/AnAllegory/VoiceMeeter-IdleWatcher/blob/main/CODE_OF_CONDUCT.md"><strong>Правила сообщества ↗</strong><span>Стандарты участия и взаимодействия.</span></a>
+        <a class="doc-link" href="https://github.com/AnAllegory/VoiceMeeter-IdleWatcher/blob/main/ROADMAP.md"><strong>Планы проекта ↗</strong><span>Возможные улучшения и направление развития.</span></a>
+        <a class="doc-link" href="https://github.com/AnAllegory/VoiceMeeter-IdleWatcher/discussions"><strong>Обсуждения ↗</strong><span>Вопросы и беседы о проекте.</span></a>
+        <a class="doc-link" href="https://github.com/AnAllegory/VoiceMeeter-IdleWatcher/blob/main/LICENSE"><strong>Лицензия MIT ↗</strong><span>Условия открытой лицензии.</span></a>
+      </div>
+    </section>
+  </main>
+
+  <footer class="shell">
+    VoiceMeeter IdleWatcher · Open source · MIT License ·
+    <a href="https://github.com/AnAllegory/VoiceMeeter-IdleWatcher">GitHub repository</a>
+  </footer>
 </body>
 </html>
