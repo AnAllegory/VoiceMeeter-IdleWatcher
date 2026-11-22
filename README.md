@@ -1,5 +1,7 @@
 # VoiceMeeter IdleWatcher
 
+[🌐 Project website](https://anallegory.github.io/VoiceMeeter-IdleWatcher/)
+
 [English](README.md) | [Русский](README.ru.md)
 
 A Windows PowerShell utility that monitors user idle time and display power state, then requests VoiceMeeter shutdown only when the configured idle threshold has elapsed and the display is fully Off.
