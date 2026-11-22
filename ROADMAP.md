@@ -81,22 +81,22 @@ Do not add these without a reproducible requirement and a separate design decisi
 4. Keep MacroButtons optional, with one STATEONLY writer and no readback.
 5. Treat maintainer runtime observations separately from source inspection and static CI.
 6. Keep Windows PowerShell 5.1 compatibility and the existing DLL marker/import-order contracts.
-7. Do not change the public repository, its tags or its releases as part of modular development workspace work.
+7. Do not create or modify public release tags or published releases during routine source development; release operations are separate and require explicit maintainer approval.
 8. Do not create a numbered release merely to make progress on this roadmap.
 
 ## Public release preparation
 
-The modular source is staged in an integration branch of the canonical public repository and awaits review. Before a new public release:
+The modular v1.0.5 source has been merged into the canonical public main branch through PR #10. Before a new public release:
 
-- Complete review of the integration Pull Request and its CI result.
-- Confirm maintainer runtime behavior on the target Windows configuration after the integrated files are checked out together.
+- Confirm that the merged main branch contains the intended modular source and that its default-branch CI validation succeeds.
+- Before packaging, perform a fresh target-PC check from a clean checkout of main and document exactly what was observed.
 - Select the next public version number. Internal v1.0.2-v1.0.5 milestones are not public tags.
 - Prepare version-specific release notes and a distribution ZIP containing the required source files.
-- Update the GitHub Pages site to describe the modular source and link to the selected public release.
+- Keep GitHub Pages synchronized with the current source layout and clearly distinguish the main-branch source snapshot from the latest published release.
 - Create the tag and GitHub release only after the maintainer explicitly approves publication.
 
 The private Beta workspace should remain an archive unless there is a separate reason to continue development there.
 
 ## Status
 
-The v1.0.2 through v1.0.5 implementation work described above is staged in the public integration branch and awaits review. The main automatic-shutdown path was exercised by the maintainer on 2026-11-22. Remaining items are observations or future considerations, not active code-change tasks.
+The v1.0.2 through v1.0.5 implementation work described above is integrated into public main. PR #10 was merged on 2026-11-22; the main automatic-shutdown path was exercised by the maintainer on that date. Remaining items are observations or future considerations, not active code-change tasks.
