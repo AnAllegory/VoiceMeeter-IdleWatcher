@@ -4,7 +4,7 @@
 
 The canonical repository is AnAllegory/VoiceMeeter-IdleWatcher. The public main branch is the home for current source, documentation, CI and GitHub Pages.
 
-The modular implementation in this repository uses the source baseline v1.0.5. That number records the internal development baseline inherited from the private workspace; it is not a new public release tag. The existing public tags and releases v1.0.0 and v1.0.1 remain unchanged.
+The modular implementation in this repository uses source baseline v1.0.5. That number originated in the private development workspace and has been selected as the next public release version. The existing public tags and releases v1.0.0 and v1.0.1 remain unchanged.
 
 ## How the project reached the modular source
 
@@ -56,6 +56,4 @@ The monolithic and modular workflows are not interchangeable. Keep CI aligned wi
 
 ## Release status
 
-The public releases v1.0.0 and v1.0.1 remain published historical releases. Internal Beta milestones v1.0.2 through v1.0.5 are not public tags. The integrated modular source has not yet been assigned or published as the next public release.
-
-Release preparation remains a separate step: confirm the integration, select the next public version, prepare version-specific release notes and a distribution archive, run the final validation, and only then create a tag and GitHub release.
+The public releases v1.0.0 and v1.0.1 remain published historical releases. The implementation milestones v1.0.2 through v1.0.4 were internal development stages, not separate public tags. The maintainer has selected the integrated v1.0.5 source as the next public release; its release notes and documentation are prepared. The `v1.0.5` tag and GitHub Release remain unpublished until the final manual publication step.
