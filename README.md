@@ -112,7 +112,7 @@ The launcher waits for explicit startup status. Graceful stop signals the existi
 
 ## Validation status
 
-The modular v1.0.5 source baseline previously passed the Windows PowerShell 5.1 parsing, project-contract and C# compilation workflow in the private development workspace. This repository's workflow runs those checks against the modular source and also validates the VBS invalid-argument path and runs PSScriptAnalyzer 1.25.0 over the orchestrator and PowerShell modules. Error-level analyzer findings fail CI; Warning and Information findings are reported but do not block it. These checks are static: they do not run VoiceMeeter or inspect the MacroButtons UI.
+The public GitHub Actions workflow for the v1.0.5 source release passed on 2026-11-22. It validates Windows PowerShell 5.1 parsing, project contracts, C# compilation with a placeholder DLL path, the VBS invalid-argument path and PSScriptAnalyzer 1.25.0 across the orchestrator and PowerShell modules. Error-level analyzer findings fail CI; Warning and Information findings are reported but do not block it. These checks are static: they do not run VoiceMeeter or inspect the MacroButtons UI.
 
 The maintainer also reported a successful v1.0.5 automatic-shutdown cycle on the target PC on 2026-11-22: OFF was accepted, the 1000ms allowance elapsed, final safety validation passed, Shutdown returned code 0 and the engine stop was confirmed. After waking the PC, the maintainer observed MacroButton 1 OFF and VoiceMeeter not running. The exact visual instant at which the button extinguished before engine shutdown was not directly observed while the display was Off. See PROJECT_CONTEXT.md for the timestamps and evidence boundaries.
 
