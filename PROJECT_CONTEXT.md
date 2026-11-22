@@ -190,6 +190,8 @@ The workflow performs:
 - Static project-contract checks for v1.0.5, the 1000ms sequence, final safety validation, the STATEONLY invariant, no-readback contract and API write gates.
 - Tab-indentation checks for source files.
 - C# interop compilation after the DLL marker is replaced with a placeholder path.
+- VBS invalid-argument validation without launching the watcher.
+- PSScriptAnalyzer 1.25.0 on the main script and PowerShell modules; Error-level findings fail CI, while Warning and Information findings are reported but non-blocking.
 
 It does **not** launch the watcher, connect to a real VoiceMeeter instance, exercise Remote API sessions or test the visible MacroButtons UI/display hardware.
 
