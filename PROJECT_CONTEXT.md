@@ -18,7 +18,7 @@ There is one canonical public repository:
 
 The public repository's main branch previously contained the monolithic v1.0.1 source line. The modular implementation was developed in the private workspace through internal milestones v1.0.2, v1.0.3, v1.0.4 and v1.0.5.
 
-The modular source baseline v1.0.5 is now integrated into the public repository. The integration preserves the original public repository's commit history. The private Beta repository may remain as a historical archive; it is not the canonical source for future public development.
+The integration branch in the public repository stages the modular source baseline v1.0.5 for review. The proposed integration preserves the original public repository's commit history. After promotion, the private Beta repository can remain as a historical archive; it is not intended to be the canonical source for future public development.
 
 The repositories do not have asserted direct Git parent/child ancestry. Internal v1.0.2-v1.0.5 milestones are development labels, not public release tags. The public v1.0.0 and v1.0.1 releases remain unchanged; the integrated modular source has not yet been assigned or published as the next public release.
 
@@ -183,7 +183,7 @@ Any proposal to revisit these decisions must identify a reproducible problem and
 
 ## 8. CI and validation
 
-The public modular workflow is .github/workflows/powershell-check.yml. The latest source-baseline run before this documentation-only update was [45019695775](https://github.com/AnAllegory/VoiceMeeter-IdleWatcher-Beta/actions/runs/45019695775), on source commit 8cae6603a3c59e0955a0b384f71124bb75a9cfaf.
+The public modular workflow is .github/workflows/powershell-check.yml. It runs on pushes to main and pull requests targeting main. See the public repository's [Actions page](https://github.com/AnAllegory/VoiceMeeter-IdleWatcher/actions) for the latest result on the commit under review.
 
 The workflow performs:
 - Windows PowerShell 5.1 parsing for the main script and PowerShell modules.
