@@ -6,6 +6,10 @@ The v1.0.0 release was published on 2026-11-19. Entries are grouped by release.
 
 ## [Unreleased]
 
+No changes yet.
+
+## [1.0.5] - 2026-11-22
+
 ### Added
 
 - Added `AGENTS.md`, `SECURITY.md`, and `ROADMAP.md` as separate repository documents for contributor instructions, private vulnerability reporting, and deferred project planning.
@@ -24,23 +28,24 @@ The v1.0.0 release was published on 2026-11-19. Entries are grouped by release.
 
 ### Modular source integration
 
-- Merged the modular source baseline into public `main` through PR #10 (merge commit `5436b1ccbbd464aa43a4846af53750fafbf126e5`), preserving the public repository's existing Git history. This source integration is not a new public release.
+- Merged the modular source baseline into public `main` through PR #10 (merge commit `5436b1ccbbd464aa43a4846af53750fafbf126e5`), preserving the public repository's existing Git history. This source integration forms the modular source baseline for public release v1.0.5.
 - Replaced the monolithic watcher implementation with the modular orchestrator, PSD1 configuration, Support, Interop and MacroButtons modules, native C# interop source and matching VBS launcher.
 - Replaced the monolithic-source CI workflow with Windows PowerShell 5.1 parsing, modular project-contract checks, tab-indentation validation, embedded C# compilation and VBS invalid-argument validation.
-- Preserved the existing public release history and RELEASE_NOTES_v1.0.0.md; internal Beta milestones below are development history, not public tags or releases.
+- Preserved the existing public release history and RELEASE_NOTES_v1.0.0.md; the v1.0.2-v1.0.4 Beta milestones below are development history, not separate public tags or releases.
 - Added the API availability gate: periodic/manual MacroButtons writes require known API state and a confirmed running engine; after API result -2, the last accepted indicator state is retained.
 - Retained STATEONLY (0x00000002) as a fixed module invariant, one centralized writer and no button-state readback.
 - Retained the 1000ms pre-shutdown allowance after a successful OFF write, followed by final idle/display/stop validation.
 - Moved the successful-validation log entry after Command.Shutdown dispatch so a potentially blocking log write cannot separate the final safety checks from the shutdown call.
 - Added an explicit CI contract preventing log writes between final safety checks and shutdown dispatch, plus a VBS invalid-argument check that does not start the watcher.
 - Added KeePassXC database exclusions to .gitignore.
+- Documented DebugMode as a high-volume diagnostic option; it remains disabled by default and should be enabled only temporarily.
 
-### Internal modular development milestones (not public release tags)
+### Development milestones leading to the modular release
 
-- Internal v1.0.2 (2026-11-21): first modular working snapshot, splitting the watcher into the orchestrator, configuration, support, interop and MacroButtons modules, native C# source and VBS launcher.
-- Internal v1.0.3 (2026-11-22): fixed STATEONLY mode in the module, strengthened configuration validation and API lifecycle handling, and retained the last accepted button state when the API is unavailable.
-- Internal v1.0.4 (2026-11-22): added the 1000ms pre-shutdown allowance and moved final idle/display/stop validation after that allowance.
-- Internal v1.0.5 (2026-11-22): gated periodic and manual MacroButtons writes on a known API state and confirmed running engine.
+- Development milestone v1.0.2 (2026-11-21): first modular working snapshot, splitting the watcher into the orchestrator, configuration, support, interop and MacroButtons modules, native C# source and VBS launcher.
+- Development milestone v1.0.3 (2026-11-22): fixed STATEONLY mode in the module, strengthened configuration validation and API lifecycle handling, and retained the last accepted button state when the API is unavailable.
+- Development milestone v1.0.4 (2026-11-22): added the 1000ms pre-shutdown allowance and moved final idle/display/stop validation after that allowance.
+- Final modular development milestone v1.0.5 (2026-11-22): gated periodic and manual MacroButtons writes on a known API state and confirmed running engine.
 
 ### Maintainer-reported runtime evidence
 
