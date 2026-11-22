@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Questions and community support / Вопросы и поддержка
+    url: https://github.com/AnAllegory/VoiceMeeter-IdleWatcher/discussions
+    about: Ask usage questions and discuss ideas here. / Задавайте вопросы и обсуждайте идеи здесь.
+  - name: Security vulnerability reporting / Сообщение об уязвимости
+    url: https://github.com/AnAllegory/VoiceMeeter-IdleWatcher/blob/main/SECURITY.md
+    about: Do not report unpatched vulnerabilities publicly. / Не публикуйте сведения о неисправленных уязвимостях.
