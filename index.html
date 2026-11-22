@@ -22,8 +22,8 @@
     "name": "VoiceMeeter IdleWatcher",
     "applicationCategory": "UtilitiesApplication",
     "operatingSystem": "Windows",
-    "softwareVersion": "1.0.1",
-    "description": "A Windows PowerShell utility that requests VoiceMeeter shutdown only when the idle threshold has elapsed and the display is fully off.",
+    "softwareVersion": "1.0.5",
+    "description": "The current integrated modular source baseline is v1.0.5. VoiceMeeter shutdown is requested only when the idle threshold has elapsed and the display is fully off; the latest tagged public release remains v1.0.1.",
     "license": "https://github.com/AnAllegory/VoiceMeeter-IdleWatcher/blob/main/LICENSE",
     "codeRepository": "https://github.com/AnAllegory/VoiceMeeter-IdleWatcher"
   }
@@ -316,13 +316,14 @@
       <h1>VoiceMeeter IdleWatcher</h1>
       <p class="hero-copy">Automatic VoiceMeeter shutdown with a strict safety rule: the idle threshold must be reached <strong>and</strong> the display must be fully off.</p>
       <div class="release-row">
-        <span class="release-pill"><span class="release-dot"></span>Latest published release: v1.0.1</span>
+        <span class="release-pill"><span class="release-dot"></span>Current source: modular v1.0.5</span>
+        <span class="release-pill">Latest published release: v1.0.1</span>
         <span class="release-pill">Windows PowerShell 5.1</span>
         <span class="release-pill">No installer required</span>
       </div>
       <div class="actions">
-        <a class="button primary" href="https://github.com/AnAllegory/VoiceMeeter-IdleWatcher/archive/refs/tags/v1.0.1.zip">Download source ZIP · v1.0.1</a>
-        <a class="button secondary" href="https://github.com/AnAllegory/VoiceMeeter-IdleWatcher/releases/latest">Release notes</a>
+        <a class="button primary" href="https://github.com/AnAllegory/VoiceMeeter-IdleWatcher/archive/refs/heads/main.zip">Download current source ZIP · main</a>
+        <a class="button secondary" href="https://github.com/AnAllegory/VoiceMeeter-IdleWatcher/releases/latest">Published releases</a>
         <a class="button secondary" href="https://github.com/AnAllegory/VoiceMeeter-IdleWatcher">View on GitHub</a>
       </div>
     </header>
@@ -350,7 +351,7 @@
         </article>
         <article class="feature">
           <h3>VoiceMeeter-aware</h3>
-          <p>Uses the Remote API and keeps monitoring if the VoiceMeeter engine is not running.</p>
+          <p>Uses the Remote API and keeps monitoring if the VoiceMeeter engine is not running. The optional MacroButtons indicator is handled by a separate module.</p>
         </article>
       </div>
     </section>
@@ -382,7 +383,7 @@
       <div class="section-head">
         <div class="eyebrow">Control flow</div>
         <h2>How the watcher makes its decision</h2>
-        <p class="muted">A simplified view of the actual project flow. The final idle and display checks happen again immediately before the shutdown request.</p>
+        <p class="muted">A simplified view of the current modular flow. If the optional STATEONLY OFF write is accepted, the watcher allows 1000ms for MacroButtons to process it, then repeats the idle, display and graceful-stop checks immediately before the shutdown request.</p>
       </div>
       <div class="diagram-wrap">
         <svg class="diagram" viewBox="0 0 900 735" role="img" aria-labelledby="diagram-title-en diagram-desc-en" xmlns="http://www.w3.org/2000/svg">
@@ -428,20 +429,37 @@
       </div>
     </section>
 
+    <section id="architecture" class="section">
+      <div class="section-head">
+        <div class="eyebrow">Current source · v1.0.5</div>
+        <h2>Modular source layout</h2>
+        <p class="muted">The current source separates orchestration, configuration, support services, API interop and the optional indicator into focused files.</p>
+      </div>
+      <div class="feature-grid">
+        <article class="feature"><h3>Main watcher · PS1</h3><p>Orchestrates the monitoring loop, engine state, safety checks and shutdown state machine.</p></article>
+        <article class="feature"><h3>Configuration · PSD1</h3><p>Stores runtime settings and validated timing and behavior options.</p></article>
+        <article class="feature"><h3>Support module</h3><p>Provides logging, startup status, graceful-stop signaling and refresh support.</p></article>
+        <article class="feature"><h3>Interop module</h3><p>Finds the matching Remote API DLL, prepares the native C# source and manages API setup.</p></article>
+        <article class="feature"><h3>MacroButtons module</h3><p>Owns the single STATEONLY writer. The indicator is optional and its failures are non-fatal.</p></article>
+        <article class="feature"><h3>Native C# + VBS</h3><p>Defines Windows and VoiceMeeter interop, hidden launch and graceful stop.</p></article>
+      </div>
+      <div class="note" style="margin-top:16px"><strong>Module contract</strong><p>Import order is Support → Interop → MacroButtons. Keep the PS1, PSD1, VBS, three PSM1 modules and C# source together in one application folder. Before automatic shutdown, an accepted STATEONLY OFF write is followed by a 1000ms allowance and final idle/display/stop checks. API acceptance is not visual readback; the allowance does not guarantee a visible UI update.</p></div>
+    </section>
+
     <section id="quick-start" class="section">
       <div class="section-head">
         <div class="eyebrow">Getting started</div>
         <h2>Quick start</h2>
-        <p class="muted">The published release is distributed as source files. There is no separate installer or executable package.</p>
+        <p class="muted">The current modular source is available as a ZIP snapshot of the main branch. The v1.0.5 source baseline is integrated but is not yet a tagged public release. There is no separate installer or executable package.</p>
       </div>
       <div class="steps">
         <article class="step">
           <h3>Download</h3>
-          <p>Get the v1.0.1 source ZIP from the button at the top of this page.</p>
+          <p>Download the current main-branch ZIP from the button above. The latest tagged public release remains v1.0.1 and is available under Published releases.</p>
         </article>
         <article class="step">
           <h3>Extract</h3>
-          <p>Unpack the archive. Keep <code>VoiceMeeter-IdleWatcher.ps1</code> and <code>VoiceMeeter-IdleWatcher.vbs</code> in the same folder.</p>
+          <p>Unpack the archive and keep all files together in one folder: the PS1 and PSD1, VBS launcher, three PowerShell modules and C# interop source.</p>
         </article>
         <article class="step">
           <h3>Start</h3>
@@ -472,7 +490,7 @@
         </div>
         <div class="note">
           <strong>Optional MacroButtons indicator</strong>
-          <p>The watcher can synchronize a MacroButtons visual state through Remote API STATEONLY mode. This changes the displayed state without executing the button macro. If MacroButtons synchronization is unavailable, the main watcher continues to work.</p>
+          <p>The optional STATEONLY write changes the indicator without executing the button macro. API acceptance is not visual readback, and the 1000ms pre-shutdown allowance does not guarantee that the UI has visibly updated. MacroButtons failures never block the core watcher.</p>
         </div>
       </div>
     </section>
@@ -480,8 +498,8 @@
     <section id="documentation" class="section">
       <div class="section-head">
         <div class="eyebrow">Explore the project</div>
-        <h2>Documentation and community</h2>
-        <p class="muted">Read the guides, inspect the source, or follow project changes on GitHub.</p>
+        <h2>Documentation and project</h2>
+        <p class="muted">Read the guides, inspect the modular source and architecture, or follow project changes on GitHub.</p>
       </div>
       <div class="docs-grid">
         <a class="doc-link" href="https://github.com/AnAllegory/VoiceMeeter-IdleWatcher/blob/main/README.md"><strong>English guide ↗</strong><span>Features, configuration, launch and stop instructions.</span></a>
@@ -491,7 +509,6 @@
         <a class="doc-link" href="https://github.com/AnAllegory/VoiceMeeter-IdleWatcher/blob/main/SECURITY.md"><strong>Security policy ↗</strong><span>How to report a security issue privately.</span></a>
         <a class="doc-link" href="https://github.com/AnAllegory/VoiceMeeter-IdleWatcher/blob/main/CODE_OF_CONDUCT.md"><strong>Code of Conduct ↗</strong><span>Community participation and contribution standards.</span></a>
         <a class="doc-link" href="https://github.com/AnAllegory/VoiceMeeter-IdleWatcher/blob/main/ROADMAP.md"><strong>Roadmap ↗</strong><span>Potential improvements and project direction.</span></a>
-        <a class="doc-link" href="https://github.com/AnAllegory/VoiceMeeter-IdleWatcher/discussions"><strong>Discussions ↗</strong><span>Questions and project conversations.</span></a>
         <a class="doc-link" href="https://github.com/AnAllegory/VoiceMeeter-IdleWatcher/blob/main/LICENSE"><strong>MIT License ↗</strong><span>Open-source license terms.</span></a>
       </div>
     </section>
@@ -502,12 +519,13 @@
       <h2>VoiceMeeter IdleWatcher</h2>
       <p class="muted">Автоматическое выключение VoiceMeeter с жёстким правилом безопасности: должен истечь заданный порог бездействия, а дисплей должен быть полностью выключен.</p>
       <div class="release-row">
-        <span class="release-pill" style="color:#17243a;border-color:#dce4ef;background:#f3f6fb"><span class="release-dot"></span>Последний опубликованный релиз: v1.0.1</span>
+        <span class="release-pill" style="color:#17243a;border-color:#dce4ef;background:#f3f6fb"><span class="release-dot"></span>Текущий исходный код: модульная версия v1.0.5</span>
+        <span class="release-pill" style="color:#17243a;border-color:#dce4ef;background:#f3f6fb">Последний опубликованный релиз: v1.0.1</span>
         <span class="release-pill" style="color:#17243a;border-color:#dce4ef;background:#f3f6fb">Windows PowerShell 5.1</span>
       </div>
       <div class="actions">
-        <a class="button" style="background:#2859c5;color:#fff" href="https://github.com/AnAllegory/VoiceMeeter-IdleWatcher/archive/refs/tags/v1.0.1.zip">Скачать исходники ZIP · v1.0.1</a>
-        <a class="button" style="background:#edf3ff;color:#2859c5" href="https://github.com/AnAllegory/VoiceMeeter-IdleWatcher/releases/latest">Примечания к релизу</a>
+        <a class="button" style="background:#2859c5;color:#fff" href="https://github.com/AnAllegory/VoiceMeeter-IdleWatcher/archive/refs/heads/main.zip">Скачать актуальные исходники · main</a>
+        <a class="button" style="background:#edf3ff;color:#2859c5" href="https://github.com/AnAllegory/VoiceMeeter-IdleWatcher/releases/latest">Опубликованные релизы</a>
         <a class="button" style="background:#edf3ff;color:#2859c5" href="https://github.com/AnAllegory/VoiceMeeter-IdleWatcher">Репозиторий GitHub</a>
       </div>
 
@@ -528,7 +546,7 @@
       <p class="muted">Остановка IdleWatcher завершает только саму утилиту. Она не выключает VoiceMeeter.</p>
 
       <h2 style="margin-top:30px">Как принимается решение</h2>
-      <p class="muted">Упрощённая схема реального потока работы. Непосредственно перед командой отключения порог бездействия и состояние дисплея проверяются ещё раз.</p>
+      <p class="muted">Упрощённая схема текущего модульного процесса. Если API принимает команду STATEONLY OFF, watcher выдерживает паузу 1000 мс, чтобы MacroButtons успел обработать изменение, а затем непосредственно перед выключением повторно проверяет бездействие, состояние дисплея и запрос штатной остановки.</p>
       <div class="diagram-wrap">
         <svg class="diagram" viewBox="0 0 900 735" role="img" aria-labelledby="diagram-title-ru diagram-desc-ru" xmlns="http://www.w3.org/2000/svg">
           <title id="diagram-title-ru">Схема работы VoiceMeeter IdleWatcher</title>
@@ -571,11 +589,25 @@
           <text class="node-small" x="450" y="705">Затем новый цикл наблюдения</text>
         </svg>
       </div>
+      <p class="muted">Подробная последовательность: необязательная команда STATEONLY OFF → пауза 1000 мс → финальная проверка idle/display/STOP → Command.Shutdown. Если условия безопасности изменились, выключение отменяется.</p>
+
+      <h2 style="margin-top:30px">Модульная архитектура исходников</h2>
+      <p>Текущая версия v1.0.5 разделяет программу по ответственности. Все файлы должны оставаться вместе в одной папке приложения.</p>
+      <div class="feature-grid">
+        <article class="feature"><h3>Оркестратор · PS1</h3><p>Главный цикл наблюдения, состояние VoiceMeeter, проверки безопасности и последовательность выключения.</p></article>
+        <article class="feature"><h3>Конфигурация · PSD1</h3><p>Параметры запуска и интервалы с проверкой допустимых значений.</p></article>
+        <article class="feature"><h3>Support</h3><p>Журналирование, статус запуска, сигналы штатной остановки и обновления.</p></article>
+        <article class="feature"><h3>Interop</h3><p>Поиск DLL, подготовка и компиляция C# interop, вход в Remote API.</p></article>
+        <article class="feature"><h3>MacroButtons</h3><p>Единственный writer для STATEONLY. Индикатор необязателен, его ошибки не блокируют watcher.</p></article>
+        <article class="feature"><h3>Native C# и VBS</h3><p>Нативные объявления Windows/VoiceMeeter и скрытый запуск со штатной остановкой.</p></article>
+      </div>
+      <div class="note" style="margin-top:16px"><strong>Важные границы</strong><p>Порядок импорта модулей: Support → Interop → MacroButtons. Перед автоматическим выключением успешная команда STATEONLY OFF сопровождается паузой 1000 мс, после которой выполняется финальная проверка idle/display/STOP. Принятие команды API не является считыванием видимого состояния, а пауза не гарантирует обновление интерфейса.</p></div>
 
       <h2 style="margin-top:30px">Быстрый запуск</h2>
+      <p class="muted">Скачайте ZIP-снимок актуальной ветки main. Исходная модульная версия v1.0.5 уже находится в публичном репозитории, но пока не оформлена отдельным тегом релиза.</p>
       <div class="steps">
-        <article class="step"><h3>Скачать</h3><p>Скачайте ZIP с исходниками версии v1.0.1 по кнопке выше.</p></article>
-        <article class="step"><h3>Распаковать</h3><p>Файлы <code>VoiceMeeter-IdleWatcher.ps1</code> и <code>VoiceMeeter-IdleWatcher.vbs</code> должны лежать в одной папке.</p></article>
+        <article class="step"><h3>Скачать</h3><p>Скачайте текущий ZIP ветки main по кнопке выше. Последний тегированный релиз v1.0.1 доступен отдельно в разделе опубликованных релизов.</p></article>
+        <article class="step"><h3>Распаковать</h3><p>Все файлы архива должны лежать вместе: PS1, PSD1, VBS, три модуля <code>*.psm1</code> и исходник <code>VMRIdleWatcherNative.cs</code>.</p></article>
         <article class="step"><h3>Запустить</h3><p>Дважды щёлкните <code>VoiceMeeter-IdleWatcher.vbs</code>. PowerShell запустится в скрытом режиме.</p></article>
         <article class="step"><h3>Остановить</h3><p>Выполните команду штатной остановки из той же папки:</p><pre>wscript.exe VoiceMeeter-IdleWatcher.vbs /stop</pre></article>
       </div>
@@ -589,10 +621,10 @@
           <li>Подходящая DLL VoiceMeeter Remote API.</li>
           <li>Включённый Windows Script Host для VBS-запускателя.</li>
         </ul>
-        <div class="note"><strong>Необязательный индикатор MacroButtons</strong><p>Наблюдатель может синхронизировать отображаемое состояние кнопки через режим Remote API STATEONLY. Он меняет только индикацию, не запуская макрос. Недоступность MacroButtons не мешает основной работе наблюдателя.</p></div>
+        <div class="note"><strong>Необязательный индикатор MacroButtons</strong><p>Режим STATEONLY меняет индикацию, не запуская макрос. Принятие команды API не подтверждает фактическое отображение состояния, а пауза 1000 мс перед выключением не гарантирует визуального обновления. Ошибки MacroButtons не мешают основной работе наблюдателя.</p></div>
       </div>
 
-      <h2 style="margin-top:30px">Документация и сообщество</h2>
+      <h2 style="margin-top:30px">Документация и проект</h2>
       <div class="docs-grid">
         <a class="doc-link" href="https://github.com/AnAllegory/VoiceMeeter-IdleWatcher/blob/main/README.ru.md"><strong>Инструкция на русском ↗</strong><span>Возможности, настройки, запуск и остановка.</span></a>
         <a class="doc-link" href="https://github.com/AnAllegory/VoiceMeeter-IdleWatcher/blob/main/README.md"><strong>English guide ↗</strong><span>Documentation in English.</span></a>
@@ -601,7 +633,6 @@
         <a class="doc-link" href="https://github.com/AnAllegory/VoiceMeeter-IdleWatcher/blob/main/SECURITY.md"><strong>Безопасность ↗</strong><span>Как конфиденциально сообщить об уязвимости.</span></a>
         <a class="doc-link" href="https://github.com/AnAllegory/VoiceMeeter-IdleWatcher/blob/main/CODE_OF_CONDUCT.md"><strong>Правила сообщества ↗</strong><span>Стандарты участия и взаимодействия.</span></a>
         <a class="doc-link" href="https://github.com/AnAllegory/VoiceMeeter-IdleWatcher/blob/main/ROADMAP.md"><strong>Планы проекта ↗</strong><span>Возможные улучшения и направление развития.</span></a>
-        <a class="doc-link" href="https://github.com/AnAllegory/VoiceMeeter-IdleWatcher/discussions"><strong>Обсуждения ↗</strong><span>Вопросы и беседы о проекте.</span></a>
         <a class="doc-link" href="https://github.com/AnAllegory/VoiceMeeter-IdleWatcher/blob/main/LICENSE"><strong>Лицензия MIT ↗</strong><span>Условия открытой лицензии.</span></a>
       </div>
     </section>
