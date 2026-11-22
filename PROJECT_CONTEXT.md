@@ -5,7 +5,7 @@
 **Default branch:** main  
 **Visibility:** Public  
 **Source baseline:** v1.0.5  
-**Status:** Modular source integrated; next public release tag has not yet been assigned.
+**Status:** Modular source staged in draft PR #10; pending merge to main and a separate public release decision.
 
 > For a new review or development session: read this document, REPOSITORY_LINEAGE.md, ARCHITECTURE.md, CHANGELOG.md, ROADMAP.md, SECURITY.md and AGENTS.md, then inspect the actual source files and the public modular workflow. The current source is authoritative if documentation and code ever disagree.
 
@@ -198,14 +198,14 @@ Always distinguish static CI, source inspection and maintainer-reported runtime 
 ## 9. Documentation map
 
 - README.md and README.ru.md — user-facing overview, requirements, configuration and start/stop instructions.
-- REPOSITORY_LINEAGE.md — relationship between the public monolithic project and the private modular Beta.
+- REPOSITORY_LINEAGE.md — history of the public monolithic source and its modular development workspace.
 - ARCHITECTURE.md — module boundaries, state flow and safety contracts.
-- CHANGELOG.md — version-by-version Beta history.
+- CHANGELOG.md — public change history and internal modular development milestones.
 - PROJECT_CONTEXT.md — this handover, source invariants and runtime evidence.
 - GROK_REVIEW_BRIEF.md — historical technical review request and its disposition.
 - AGENTS.md — mandatory rules for future review and maintenance.
-- ROADMAP.md — completed Beta milestones, open observations and deliberate non-goals.
-- SECURITY.md — private vulnerability reporting and safe handling of diagnostic material.
+- ROADMAP.md — current project status, follow-up observations and deliberate non-goals.
+- SECURITY.md — vulnerability reporting guidance and safe handling of diagnostic material.
 - LICENSE — MIT license terms.
 
 This repository is the canonical documentation and source location. Keep the bilingual guides and project records synchronized with implementation changes.
@@ -214,7 +214,7 @@ This repository is the canonical documentation and source location. Keep the bil
 
 - Communicate in Russian unless the maintainer asks otherwise.
 - Use the actual current source files and workflow as the implementation truth.
-- Compare the project with the public repository when discussing lineage, but do not treat the public monolithic source as the current Beta implementation.
+- Treat public main as the canonical baseline. Review proposed changes on their integration branch/PR; use the private Beta repository only as historical lineage context.
 - Give one concrete user instruction at a time.
 - Do not ask for information already recorded in this handover or supplied in the current conversation.
 - Do not claim a runtime test was executed by the assistant. Attribute local test results to the maintainer.
