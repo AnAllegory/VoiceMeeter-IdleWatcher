@@ -1,6 +1,6 @@
 # VoiceMeeter IdleWatcher — Project Context / Handover
 
-**Last reviewed:** 2026-11-20  
+**Last reviewed:** 2026-11-22  
 **Repository:** AnAllegory/VoiceMeeter-IdleWatcher  
 **Default branch:** main  
 **Visibility:** Public  
