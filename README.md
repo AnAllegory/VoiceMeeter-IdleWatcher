@@ -8,6 +8,15 @@ A Windows PowerShell utility that monitors user idle time and display power stat
 
 > **Current stable release and source baseline:** modular implementation **v1.0.5**, published from the public `main` branch. See the [latest release](https://github.com/AnAllegory/VoiceMeeter-IdleWatcher/releases/latest), [release discussion](https://github.com/AnAllegory/VoiceMeeter-IdleWatcher/discussions/11), and [Release notes v1.0.5](RELEASE_NOTES_v1.0.5.md).
 
+## Quick start
+
+1. Download the [Portable ZIP v1.0.5](https://anallegory.github.io/VoiceMeeter-IdleWatcher/downloads/VoiceMeeter-IdleWatcher-v1.0.5-portable.zip) and extract it.
+2. Keep all seven runtime files together in the same folder. The archive includes a bilingual `QUICK_START.txt`.
+3. Double-click `VoiceMeeter-IdleWatcher.vbs`, or run `wscript.exe VoiceMeeter-IdleWatcher.vbs` from that folder.
+4. To stop the watcher gracefully, run `wscript.exe VoiceMeeter-IdleWatcher.vbs /stop` from the same folder.
+
+The [tagged source ZIP v1.0.5](https://github.com/AnAllegory/VoiceMeeter-IdleWatcher/archive/refs/tags/v1.0.5.zip) is available for source inspection. Requirements: Windows, Windows PowerShell 5.1, VoiceMeeter with its Remote API DLL, and Windows Script Host.
+
 For the history of the transition from the original monolithic implementation to the modular source, read [REPOSITORY_LINEAGE.md](REPOSITORY_LINEAGE.md).
 
 ## Safety model
@@ -72,16 +81,13 @@ The configuration file is VoiceMeeter-IdleWatcher.psd1.
 | Setting | Default | Meaning |
 |---|---:|---|
 | IdleMinutes | 8 | Idle threshold in minutes, allowed range 1–60 |
-| CheckIntervalSec | 10 | Main monitoring interval |
-| RetryIntervalSec | 30 | Retry interval after relevant API errors |
-| ShutdownCommandLimit | 3 | Maximum successful, unconfirmed Shutdown commands per engine run |
 | MacroButtonLogicalIndex | 1 | Remote API logical button ID; -1 disables the feature |
 | MacroButtonSyncIntervalSec | 10 | Periodic indicator assertion interval |
 | DebugMode | false | Set to true for per-probe, per-write and detailed loop traces |
 
 **Logging note:** Keep `DebugMode = false` for normal use. Setting it to `true` enables high-volume per-probe, per-write and loop diagnostics, which can fill and rotate the default primary log (500 KB) and fallback log (2 MB) much faster. Enable it only temporarily while troubleshooting.
 
-Other timing, timeout, log-size and synchronization-object values are also validated in PSD1. Invalid configuration is logged as a startup failure. MacroButtons failures remain non-fatal.
+Other PSD1 entries control internal retry timing, timeouts, log rotation and single-instance coordination. Leave these implementation settings at their defaults unless a maintainer specifically asks you to change them. Invalid configuration is logged as a startup failure; MacroButtons failures remain non-fatal.
 
 ## Requirements
 
