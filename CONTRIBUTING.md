@@ -56,7 +56,7 @@ Never include passwords, API tokens, recovery codes, private keys, unredacted lo
 
 ## Pull requests
 
-1. Create a focused branch from the current public main branch.
+1. If you do not have write access, fork the repository. Create a focused branch based on the current public main branch and target your pull request at main.
 2. Keep the change set small and explain the problem it solves.
 3. Link the related Issue when one exists.
 4. Describe behavior changes, compatibility impact and validation evidence.
