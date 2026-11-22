@@ -72,7 +72,7 @@ jobs:
 
           $ps1 = Get-Content -LiteralPath 'VoiceMeeter-IdleWatcher.ps1' -Raw
           if ($ps1 -notmatch '\$WatcherVersion\s*=\s*''1\.0\.5''') {
-            throw 'Watcher version must match private Beta source baseline 1.0.5.'
+            throw 'Watcher version must match the integrated modular source baseline 1.0.5.'
           }
 
           $refreshDelayMatch = [regex]::Match($ps1, '\$macroButtonRefreshDelayMs\s*=\s*(\d+)')
