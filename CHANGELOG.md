@@ -15,11 +15,37 @@ The v1.0.0 release was published on 2026-11-19. Entries are grouped by release.
 - Made Error-level PSScriptAnalyzer findings fail the GitHub Actions workflow; Warning and Information findings remain visible but non-blocking.
 - Added `AGENTS.md` and `SECURITY.md` to the CI required-file check so repository review and security policies cannot disappear unnoticed.
 - Added `ROADMAP.md` to the CI required-file check so the project planning document cannot disappear unnoticed.
-- Moved the pre-shutdown log write ahead of the final idle/display revalidation so file logging cannot delay the safety check before `Command.Shutdown`.
+- Ensured the final idle/display/stop checks are followed directly by Command.Shutdown with no intervening log write; the successful-validation message is written only after dispatch.
 - Added a Windows Script Host check for the VBS launcher. It verifies script parsing and invalid-argument handling without starting the watcher.
 - Expanded CI source-level checks to protect the MacroButtons STATEONLY/no-readback contract and the final idle/display revalidation order before `Command.Shutdown`.
 - Aligned `AGENTS.md` and `ROADMAP.md` with the current CI checks, including VBS validation, shutdown-order verification, embedded C# compilation, and the PSScriptAnalyzer Error blocking policy.
 
+
+
+### Modular source integration
+
+- Replaced the monolithic watcher implementation with the modular orchestrator, PSD1 configuration, Support, Interop and MacroButtons modules, native C# interop source and matching VBS launcher.
+- Replaced the monolithic-source CI workflow with Windows PowerShell 5.1 parsing, modular project-contract checks, tab-indentation validation, embedded C# compilation and VBS invalid-argument validation.
+- Preserved the existing public release history and RELEASE_NOTES_v1.0.0.md; internal Beta milestones below are development history, not public tags or releases.
+- Added the API availability gate: periodic/manual MacroButtons writes require known API state and a confirmed running engine; after API result -2, the last accepted indicator state is retained.
+- Retained STATEONLY (0x00000002) as a fixed module invariant, one centralized writer and no button-state readback.
+- Retained the 1000ms pre-shutdown allowance after a successful OFF write, followed by final idle/display/stop validation.
+- Moved the successful-validation log entry after Command.Shutdown dispatch so a potentially blocking log write cannot separate the final safety checks from the shutdown call.
+- Added an explicit CI contract preventing log writes between final safety checks and shutdown dispatch, plus a VBS invalid-argument check that does not start the watcher.
+- Added KeePassXC database exclusions to .gitignore.
+
+### Internal modular development milestones (not public release tags)
+
+- Internal v1.0.2 (2026-11-21): first modular working snapshot, splitting the watcher into the orchestrator, configuration, support, interop and MacroButtons modules, native C# source and VBS launcher.
+- Internal v1.0.3 (2026-11-22): fixed STATEONLY mode in the module, strengthened configuration validation and API lifecycle handling, and retained the last accepted button state when the API is unavailable.
+- Internal v1.0.4 (2026-11-22): added the 1000ms pre-shutdown allowance and moved final idle/display/stop validation after that allowance.
+- Internal v1.0.5 (2026-11-22): gated periodic and manual MacroButtons writes on a known API state and confirmed running engine.
+
+### Maintainer-reported runtime evidence
+
+On 2026-11-22 the maintainer exercised the v1.0.5 source on the target Windows PC. The automatic sequence recorded OFF acceptance at 16:14:13.513, the 1000ms allowance at 16:14:13.519, final validation at 16:14:14.537, Command.Shutdown return code 0 at 16:14:14.557, and engine stop confirmation at 16:14:15.617. After waking the PC, the maintainer observed MacroButton 1 OFF and VoiceMeeter not running.
+
+The exact visual instant when the button extinguished relative to engine shutdown was not observed because the display was Off during the sequence. CI does not verify the live MacroButtons UI or VoiceMeeter runtime.
 
 ## [1.0.1] - 2026-11-19
 

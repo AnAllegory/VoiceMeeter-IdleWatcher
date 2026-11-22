@@ -5,135 +5,259 @@
 <a id="english"></a>
 ## English
 
-This document gives a high-level view of the watcher's control flow. It complements the source code; the PowerShell and VBScript files remain the definitive implementation.
+This document describes the current modular source baseline v1.0.5 in the public repository. It follows the earlier monolithic implementation and uses a CI workflow aligned with the modular source layout. See REPOSITORY_LINEAGE.md for the project history. The current source files define the implementation if any wording here becomes stale.
 
-### Main control flow
+### Modules and ownership
+
+The main PS1 is the orchestrator. It loads and validates PSD1 configuration, imports the modules in the required order and owns the monitoring/shutdown state machine.
+
+| Component | Responsibility |
+|---|---|
+| VoiceMeeter-IdleWatcher.ps1 | Orchestration, engine state, idle/display gates, shutdown/retry logic, lifecycle coordination |
+| VoiceMeeter-IdleWatcher.psd1 | Validated configuration values |
+| VoiceMeeter-IdleWatcher.Support.psm1 | Logging, startup status, stop and immediate-refresh signaling |
+| VoiceMeeter-IdleWatcher.Interop.psm1 | Remote DLL discovery, C# source substitution/compile, API Login recovery |
+| VoiceMeeter-IdleWatcher.MacroButtons.psm1 | Single STATEONLY writer, last accepted state and last write result |
+| VMRIdleWatcherNative.cs | Windows display/idle/events and VoiceMeeter Remote API native declarations |
+| VoiceMeeter-IdleWatcher.vbs | Hidden PowerShell launcher, startup-status handling and graceful /stop |
+
+Import order is **Support -> Interop -> MacroButtons**. Keep the PS1, PSD1, VBS, three PowerShell modules and C# source together.
+
+### Main lifecycle
 
 ```mermaid
 flowchart TD
-    A[User starts the VBS launcher] --> B[Launch hidden PowerShell watcher]
-    B --> C[Initialize logging, single-instance guard, display notifications and Remote API]
-    C --> MB[Assert MacroButtons ON with STATEONLY]
-    MB --> D[Monitoring loop]
-    D --> MB
-
-    D --> E[Read Windows idle duration]
-    D --> F[Read display power state]
-    D --> G[Check VoiceMeeter engine and API session]
-
-    E --> H{Idle threshold reached?}
-    F --> I{Display state is Off?}
-    H -->|No| D
-    I -->|No| D
-    H -->|Yes| J{Both conditions satisfied?}
-    I -->|Yes| J
-
-    J -->|No| D
-    J -->|Yes| K[Re-check idle duration and display state]
-    K --> L{Still eligible?}
-    L -->|No| D
-    L -->|Yes| M[Send Command.Shutdown through Remote API]
-    M --> N[Probe for engine stop or restart]
-    N --> D
-
-    P[User requests /stop through VBS] --> Q[Signal named Windows stop event]
-    Q --> O[Set MacroButtons display state to OFF with STATEONLY]
-    T[Duplicate START request] --> U[Signal named auto-reset refresh event]
-    U --> MB
-    O --> R[Log out, unregister notifications and release mutex]
-    R --> S[Watcher exits]
+    A[Start VBS launcher] --> B[Launch hidden PowerShell watcher]
+    B --> C[Load PSD1 and validate configuration]
+    C --> D[Import Support then Interop then MacroButtons]
+    D --> E[Initialize native interop and API state]
+    E --> F[Monitoring loop]
+    F --> G[Probe engine/API and update indicator when writes are allowed]
+    F --> H[Read idle duration]
+    F --> I[Read display power state]
+    G --> F
+    H --> J{Idle threshold reached?}
+    I --> K{Display fully Off?}
+    J -->|No| F
+    K -->|No| F
+    J -->|Yes| L{Both conditions true and no STOP?}
+    K -->|Yes| L
+    L -->|No| F
+    L -->|Yes| M[Pre-shutdown MacroButtons OFF attempt]
+    M --> N{OFF accepted?}
+    N -->|Yes| O[Wait 1000 ms]
+    N -->|No or feature disabled| P[Skip optional UI allowance]
+    O --> Q[Final idle display STOP validation]
+    P --> Q
+    Q --> R{Still safe?}
+    R -->|No| S[Cancel shutdown; restore ON when possible]
+    R -->|Yes| T[Send Command.Shutdown]
+    S --> F
+    T --> U[Confirm engine stop or observe restart]
+    U --> F
+    V[External API teardown / manual Exit] --> W[Do not write to unavailable server]
+    W --> X[Retain last API-accepted indicator state]
 ```
 
-### Safety conditions
+### Shutdown safety gate
 
-Automatic shutdown is permitted only when **both** conditions are true at the final check:
+An automatic shutdown command is permitted only when all required safety conditions remain true at the final validation immediately before dispatch:
 
-1. The configured Windows idle threshold has been reached.
-2. The display power state is **Off (0)**.
+- The Windows idle threshold is reached.
+- The display is fully Off (0).
+- No graceful /stop request is pending.
 
-Display **On (1)**, **Dimmed (2)**, or an unknown display state blocks automatic shutdown. The conditions are checked again immediately before the shutdown command is sent.
+On (1), Dimmed (2), unknown or unavailable display state blocks shutdown. The final validation occurs after the 1000ms refresh allowance when the optional STATEONLY OFF write succeeded. If a condition changes during the wait, shutdown is cancelled and ON is restored when the Remote API still permits it.
 
-If VoiceMeeter is not running, the watcher continues monitoring. It can detect a later engine start and apply the same conditions while the computer remains idle and the display remains Off.
+Stopping the watcher does not issue Command.Shutdown.
 
-### Start and stop
+### Remote API and MacroButtons state
 
-- The VBS launcher starts PowerShell hidden and waits for an explicit startup status.
-- The `/stop` argument signals the running watcher through a named Windows event.
-- A graceful stop logs out of the Remote API, unregisters display notifications, closes stop-event resources, releases the single-instance mutex and exits.
-- Stopping the watcher does **not** itself shut down VoiceMeeter.
+The Remote API is the authority for writes. A successful Login does not alone prove that the VoiceMeeter engine is running; the engine is probed separately.
 
-### MacroButtons state display
+MacroButtons is optional and non-fatal. Its module owns the only STATEONLY write path:
 
-The watcher periodically asserts ON for the configured MacroButtons logical ID every 10 seconds and asserts OFF during graceful cleanup. It does not read the button state: the process itself is the source of truth. Remote API STATEONLY changes only the visual state and never executes the button macro. A repeated START request signals the active watcher through an auto-reset event for an immediate refresh. Button synchronization is optional: unavailable API calls or an unavailable button do not affect the main monitoring loop. The current default logical button ID is 1; choose an ID that matches the local MacroButtons layout. Set `$MacroButtonLogicalIndex` to -1 to disable synchronization.
+- STATEONLY is fixed to 0x00000002 inside VoiceMeeter-IdleWatcher.MacroButtons.psm1.
+- The default logical button index is 1; -1 disables the feature.
+- ON is asserted while the engine is confirmed available.
+- OFF is attempted before an IdleWatcher-issued automatic shutdown, while the API is still available.
+- Periodic synchronization and explicit refresh require both known API state and a confirmed running engine.
+- When IsParametersDirty = -2 confirms that the server is unavailable, no periodic/manual OFF write is attempted. The last API-accepted indicator state is retained.
+- On graceful watcher stop, ON is asserted only if the API confirms the engine is available. If not, the last accepted state is retained.
 
-### Scope
+The watcher does not use GetStatus for button-state readback and does not call MacroButton_IsDirty. A SetStatus return code of zero means that the Remote API accepted the command; it does not prove that the MacroButtons window has rendered the new state.
 
-This is a simplified architecture diagram, not a complete representation of every retry, timeout, API recovery path or logging branch. Consult the current source files for exact behavior. MacroButtons STATEONLY visual-state synchronization has been confirmed by the maintainer on the target Windows system; GitHub Actions checks the source contract but cannot test the local VoiceMeeter UI.
+The status fields have distinct meanings:
+
+| Field | Meaning |
+|---|---|
+| Desired | State the watcher currently wants the indicator to show |
+| LastAccepted | Last state successfully accepted by Remote API |
+| WriterStatus | Result/status of the most recent MacroButtons write attempt; not live API health |
+| LastAcceptedAt | Time of the last successful API acceptance |
+
+### Pre-shutdown display-refresh allowance
+
+The 1000ms wait is a timing allowance intended to give the MacroButtons application's own state-change polling loop time to process the new state before the VoiceMeeter engine closes. The watcher does not poll or read back the displayed button state. The allowance is not a guarantee of visual refresh.
+
+If the feature is disabled or OFF is not accepted, the optional wait is skipped. MacroButtons failure does not become a fatal shutdown prerequisite. Regardless of the optional indicator result, the final idle/display/STOP safety validation remains mandatory before an automatic shutdown command.
+
+### API result handling
+
+- IsParametersDirty() >= 0: Remote API is responding; the source separately determines whether the engine is confirmed running.
+- -2: no Remote API server. This is the known unavailable transition; writes are skipped and the last accepted indicator state is retained.
+- -1 or another undocumented negative result: API/client state is not safely resolved. The watcher must not treat an unknown result as proof that the engine stopped or send an OFF transition on that assumption.
+- Login success and engine availability are distinct facts.
+
+### DLL selection and C# marker contract
+
+The DLL is chosen by the **PowerShell watcher process architecture**, not by guessing the VoiceMeeter process bitness:
+
+- 64-bit PowerShell: VoicemeeterRemote64.dll
+- 32-bit PowerShell: VoicemeeterRemote.dll
+
+The C# source contains exactly one __VOICEMEETER_DLL_PATH__ marker inside the verbatim string literal. Interop reads the file as UTF-8, doubles embedded quotes in the selected path and replaces the marker before compilation. Preserve this contract.
+
+### Graceful stop and cleanup
+
+A normal /stop request signals the running watcher. The watcher leaves its main loop and performs cleanup: it handles the indicator according to confirmed API availability, logs out, unregisters display notifications, closes synchronization events and releases the single-instance mutex. It does not shut down VoiceMeeter as a side effect of stopping itself.
+
+### Known lifecycle limitation
+
+A manual VoiceMeeter Exit can remove the Remote API server before the watcher can deliver a STATEONLY OFF command. After -2, an OFF write cannot be made through that server. This is an accepted API lifecycle limitation. The project does not add process polling, WMI, Process.Exited handlers, launcher ownership or a second writer.
+
+### Runtime evidence boundary
+
+The maintainer's 2026-11-22 v1.0.5 test confirmed the automatic sequence in the log: OFF accepted at 16:14:13.513, 1000ms allowance started at 16:14:13.519, final validation passed at 16:14:14.537, Shutdown returned code 0 at 16:14:14.557 and engine stop was confirmed at 16:14:15.617. After waking the PC, the maintainer observed button 1 OFF and VoiceMeeter absent.
+
+This confirms the post-wake end state and the shutdown sequence. It does **not** establish the exact visual instant at which the button extinguished relative to engine shutdown, because the display was Off during that interval. CI cannot resolve this UI timing question.
 
 <a id="русский"></a>
 ## Русский
 
-Этот документ показывает общую логику работы наблюдателя. Он дополняет исходный код; фактическая реализация определяется файлами PowerShell и VBScript.
+Этот документ описывает текущую модульную исходную версию v1.0.5 в публичном репозитории. Она продолжает первоначальную монолитную реализацию, а workflow соответствует модульной структуре исходников. История проекта описана в REPOSITORY_LINEAGE.md. Если формулировка в документации расходится с исходниками, приоритет имеют актуальные исходники.
 
-### Основной поток работы
+### Модули и ответственность
+
+Главный PS1 является оркестратором. Он загружает и проверяет конфигурацию PSD1, импортирует модули в заданном порядке и управляет автоматом состояний наблюдения и выключения.
+
+| Компонент | Ответственность |
+|---|---|
+| VoiceMeeter-IdleWatcher.ps1 | Оркестрация, состояние движка, проверки idle/display, выключение, повторы и жизненный цикл |
+| VoiceMeeter-IdleWatcher.psd1 | Проверяемые параметры конфигурации |
+| VoiceMeeter-IdleWatcher.Support.psm1 | Журналирование, статус запуска, сигналы остановки и немедленного обновления |
+| VoiceMeeter-IdleWatcher.Interop.psm1 | Поиск Remote DLL, подстановка C#-источника, компиляция и восстановление Login |
+| VoiceMeeter-IdleWatcher.MacroButtons.psm1 | Единственный writer STATEONLY, последнее принятое состояние и результат последней записи |
+| VMRIdleWatcherNative.cs | Нативные объявления Windows display/idle/events и VoiceMeeter Remote API |
+| VoiceMeeter-IdleWatcher.vbs | Скрытый запуск PowerShell, обработка статуса запуска и штатный /stop |
+
+Порядок импорта: **Support -> Interop -> MacroButtons**. PS1, PSD1, VBS, три PowerShell-модуля и C#-файл должны находиться вместе.
+
+### Основной жизненный цикл
 
 ```mermaid
 flowchart TD
-    A[Пользователь запускает VBS] --> B[Скрытый запуск PowerShell]
-    B --> C[Инициализация журналов, защиты от второго экземпляра, уведомлений дисплея и Remote API]
-    C --> MB[Установка ON для MacroButtons через STATEONLY]
-    MB --> D[Цикл наблюдения]
-    D --> MB
-
-    D --> E[Получение времени бездействия Windows]
-    D --> F[Получение состояния питания дисплея]
-    D --> G[Проверка VoiceMeeter и API-сессии]
-
-    E --> H{Порог бездействия достигнут?}
-    F --> I{Дисплей полностью выключен?}
-    H -->|Нет| D
-    I -->|Нет| D
-    H -->|Да| J{Оба условия выполнены?}
-    I -->|Да| J
-
-    J -->|Нет| D
-    J -->|Да| K[Повторная проверка бездействия и дисплея]
-    K --> L{Условия всё ещё выполнены?}
-    L -->|Нет| D
-    L -->|Да| M[Команда Command.Shutdown через Remote API]
-    M --> N[Проверка остановки или перезапуска движка]
-    N --> D
-
-    P[Пользователь передаёт /stop через VBS] --> Q[Сигнал именованному событию Windows]
-    Q --> O[Установка OFF на MacroButtons через STATEONLY]
-    T[Повторный запрос START] --> U[Сигнал именованному событию обновления]
-    U --> MB
-    O --> R[Logout, снятие уведомлений и освобождение mutex]
-    R --> S[Завершение наблюдателя]
+    A[Запуск VBS] --> B[Скрытый запуск PowerShell watcher]
+    B --> C[Загрузка PSD1 и проверка конфигурации]
+    C --> D[Импорт Support, Interop, MacroButtons]
+    D --> E[Инициализация native interop и API]
+    E --> F[Цикл наблюдения]
+    F --> G[Проверка API/движка и синхронизация индикатора при разрешённых записях]
+    F --> H[Проверка времени бездействия]
+    F --> I[Проверка состояния дисплея]
+    G --> F
+    H --> J{Порог бездействия достигнут?}
+    I --> K{Дисплей полностью Off?}
+    J -->|Нет| F
+    K -->|Нет| F
+    J -->|Да| L{Оба условия выполнены и STOP не запрошен?}
+    K -->|Да| L
+    L -->|Нет| F
+    L -->|Да| M[Попытка MacroButtons OFF]
+    M --> N{OFF принят API?}
+    N -->|Да| O[Ожидание 1000 мс]
+    N -->|Нет или функция отключена| P[Пропуск необязательной UI-паузы]
+    O --> Q[Финальная проверка idle display STOP]
+    P --> Q
+    Q --> R{Условия всё ещё безопасны?}
+    R -->|Нет| S[Отмена выключения; восстановление ON при возможности]
+    R -->|Да| T[Команда Command.Shutdown]
+    S --> F
+    T --> U[Подтверждение остановки или обнаружение перезапуска]
+    U --> F
+    V[Внешнее завершение API / ручной Exit] --> W[Не писать в недоступный сервер]
+    W --> X[Сохранить последнее принятое API состояние]
 ```
 
-### Условия безопасности
+### Защитная проверка перед выключением
 
-Автоматическое отключение разрешено только при одновременном выполнении **двух условий** во время финальной проверки:
+Автоматическое выключение разрешено только тогда, когда непосредственно перед отправкой команды остаются истинными все условия:
 
-1. Достигнут заданный порог бездействия Windows.
-2. Состояние питания дисплея — **Off (0)**.
+- Достигнут порог бездействия Windows.
+- Дисплей полностью выключен (0).
+- Не поступил запрос штатной остановки /stop.
 
-Состояния дисплея **On (1)**, **Dimmed (2)** или неизвестное состояние блокируют автоматическое отключение. Оба условия повторно проверяются непосредственно перед отправкой команды выключения.
+Состояния On (1), Dimmed (2), неизвестное или недоступное блокируют выключение. Если необязательная команда STATEONLY OFF принята, после паузы 1000 мс все три условия проверяются повторно. Если во время ожидания хотя бы одно условие изменилось, выключение отменяется, а ON восстанавливается, пока Remote API ещё доступен.
 
-Если VoiceMeeter не запущен, наблюдатель продолжает мониторинг. Он может обнаружить последующий запуск движка и применить те же условия, пока компьютер остаётся бездействующим, а дисплей выключен.
+Остановка watcher не отправляет Command.Shutdown.
 
-### Запуск и остановка
+### Remote API и состояние MacroButtons
 
-- VBS-запускатель скрыто запускает PowerShell и ожидает явного статуса запуска.
-- Аргумент `/stop` передаёт работающему наблюдателю сигнал через именованное событие Windows.
-- При штатной остановке выполняется Logout из Remote API, снимаются уведомления дисплея, закрываются ресурсы события, освобождается mutex единственного экземпляра, после чего процесс завершается.
-- Остановка наблюдателя **сама по себе не выключает VoiceMeeter**.
+Remote API является единственным каналом записи. Успешный Login сам по себе ещё не означает, что движок VoiceMeeter запущен; состояние движка проверяется отдельно.
 
-### Отображение состояния MacroButtons
+MacroButtons остаётся необязательной функцией, ошибки которой не должны останавливать watcher. Единственный путь записи находится в MacroButtons-модуле:
 
-Наблюдатель каждые 10 секунд устанавливает ON для указанного логического ID кнопки MacroButtons, а при штатном завершении устанавливает OFF. Он не читает состояние кнопки: источником истины является состояние самого процесса. Режим Remote API STATEONLY меняет отображение, не запуская макрос. Повторный запрос START посылает работающему экземпляру сигнал через auto-reset событие для немедленного обновления кнопки. Синхронизация необязательна: недоступность API или кнопки не влияет на основной цикл наблюдения. Текущее значение логического ID кнопки по умолчанию — 1; выберите ID в соответствии с локальной раскладкой MacroButtons. Значение `$MacroButtonLogicalIndex = -1` отключает синхронизацию.
+- STATEONLY зафиксирован в VoiceMeeter-IdleWatcher.MacroButtons.psm1 как 0x00000002.
+- Логический ID кнопки по умолчанию — 1; значение -1 отключает функцию.
+- ON устанавливается, пока движок подтверждённо доступен.
+- Перед автоматическим выключением по команде IdleWatcher отправляется OFF, пока API ещё доступен.
+- Периодическая синхронизация и принудительный Refresh требуют известного состояния API и подтверждённо работающего движка.
+- Когда IsParametersDirty = -2 подтверждает отсутствие сервера, периодические и ручные OFF-записи прекращаются. Сохраняется последнее состояние, принятое API.
+- При штатной остановке watcher команда ON отправляется только при подтверждённой доступности движка. Иначе последнее принятое состояние сохраняется.
 
-### Границы схемы
+Watcher не использует GetStatus для обратного считывания состояния кнопки и не вызывает MacroButton_IsDirty. Возврат SetStatus с кодом 0 означает, что Remote API принял команду; он не подтверждает, что окно MacroButtons уже отобразило новое состояние.
 
-Это упрощённая схема архитектуры, а не полное отображение всех повторных попыток, тайм-аутов, веток восстановления API и журналирования. Точное поведение следует сверять с актуальными исходниками. Синхронизация отображаемого состояния MacroButtons через STATEONLY подтверждена сопровождающим проекта на целевом компьютере; GitHub Actions проверяет исходный контракт, но не может тестировать локальный интерфейс VoiceMeeter.
+Поля статуса имеют разные значения:
+
+| Поле | Значение |
+|---|---|
+| Desired | Состояние, которое watcher хочет установить |
+| LastAccepted | Последнее состояние, успешно принятое Remote API |
+| WriterStatus | Результат/статус последней записи MacroButtons, а не текущая доступность API |
+| LastAcceptedAt | Время последнего успешного принятия команды API |
+
+### Пауза для обновления отображения перед выключением
+
+Ожидание 1000 мс предназначено для того, чтобы приложение MacroButtons успело обработать изменение состояния собственным циклом опроса до закрытия движка VoiceMeeter. Watcher не считывает видимое состояние кнопки. Эта пауза не гарантирует визуальное обновление.
+
+Если функция отключена или OFF не принят, необязательная пауза пропускается. Ошибка MacroButtons не становится обязательным условием для выключения. При любом исходе необязательной записи финальная проверка idle/display/STOP перед автоматическим выключением обязательна.
+
+### Обработка результатов API
+
+- IsParametersDirty() >= 0: Remote API отвечает; состояние запущенного движка дополнительно определяется исходным кодом.
+- -2: сервер Remote API отсутствует. Записи пропускаются, последнее принятое состояние индикатора сохраняется.
+- -1 или другое недокументированное отрицательное значение: состояние API/клиента не разрешено безопасным образом. Не следует считать неизвестный результат доказательством остановки движка или на этом основании отправлять OFF.
+- Успешный Login и доступность движка — разные факты.
+
+### Выбор DLL и контракт маркера C#
+
+DLL выбирается по **разрядности процесса PowerShell watcher**, а не по предполагаемой разрядности процесса VoiceMeeter:
+
+- 64-разрядный PowerShell: VoicemeeterRemote64.dll
+- 32-разрядный PowerShell: VoicemeeterRemote.dll
+
+В C#-файле ровно один маркер __VOICEMEETER_DLL_PATH__ внутри verbatim-строки. Interop читает файл как UTF-8, удваивает кавычки в выбранном пути и заменяет маркер до компиляции. Этот контракт необходимо сохранять.
+
+### Штатная остановка и очистка
+
+Запрос /stop передаёт сигнал работающему watcher. Тот выходит из основного цикла и выполняет очистку: обновляет индикатор в соответствии с подтверждённой доступностью API, выполняет Logout, снимает уведомления дисплея, закрывает события синхронизации и освобождает mutex единственного экземпляра. Остановка watcher сама по себе не выключает VoiceMeeter.
+
+### Известное ограничение жизненного цикла
+
+При ручном Exit VoiceMeeter сервер Remote API может исчезнуть раньше, чем watcher сможет отправить STATEONLY OFF. После -2 отправить OFF через этот сервер невозможно. Это принятое ограничение API. В проект не добавляются опрос процессов, WMI, Process.Exited, управление жизненным циклом через launcher или второй writer.
+
+### Границы доказательств runtime-теста
+
+В тесте v1.0.5 от 2026-11-22 сопровождающий подтвердил журналом следующую последовательность автоматического выключения: OFF принят в 16:14:13.513, пауза 1000 мс началась в 16:14:13.519, финальная проверка пройдена в 16:14:14.537, Shutdown вернул код 0 в 16:14:14.557, остановка движка подтверждена в 16:14:15.617. После пробуждения ПК сопровождающий увидел, что кнопка 1 погашена, а VoiceMeeter не запущен.
+
+Это подтверждает конечное состояние после пробуждения и саму последовательность выключения. Но точный визуальный момент погасания кнопки относительно остановки движка **не установлен**, поскольку дисплей в этот промежуток был выключен. CI не может разрешить этот вопрос интерфейса.

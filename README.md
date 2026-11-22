@@ -2,167 +2,129 @@
 
 [English](README.md) | [Русский](README.ru.md)
 
-A Windows PowerShell automation tool for VoiceMeeter. It monitors Windows idle time and the display power state, and requests VoiceMeeter shutdown only when the configured idle threshold has elapsed and the display is fully off.
+A Windows PowerShell utility that monitors user idle time and display power state, then requests VoiceMeeter shutdown only when the configured idle threshold has elapsed and the display is fully Off.
 
-**Maintainer's handover notes:** see [PROJECT_CONTEXT.md](PROJECT_CONTEXT.md). This is the working reference for project history, verified behavior, known limitations, and how to resume work in a new ChatGPT conversation.
+> **Current source baseline:** modular implementation **v1.0.5**, integrated into this public repository. The integration is not yet assigned a new public release tag; see [Releases](https://github.com/AnAllegory/VoiceMeeter-IdleWatcher/releases) for published versions.
 
-## Features
+For the history of the transition from the original monolithic implementation to the modular source, read [REPOSITORY_LINEAGE.md](REPOSITORY_LINEAGE.md).
 
-- Monitors Windows user idle time.
-- Monitors the display power state through Windows power notifications.
-- Allows automatic VoiceMeeter shutdown only when both conditions are true:
-  - The idle threshold has been reached.
-  - The display state is **Off** (0).
-- Blocks automatic shutdown when the display is **On** (1), **Dimmed** (2), or unknown.
-- Uses the VoiceMeeter Remote API.
-- Discovers the matching Remote API DLL from the VoiceMeeter installation and Windows registry.
-- Prevents multiple watcher instances with a named mutex.
-- Supports graceful stop through a named Windows event.
-- Writes primary, fallback, and emergency logs.
+## Safety model
 
-## How it works
+Automatic shutdown is allowed only when both conditions are true:
 
-The watcher periodically checks Windows idle duration and the current display state.
+1. The configured Windows idle threshold has been reached.
+2. The display state is fully Off (0).
 
-The default idle threshold is **8 minutes**. A shutdown request is sent only when the display is fully off and the idle threshold has elapsed. The script checks both conditions again immediately before sending the VoiceMeeter shutdown command.
+Display On (1), Dimmed (2), unknown or unavailable blocks automatic shutdown. Idle, display state and graceful /stop are checked again after the MacroButtons refresh allowance and immediately before Command.Shutdown.
 
-If VoiceMeeter is not running, the watcher continues monitoring. If VoiceMeeter restarts while the computer remains idle and the display remains off, the watcher can detect the restart and send the shutdown request again.
+Stopping IdleWatcher does **not** shut down VoiceMeeter. It stops the watcher and performs cleanup.
 
-An unknown display state is treated as a safe condition: automatic shutdown remains blocked.
+## Automatic shutdown sequence
 
-## Architecture
+When the shutdown conditions are met:
 
-The diagram below summarizes the main control flow. For the bilingual explanation and the stop/cleanup path, see [ARCHITECTURE.md](ARCHITECTURE.md).
+1. The watcher checks idle time, display Off and whether a graceful stop was requested.
+2. If MacroButtons synchronization is enabled and the STATEONLY OFF command is accepted, the watcher waits **1000ms** to give the MacroButtons application time to process the changed display state.
+3. After the wait, it rechecks idle time, display state and /stop immediately before sending Command.Shutdown.
+4. If a safety condition changed during the wait, shutdown is cancelled and the watcher attempts to restore ON when the API is still available.
 
-```mermaid
-flowchart TD
-    A[Start VBS launcher] --> B[Launch hidden PowerShell watcher]
-    B --> C[Initialize watcher and Remote API]
-    C --> D[Monitoring loop]
-    D --> E[Read idle time]
-    D --> F[Read display state]
-    E --> G{Idle threshold reached?}
-    F --> H{Display is Off?}
-    G -->|No| D
-    H -->|No| D
-    G -->|Yes| I{Both conditions true?}
-    H -->|Yes| I
-    I -->|No| D
-    I -->|Yes| J[Re-check both conditions]
-    J --> K{Still eligible?}
-    K -->|No| D
-    K -->|Yes| L[Send VoiceMeeter shutdown command]
-    L --> M[Probe engine stop or restart]
-    M --> D
-```
+The 1000ms wait is a refresh allowance, not a readback and not a guarantee that the user interface has visibly updated. If MacroButtons is disabled or the optional OFF write is not accepted, the wait is skipped; MacroButtons failure does not disable the main shutdown feature.
 
-## Current configuration
+## MacroButtons indicator
 
-| Setting | Default | Description |
-|---|---:|---|
-| IdleMinutes | 8 | Idle threshold in minutes. Allowed range: 1–60. |
-| CheckIntervalSec | 10 seconds | Normal main-loop wait interval. |
-| RetryIntervalSec | 30 seconds | Retry interval after API errors. |
-| DebugMode | Off | Enables verbose DEBUG log entries when the -DebugMode switch is supplied. |
+The optional indicator uses VBVMR_MacroButton_SetStatus with STATEONLY (0x00000002). The mode is fixed in the module and is not configurable in PSD1. STATEONLY changes the displayed state without executing the button macro.
 
-The script also uses shorter internal intervals for API recovery and for checking whether VoiceMeeter has stopped or restarted after a shutdown request.
+- Default Remote API logical button ID: 1.
+- Set MacroButtonLogicalIndex = -1 in PSD1 to disable synchronization.
+- The watcher asserts ON while VoiceMeeter is confirmed available and performs periodic synchronization at the configured interval.
+- Before an IdleWatcher-issued automatic shutdown, it attempts OFF while the Remote API is still available.
+- During graceful watcher stop, it asserts ON if VoiceMeeter is confirmed available. If the API is unavailable or unknown, it retains the last state accepted by the API.
+- The watcher does not read the displayed button state through GetStatus and does not call MacroButton_IsDirty. A successful SetStatus return means the API accepted the command; it is not visual readback.
 
-## Project files
+The status snapshot distinguishes Desired, LastAccepted, WriterStatus and LastAcceptedAt. WriterStatus describes the most recent MacroButtons write result; it is not a live Remote API health indicator. LastAccepted records the last state accepted by the API, not a readback of the visible button.
 
-| File | Purpose |
+### Manual VoiceMeeter Exit limitation
+
+When VoiceMeeter is closed manually, the watcher may learn that the engine/API has stopped only after the Remote API server is already unavailable (IsParametersDirty = -2). It cannot send STATEONLY OFF through a server that has disappeared, so the last accepted indicator state may remain ON. This is an accepted API lifecycle limitation. When VoiceMeeter becomes available again, the watcher asserts ON.
+
+The project deliberately does not add process polling, WMI subscriptions, Process.Exited handlers or a second MacroButtons writer to work around this limitation.
+
+## Modular source layout
+
+| File | Responsibility |
 |---|---|
-| VoiceMeeter-IdleWatcher.ps1 | Main PowerShell watcher and VoiceMeeter Remote API integration. |
-| VoiceMeeter-IdleWatcher.vbs | Hidden launcher and graceful-stop entry point. |
-| README.md | English documentation. |
-| README.ru.md | Russian documentation. |
-| PROJECT_CONTEXT.md | Maintainer's project handover and context reference. |
-| AGENTS.md | Instructions for AI coding agents reviewing and changing this repository. |
-| CODE_OF_CONDUCT.md | Contributor Covenant Code of Conduct (version 2.1). |
-| SECURITY.md | Security policy and private vulnerability reporting guidance. |
-| ROADMAP.md | Potential future improvements, deferred ideas, and project change principles. |
-| ARCHITECTURE.md | Bilingual architecture overview and Mermaid diagrams. |
-| CHANGELOG.md | Repository change history and development baseline. |
-| LICENSE | MIT license terms. |
-| RELEASE_NOTES_v1.0.0.md | Release notes for the published v1.0.0 release. |
-| .gitignore | Excludes local logs, temporary files, backups, and KeePass databases from Git. |
-| .github/workflows/powershell-check.yml | Runs Windows PowerShell 5.1 parsing, VBS launcher validation, source-level safety checks, embedded C# compilation, and PSScriptAnalyzer. |
+| VoiceMeeter-IdleWatcher.ps1 | Main orchestrator, configuration validation, monitoring loop and shutdown flow |
+| VoiceMeeter-IdleWatcher.psd1 | Runtime configuration |
+| VoiceMeeter-IdleWatcher.vbs | Hidden launcher, startup status and graceful /stop |
+| VoiceMeeter-IdleWatcher.Support.psm1 | Logging, startup-status and stop/refresh support |
+| VoiceMeeter-IdleWatcher.Interop.psm1 | DLL discovery, C# source preparation and Remote API setup |
+| VoiceMeeter-IdleWatcher.MacroButtons.psm1 | Single STATEONLY writer and last-write status |
+| VMRIdleWatcherNative.cs | Windows and VoiceMeeter native interop |
 
-Keep the PS1 and VBS files in the same directory. The VBS launcher locates the PS1 file beside itself and expects the matching base filename.
+The import order is Support -> Interop -> MacroButtons. Keep the implementation files together in the same application folder.
+
+## Configuration defaults
+
+The configuration file is VoiceMeeter-IdleWatcher.psd1.
+
+| Setting | Default | Meaning |
+|---|---:|---|
+| IdleMinutes | 8 | Idle threshold in minutes, allowed range 1–60 |
+| CheckIntervalSec | 10 | Main monitoring interval |
+| RetryIntervalSec | 30 | Retry interval after relevant API errors |
+| ShutdownCommandLimit | 3 | Maximum successful, unconfirmed Shutdown commands per engine run |
+| MacroButtonLogicalIndex | 1 | Remote API logical button ID; -1 disables the feature |
+| MacroButtonSyncIntervalSec | 10 | Periodic indicator assertion interval |
+| DebugMode | false | Set to true for per-probe, per-write and detailed loop traces |
+
+Other timing, timeout, log-size and synchronization-object values are also validated in PSD1. Invalid configuration is logged as a startup failure. MacroButtons failures remain non-fatal.
 
 ## Requirements
 
 - Windows.
 - Windows PowerShell 5.1.
-- VoiceMeeter installed.
-- The VoiceMeeter Remote API DLL matching the PowerShell process architecture.
+- VoiceMeeter installed with its Remote API DLL.
 - Windows Script Host enabled for the VBS launcher.
 
-The script searches VoiceMeeter installation information in the Windows registry and common Program Files locations for the appropriate DLL: VoicemeeterRemote64.dll for a 64-bit PowerShell process or VoicemeeterRemote.dll for a 32-bit process.
+The DLL is selected for the **PowerShell watcher process architecture**: 64-bit PowerShell uses VoicemeeterRemote64.dll; 32-bit PowerShell uses VoicemeeterRemote.dll.
 
 ## Start and stop
 
-### Start
+Keep the PS1, PSD1, VBS, modules and C# source in one directory.
 
-Double-click VoiceMeeter-IdleWatcher.vbs, or run:
+Start the watcher hidden:
 
-~~~text
+```text
 wscript.exe VoiceMeeter-IdleWatcher.vbs
-~~~
+```
 
-The VBS launcher starts Windows PowerShell hidden and waits for an explicit startup status. An early startup failure is reported instead of being silently treated as a successful launch.
+Stop it gracefully:
 
-### Stop
-
-Run the VBS launcher with /stop:
-
-~~~text
+```text
 wscript.exe VoiceMeeter-IdleWatcher.vbs /stop
-~~~
+```
 
-The stop request is sent through a named Windows event. The watcher then logs out from the VoiceMeeter Remote API, closes its notification resources, releases its single-instance mutex, and exits. The launcher waits for the stop result.
+The launcher waits for explicit startup status. Graceful stop signals the existing watcher, which logs out of the Remote API, unregisters display notifications, closes event resources and releases the single-instance mutex. Do not use process termination as the normal stop method.
 
-Stopping the watcher does **not** shut down VoiceMeeter. It only stops the automation.
+## Validation status
 
-## VoiceMeeter MacroButtons
+The modular v1.0.5 source baseline previously passed the Windows PowerShell 5.1 parsing, project-contract and C# compilation workflow in the private development workspace. This repository's workflow runs those checks against the integrated source. The checks are static: they do not run VoiceMeeter or inspect the MacroButtons UI.
 
-A two-state MacroButtons button can start and stop the watcher. The commands below are the exact form confirmed by the maintainer in the current local setup.
+The maintainer also reported a successful v1.0.5 automatic-shutdown cycle on the target PC on 2026-11-22: OFF was accepted, the 1000ms allowance elapsed, final safety validation passed, Shutdown returned code 0 and the engine stop was confirmed. After waking the PC, the maintainer observed MacroButton 1 OFF and VoiceMeeter not running. The exact visual instant at which the button extinguished before engine shutdown was not directly observed while the display was Off. See PROJECT_CONTEXT.md for the timestamps and evidence boundaries.
 
-**ON action (START):**
+## Documentation
 
-~~~vb
-System.Execute("%windir%\\System32\\cmd.exe","C:\\Path\\To\\VoiceMeeter IdleWatcher","/C wscript.exe VoiceMeeter-IdleWatcher.vbs");
-~~~
+- [Repository history and modular integration](REPOSITORY_LINEAGE.md)
+- [Security policy](SECURITY.md)
+- [Project roadmap and deliberate scope](ROADMAP.md)
+- [Architecture and control flow](ARCHITECTURE.md)
+- [Change history](CHANGELOG.md)
+- [Maintainer handover and runtime evidence](PROJECT_CONTEXT.md)
+- [Historical technical review brief](GROK_REVIEW_BRIEF.md)
+- [Review and maintenance rules](AGENTS.md)
+- [Contributor Covenant Code of Conduct](CODE_OF_CONDUCT.md)
+- [Release notes v1.0.0](RELEASE_NOTES_v1.0.0.md)
+- [MIT License](LICENSE)
+- [Russian README](README.ru.md)
 
-**OFF action (STOP):**
-
-~~~vb
-System.Execute("%windir%\\System32\\cmd.exe","C:\\Path\\To\\VoiceMeeter IdleWatcher","/C wscript.exe VoiceMeeter-IdleWatcher.vbs /stop");
-~~~
-
-Replace the example working directory with the folder containing both project scripts on your own computer.
-
-While the watcher is running, it periodically asserts ON for the configured button through the VoiceMeeter Remote API. It does not read the button state: the watcher already knows its own process state. The API STATEONLY mode changes only the displayed state and never executes the button macro. Graceful watcher shutdown asserts OFF.
-
-The source setting $MacroButtonLogicalIndex selects the zero-based VoiceMeeter Remote API button ID. Its current default is 1; choose an ID that matches your local MacroButtons layout. Set the value to -1 to disable synchronization.
-
-A repeated START request does not create another watcher process. It signals the existing watcher through an auto-reset event for an immediate button refresh instead of waiting for the normal 10-second interval. Periodic ON assertions also restore the display if MacroButtons is opened after the watcher has started.
-
-If the configured button or API function is unavailable, synchronization is skipped and retried later. These optional failures are DEBUG-only, do not stop the watcher, and do not generate repeated ERROR entries. No second monitoring process is created.
-
-GitHub Actions runs Windows PowerShell 5.1 parsing, validates the VBS launcher's invalid-argument path with `cscript.exe` (without starting the watcher), checks the MacroButtons STATEONLY/no-readback contract, verifies final idle/display revalidation immediately before `Command.Shutdown` with no intervening log write, and compiles the embedded Remote API C# interop. PSScriptAnalyzer findings at **Error** severity fail the workflow; Warning and Information findings are reported but do not block it. The maintainer has also verified MacroButtons state synchronization on the target Windows system. GitHub Actions cannot test that local UI or actual VoiceMeeter/display behavior.
-
-## Logs
-
-- Primary log: VoiceMeeter-IdleWatcher.log in the script directory.
-- Fallback log: %LOCALAPPDATA%\VoiceMeeter-IdleWatcher\VoiceMeeter-IdleWatcher-fallback.log.
-- Emergency log: %TEMP%\VoiceMeeter-IdleWatcher-emergency.log.
-
-The primary and fallback logs rotate when they reach their configured size limits. Log files and their rotated copies are excluded by .gitignore and should not be committed.
-
-## Development note
-
-This project was developed with substantial and active assistance from ChatGPT, including architecture discussions, implementation analysis, troubleshooting, review of code changes, and documentation. The project maintainer controls the source files and performs runtime verification on the target Windows system.
-
-## License
-
-This project is licensed under the MIT License. See [LICENSE](LICENSE) for details.
+The implementation and current workflow are authoritative for actual behavior. Documentation must be updated whenever source behavior changes.
