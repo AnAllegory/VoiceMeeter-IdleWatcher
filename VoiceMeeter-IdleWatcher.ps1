@@ -553,7 +553,7 @@ try {
 				$displayState = [VMRIdleWatcherNative]::GetDisplayState()
 
 				$summaryNow = Get-Date
-				if (($lastStatusSummaryAt -eq [datetime]::MinValue) -or (($summaryNow - $lastStatusSummaryAt).TotalSeconds -ge 60)) {
+				if (($lastStatusSummaryAt -eq [datetime]::MinValue) -or (($summaryNow - $lastStatusSummaryAt).TotalSeconds -ge 300)) {
 					$apiStateSummary = if (-not $apiEngineStateKnown) {
 						'Unknown'
 					}
