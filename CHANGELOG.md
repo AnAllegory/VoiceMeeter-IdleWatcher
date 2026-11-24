@@ -6,19 +6,24 @@ The v1.0.0 release was published on 2026-11-19; v1.0.5 was published on 2026-11-
 
 ## [Unreleased]
 
+No changes yet.
+
+## [1.0.6] - 2026-11-24
+
 ### Fixed
 
-- Corrected the MacroButtons diagnostic summary: OFF is shown only after the pre-shutdown OFF write was accepted. When VoiceMeeter is confirmed stopped and no such OFF write was accepted, the snapshot now reports that writes are paused and the last accepted state is retained.
-- Clear the temporary pending-shutdown marker after a confirmed engine stop or a successful API re-login that confirms the engine state. This prevents a completed shutdown from remaining labelled as pending without changing the last API-accepted state or shutdown behavior.
+- Corrected the MacroButtons diagnostic summary so OFF is reported only while an accepted pre-shutdown OFF command is pending the watcher's own shutdown.
+- Clear the temporary pending-shutdown marker after a confirmed engine stop or a successful API re-login that resolves engine state. LastAccepted remains separate.
 
 ### Changed
 
-- Status snapshots are emitted immediately on the first main-loop pass and then no more often than every 300 seconds. The 10-second monitoring loop and default MacroButtons synchronization interval remain unchanged.
-- Prepared the v1.0.6 maintenance candidate and aligned its version contract, bilingual documentation and release notes. v1.0.5 remains the latest published stable release until a separate publication action.
+- Emit the first status snapshot on the first main-loop pass, then no more often than once every 300 seconds. The 10-second monitoring loop and default MacroButtons synchronization interval remain unchanged.
+- Update bilingual user and maintainer documentation and prepare a portable package with seven runtime files plus QUICK_START.txt.
 
 ### Validation
 
-- Extended CI contracts to protect diagnostic-summary semantics, pending-marker cleanup after confirmed engine stop/re-login, the immediate first snapshot and the 300-second snapshot interval. These are static checks; target-PC runtime verification remains separate.
+- Windows PowerShell 5.1 parsing, project-contract checks, C# compilation, VBS invalid-argument handling and PSScriptAnalyzer passed on merge commit `c71b20d6f4b6987be3b66758073fe325fddb4209` (Actions run #45386275337).
+- Maintainer-reported target-PC test on 2026-11-24 confirmed the immediate first snapshot, all observed snapshot intervals at or above 300 seconds, the normal idle/display-Off shutdown path, the 1000ms allowance, final safety validation, successful Shutdown and subsequent VoiceMeeter/API recovery. See RELEASE_NOTES_v1.0.6.md for timestamps and evidence limits.
 
 ## [1.0.5] - 2026-11-22
 

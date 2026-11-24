@@ -4,8 +4,8 @@
 **Current repository:** AnAllegory/VoiceMeeter-IdleWatcher  
 **Default branch:** main  
 **Visibility:** Public  
-**Source baseline:** v1.0.5 published stable; v1.0.6 candidate under review on a separate branch  
-**Status:** `main` remains at the v1.0.5 published stable baseline. The v1.0.6 maintenance candidate is prepared on separate branch `prepare-v1.0.6-maintenance` and is under review in [PR #13](https://github.com/AnAllegory/VoiceMeeter-IdleWatcher/pull/13); it is not yet merged, tagged or published. Tag `v1.0.5` points to validated commit `ad60060dbe45323fb7c782ba6d4aa6df6b0b502f`; the release discussion is [#11](https://github.com/AnAllegory/VoiceMeeter-IdleWatcher/discussions/11).
+**Source baseline:** v1.0.6 merged and target-PC validated; v1.0.5 remains the latest published GitHub Release until the v1.0.6 tag/Release is created  
+**Status:** PR #13 was merged into `main` on 2026-11-24 (merge commit `c71b20d6f4b6987be3b66758073fe325fddb4209`). The v1.0.6 source passed static CI and the maintainer-reported target-PC runtime test. The final Portable ZIP is prepared on `gh-pages`; GitHub tag/Release publication remains the final release-administration step. Tag `v1.0.5` still points to validated commit `ad60060dbe45323fb7c782ba6d4aa6df6b0b502f`; the v1.0.5 release discussion is [#11](https://github.com/AnAllegory/VoiceMeeter-IdleWatcher/discussions/11).
 
 > For a new review or development session: read this document, REPOSITORY_LINEAGE.md, ARCHITECTURE.md, CHANGELOG.md, ROADMAP.md, SECURITY.md and AGENTS.md, then inspect the actual source files and the public modular workflow. The current source is authoritative if documentation and code ever disagree.
 
@@ -162,15 +162,15 @@ After waking the PC, the maintainer visually confirmed that MacroButton 1 was no
 
 **What it does not prove:** the exact visual instant when the MacroButtons window extinguished the button relative to engine shutdown. The maintainer could not observe the button while the display was Off. There is no API readback in this design.
 
-### v1.0.6 maintenance candidate (prepared 2026-11-24; not published)
+### v1.0.6 maintenance release (merged and target-PC validated 2026-11-24)
 
-The separate-branch v1.0.6 candidate contains three maintenance changes:
+The v1.0.6 changes were merged through PR #13 (merge commit `c71b20d6f4b6987be3b66758073fe325fddb4209`) and contain three maintenance changes:
 
 - The periodic status snapshot is emitted on the first main-loop pass, then only when at least 300 seconds have elapsed since the previous snapshot. The main monitoring loop remains at its configured interval (10 seconds by default); the MacroButtons synchronization interval is separate and unchanged.
 - The diagnostic `Desired` summary now reports OFF only when the watcher has an accepted OFF write pending its own shutdown. If VoiceMeeter is confirmed stopped and no pre-shutdown OFF was accepted, the snapshot reports that writes are paused and the last accepted API state is retained.
 - The temporary pending-shutdown marker is cleared when engine stop is confirmed or a successful API re-login confirms the engine state. The last API-accepted state remains independent; Remote API writes, API gates and shutdown eligibility are unchanged.
 
-The candidate has not yet received target-PC runtime verification. Before publication, the maintainer should confirm the immediate first snapshot, the minimum 300-second interval, and one normal idle-plus-display-Off shutdown cycle. Additional review scenarios remain observations to test, not confirmed defects: Sleep/Wake event ordering, /stop arriving after Shutdown dispatch while the Remote API is still responding, and VoiceMeeter starting when the idle threshold is already reached and the display is Off.
+The maintainer-reported target-PC test on 2026-11-24 confirmed an immediate first snapshot at 15:45:23.754; five subsequent intervals of 300.332s, 300.378s, 300.379s, 300.370s and 307.692s; STATEONLY OFF accepted at 16:06:45.339; the 1000ms allowance; final validation passed at 16:06:46.394 (idle=482s, DisplayState=Off, StopRequested=False); Command.Shutdown return code 0; engine stop confirmed at 16:06:47.458; and API/engine recovery with MacroButton ON accepted at 16:10:22.892. The successful API return confirms command acceptance, not visual UI readback. Sleep/Wake event ordering, /stop arriving after Shutdown dispatch while the API is still responding, and VoiceMeeter starting when idle is already satisfied and the display is Off remain open observation scenarios, not confirmed defects or completed tests.
 
 ## 7. Accepted limitations and scope decisions
 
@@ -197,7 +197,7 @@ The public modular workflow is .github/workflows/powershell-check.yml. It runs o
 
 The workflow performs:
 - Windows PowerShell 5.1 parsing for the main script and PowerShell modules.
-- Static project-contract checks for the v1.0.6 candidate version, the 1000ms sequence, final safety validation, the STATEONLY invariant, no-readback contract, API write gates, diagnostic-summary semantics, pending-marker lifecycle and 300-second status-snapshot cadence.
+- Static project-contract checks for the v1.0.6 version, the 1000ms sequence, final safety validation, the STATEONLY invariant, no-readback contract, API write gates, diagnostic-summary semantics, pending-marker lifecycle and 300-second status-snapshot cadence.
 - Tab-indentation checks for source files.
 - C# interop compilation after the DLL marker is replaced with a placeholder path.
 - VBS invalid-argument validation without launching the watcher.
@@ -221,7 +221,7 @@ Always distinguish static CI, source inspection and maintainer-reported runtime 
 - CONTRIBUTING.md and CONTRIBUTING.ru.md — contributor workflow, development requirements and project safety contracts.
 - .github/ISSUE_TEMPLATE/ and .github/PULL_REQUEST_TEMPLATE.md — structured issue and pull-request forms.
 - RELEASE_NOTES_v1.0.5.md — published stable-release description and verification notes.
-- RELEASE_NOTES_v1.0.6.md — prepared maintenance-candidate description and pre-publication runtime checklist.
+- RELEASE_NOTES_v1.0.6.md — final bilingual maintenance-release notes, static CI result and target-PC runtime evidence.
 - LICENSE — MIT license terms.
 
 This repository is the canonical documentation and source location. Keep the bilingual guides and project records synchronized with implementation changes.
