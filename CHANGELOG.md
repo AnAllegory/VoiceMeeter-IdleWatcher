@@ -18,12 +18,16 @@ No changes yet.
 ### Changed
 
 - Emit the first status snapshot on the first main-loop pass, then no more often than once every 300 seconds. The 10-second monitoring loop and default MacroButtons synchronization interval remain unchanged.
-- Update bilingual user and maintainer documentation and prepare a portable package with seven runtime files plus QUICK_START.txt.
+- Update bilingual user and maintainer documentation and publish the portable package with seven runtime files plus QUICK_START.txt in the repository's `gh-pages` branch.
 
 ### Validation
 
 - Windows PowerShell 5.1 parsing, project-contract checks, C# compilation, VBS invalid-argument handling and PSScriptAnalyzer passed on merge commit `c71b20d6f4b6987be3b66758073fe325fddb4209` (Actions run #45386275337).
 - Maintainer-reported target-PC test on 2026-11-24 confirmed the immediate first snapshot, all observed snapshot intervals at or above 300 seconds, the normal idle/display-Off shutdown path, the 1000ms allowance, final safety validation, successful Shutdown and subsequent VoiceMeeter/API recovery. See RELEASE_NOTES_v1.0.6.md for timestamps and evidence limits.
+
+### Microsoft Defender notice
+
+- On the maintainer's Windows 11 PC, Microsoft Defender detected the downloaded Portable ZIP as `Trojan:Script/Wacatac.H!ml` and quarantined it. A separate custom scan of the installed application folder completed without a recorded detection. This does not establish a false positive or certify the archive as safe; the cause remains unresolved. Do not disable protection or restore a quarantined copy.
 
 ## [1.0.5] - 2026-11-22
 
