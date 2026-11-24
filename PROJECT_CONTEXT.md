@@ -164,10 +164,11 @@ After waking the PC, the maintainer visually confirmed that MacroButton 1 was no
 
 ### v1.0.6 maintenance candidate (prepared 2026-11-24; not published)
 
-The separate-branch v1.0.6 candidate contains two maintenance changes:
+The separate-branch v1.0.6 candidate contains three maintenance changes:
 
 - The periodic status snapshot is emitted on the first main-loop pass, then only when at least 300 seconds have elapsed since the previous snapshot. The main monitoring loop remains at its configured interval (10 seconds by default); the MacroButtons synchronization interval is separate and unchanged.
-- The diagnostic `Desired` summary now reports OFF only when the watcher has an accepted OFF write pending its own shutdown. If VoiceMeeter is confirmed stopped and no pre-shutdown OFF was accepted, the snapshot reports that writes are paused and the last accepted API state is retained. The writer, API gates and shutdown decision path are unchanged.
+- The diagnostic `Desired` summary now reports OFF only when the watcher has an accepted OFF write pending its own shutdown. If VoiceMeeter is confirmed stopped and no pre-shutdown OFF was accepted, the snapshot reports that writes are paused and the last accepted API state is retained.
+- The temporary pending-shutdown marker is cleared when engine stop is confirmed or a successful API re-login confirms the engine state. The last API-accepted state remains independent; Remote API writes, API gates and shutdown eligibility are unchanged.
 
 The candidate has not yet received target-PC runtime verification. Before publication, the maintainer should confirm the immediate first snapshot, the minimum 300-second interval, and one normal idle-plus-display-Off shutdown cycle. Additional review scenarios remain observations to test, not confirmed defects: Sleep/Wake event ordering, /stop arriving after Shutdown dispatch while the Remote API is still responding, and VoiceMeeter starting when the idle threshold is already reached and the display is Off.
 
@@ -196,7 +197,7 @@ The public modular workflow is .github/workflows/powershell-check.yml. It runs o
 
 The workflow performs:
 - Windows PowerShell 5.1 parsing for the main script and PowerShell modules.
-- Static project-contract checks for the v1.0.6 candidate version, the 1000ms sequence, final safety validation, the STATEONLY invariant, no-readback contract, API write gates, diagnostic-summary semantics and 300-second status-snapshot cadence.
+- Static project-contract checks for the v1.0.6 candidate version, the 1000ms sequence, final safety validation, the STATEONLY invariant, no-readback contract, API write gates, diagnostic-summary semantics, pending-marker lifecycle and 300-second status-snapshot cadence.
 - Tab-indentation checks for source files.
 - C# interop compilation after the DLL marker is replaced with a placeholder path.
 - VBS invalid-argument validation without launching the watcher.

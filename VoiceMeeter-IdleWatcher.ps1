@@ -525,6 +525,8 @@ try {
 							else {
 								Write-Log 'VoiceMeeter engine/API stop detected (Remote API code -2). The server is unavailable, so MacroButtons OFF cannot be sent; the last accepted state is retained.' -Level 'WARN'
 							}
+							# A confirmed engine stop ends the pending-shutdown marker; LastAccepted remains separate.
+							$macroButtonOffForPendingShutdown = $false
 						}
 					}
 					else {
@@ -646,9 +648,8 @@ try {
 							$loginCompleted = $true
 							$voiceMeeterIsRunning = ($relogin -eq 0)
 							$apiEngineStateKnown = $true
-							if ($voiceMeeterIsRunning) {
-								$macroButtonOffForPendingShutdown = $false
-							}
+							# Successful re-login resolves the engine state, whether running or stopped.
+							$macroButtonOffForPendingShutdown = $false
 							if ($voiceMeeterIsRunning) {
 								Invoke-MacroButtonStateSync -DesiredState 1 -Force
 							}
@@ -685,6 +686,8 @@ try {
 								else {
 									Write-Log 'VoiceMeeter engine stop confirmed by the shutdown monitor (Remote API code -2). MacroButtons cannot be updated after the server has disappeared; the last accepted state is retained.' -Level 'WARN'
 								}
+								# A confirmed engine stop ends the pending-shutdown marker; LastAccepted remains separate.
+								$macroButtonOffForPendingShutdown = $false
 							}
 							if ($shutdownSentThisIdle) {
 								if (-not $engineStoppedAfterShutdown) {

@@ -118,6 +118,28 @@ jobs:
             throw 'Desired summary must report OFF only from the accepted pre-shutdown flag and distinguish a stopped engine.'
           }
 
+          $engineStopMarkers = @(
+            'Write-Log "VoiceMeeter engine stop detected. MacroButton OFF command had already been accepted before the watcher''s own Shutdown command."',
+            "Write-Log 'VoiceMeeter engine stop confirmed by the shutdown monitor. MacroButtons was already set to OFF before Command.Shutdown.'"
+          )
+          foreach ($marker in $engineStopMarkers) {
+            $markerPosition = $ps1.IndexOf($marker)
+            $clearPosition = $ps1.IndexOf('$macroButtonOffForPendingShutdown = $false', $markerPosition)
+            $nextShutdownStatePosition = $ps1.IndexOf('if ($shutdownSentThisIdle)', $markerPosition)
+            if (($markerPosition -lt 0) -or ($clearPosition -le $markerPosition) -or
+                (($nextShutdownStatePosition -ge 0) -and ($clearPosition -ge $nextShutdownStatePosition))) {
+              throw 'A confirmed engine-stop path must clear the pending MacroButtons shutdown marker.'
+            }
+          }
+
+          $reloginPosition = $ps1.IndexOf('$voiceMeeterIsRunning = ($relogin -eq 0)')
+          $reloginClearPosition = $ps1.IndexOf('$macroButtonOffForPendingShutdown = $false', $reloginPosition)
+          $reloginRunningPosition = $ps1.IndexOf('if ($voiceMeeterIsRunning) {', $reloginPosition)
+          if (($reloginPosition -lt 0) -or ($reloginClearPosition -le $reloginPosition) -or
+              ($reloginRunningPosition -le $reloginClearPosition)) {
+            throw 'A successful API re-login must clear the pending shutdown marker before handling the confirmed engine state.'
+          }
+
           $refreshDelayMatch = [regex]::Match($ps1, '\$macroButtonRefreshDelayMs\s*=\s*(\d+)')
           if (-not $refreshDelayMatch.Success -or [int]$refreshDelayMatch.Groups[1].Value -ne 1000) {
             throw 'Pre-shutdown MacroButtons refresh allowance must remain exactly 1000ms.'

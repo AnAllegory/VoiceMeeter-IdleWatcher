@@ -34,8 +34,9 @@ The latest published stable source release and current `main` baseline are v1.0.
 ### Maintenance diagnostics and logging cadence — v1.0.6 candidate
 
 - The diagnostic `Desired` summary reports OFF only when a pre-shutdown OFF write was accepted; a confirmed-stopped engine without such an accepted write is reported as writes paused with the last accepted state retained.
+- The temporary pending-shutdown marker is cleared when engine stop is confirmed, preventing a completed shutdown from remaining labelled as pending.
 - Status snapshots are emitted on the first main-loop pass and then at intervals of at least 300 seconds. The main monitoring loop and default MacroButtons synchronization cadence are unchanged.
-- CI now checks the v1.0.6 candidate version, diagnostic summary semantics and snapshot interval/immediate-first-snapshot contracts.
+- CI now checks the v1.0.6 candidate version, diagnostic summary semantics, pending-marker cleanup and snapshot interval/immediate-first-snapshot contracts.
 - This is a maintenance candidate, not a published release. v1.0.5 remains the latest stable public release.
 
 ## Current observations

@@ -83,6 +83,7 @@ MacroButtons is optional and non-fatal. Its module owns the only STATEONLY write
 - OFF is attempted before an IdleWatcher-issued automatic shutdown, while the API is still available.
 - Periodic synchronization and explicit refresh require both known API state and a confirmed running engine.
 - When IsParametersDirty = -2 confirms that the server is unavailable, no periodic/manual OFF write is attempted. The last API-accepted indicator state is retained.
+- When engine stop is confirmed, the temporary pending-shutdown marker is cleared. LastAccepted remains separate and continues to report the last API-accepted write.
 - On graceful watcher stop, ON is asserted only if the API confirms the engine is available. If not, the last accepted state is retained.
 
 The watcher does not use GetStatus for button-state readback and does not call MacroButton_IsDirty. A SetStatus return code of zero means that the Remote API accepted the command; it does not prove that the MacroButtons window has rendered the new state.
@@ -213,6 +214,7 @@ MacroButtons остаётся необязательной функцией, о�
 - Перед автоматическим выключением по команде IdleWatcher отправляется OFF, пока API ещё доступен.
 - Периодическая синхронизация и принудительный Refresh требуют известного состояния API и подтверждённо работающего движка.
 - Когда IsParametersDirty = -2 подтверждает отсутствие сервера, периодические и ручные OFF-записи прекращаются. Сохраняется последнее состояние, принятое API.
+- После подтверждения остановки движка временный маркер ожидающего выключения очищается. Поле LastAccepted независимо сохраняет последнее состояние, принятое API.
 - При штатной остановке watcher команда ON отправляется только при подтверждённой доступности движка. Иначе последнее принятое состояние сохраняется.
 
 Watcher не использует GetStatus для обратного считывания состояния кнопки и не вызывает MacroButton_IsDirty. Возврат SetStatus с кодом 0 означает, что Remote API принял команду; он не подтверждает, что окно MacroButtons уже отобразило новое состояние.

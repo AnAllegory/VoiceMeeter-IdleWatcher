@@ -10,8 +10,9 @@
 
 - Corrected the MacroButtons status snapshot so `Desired=OFF` is reported only when the pre-shutdown OFF write was accepted and remains pending for the watcher's own shutdown.
 - When VoiceMeeter is confirmed stopped and no pre-shutdown OFF write was accepted, the diagnostic snapshot now says that writes are paused and the last API-accepted state is retained. This corrects reporting only; it does not add a writer or change API behavior.
+- Clear the temporary pending-shutdown marker when engine stop is confirmed or a successful API re-login confirms the engine state. The last API-accepted state remains intact, and this cleanup does not change API writes or shutdown eligibility.
 - Set periodic status snapshots to a minimum interval of 300 seconds, while keeping the first snapshot on the initial main-loop pass. The monitoring loop and default MacroButtons synchronization interval remain unchanged.
-- Extended static CI contracts for the diagnostic summary, the immediate first snapshot and the 300-second interval.
+- Extended static CI contracts for the diagnostic summary, pending-marker lifecycle, the immediate first snapshot and the 300-second interval.
 
 ### Safety and behavior
 
@@ -40,8 +41,9 @@ The additional scenarios above are open runtime observations, not confirmed defe
 
 - Исправлена сводка состояния MacroButtons: `Desired=OFF` отображается только тогда, когда команда OFF перед выключением была принята API и остаётся ожидающей штатного выключения наблюдателя.
 - Если остановка VoiceMeeter подтверждена, но команда OFF перед выключением не была принята, диагностическая сводка теперь сообщает, что записи приостановлены и сохраняется последнее состояние, принятое API. Исправлено только журналирование: новый writer не добавлен, поведение API не изменено.
+- Временный маркер ожидающего выключения очищается после подтверждённой остановки движка или успешного повторного Login, определившего состояние движка. Последнее состояние, принятое API, сохраняется; эта очистка не меняет записи в API и условия разрешения Shutdown.
 - Периодичность статусных сводок ограничена интервалом не чаще одного раза в 300 секунд. Первая сводка по-прежнему выводится на первом проходе основного цикла. Интервал цикла наблюдения и стандартная периодичность синхронизации MacroButtons не изменены.
-- Статические проверки CI дополнены контрактами для диагностической сводки, немедленного первого снимка и интервала 300 секунд.
+- Статические проверки CI дополнены контрактами для диагностической сводки, жизненного цикла временного маркера, немедленного первого снимка и интервала 300 секунд.
 
 ### Безопасность и поведение
 
