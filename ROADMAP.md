@@ -2,7 +2,7 @@
 
 This document records the current project state, possible follow-up observations and deliberate scope decisions. It is a planning note, not a promise that every item will be implemented.
 
-The latest official GitHub Release remains v1.0.5; the v1.0.6 tag and GitHub Release page are still pending. The v1.0.6 source is merged into `main` through PR #13 and passed static CI plus maintainer-reported target-PC runtime validation on 2026-11-24. Its Portable ZIP is published on `gh-pages` and the website links directly to the GitHub-hosted archive. Known issue: Microsoft Defender detected the downloaded ZIP as `Trojan:Script/Wacatac.H!ml` on the maintainer's Windows 11 PC and quarantined it; a separate custom scan of the installed application folder produced no recorded detection. This does not establish a false positive, and the cause remains unresolved. Keep this warning visible and do not advise users to disable Defender or restore quarantined copies. The public project and the project relationship are described in REPOSITORY_LINEAGE.md. Changes should be driven by reproducible behavior, a concrete use case or a clear maintenance benefit. Do not add complexity merely because it is technically possible.
+The latest official GitHub Release is **v1.0.6**, published at [the v1.0.6 release page](https://github.com/AnAllegory/VoiceMeeter-IdleWatcher/releases/tag/v1.0.6). The v1.0.6 source is merged into `main` through PR #15 and passed static CI plus maintainer-reported target-PC runtime validation on 2026-11-24. Its Portable ZIP is published on `gh-pages` and the website links directly to the GitHub-hosted archive; the exact tagged source ZIP is available from the release tag. Known issue: Microsoft Defender detected the downloaded ZIP as `Trojan:Script/Wacatac.H!ml` on the maintainer's Windows 11 PC and quarantined it; a separate custom scan of the installed application folder produced no recorded detection. This does not establish a false positive, and the cause remains unresolved. Keep this warning visible and do not advise users to disable Defender or restore quarantined copies. The public project and the project relationship are described in REPOSITORY_LINEAGE.md. Changes should be driven by reproducible behavior, a concrete use case or a clear maintenance benefit. Do not add complexity merely because it is technically possible.
 
 ## Implemented in the modular development line
 
@@ -37,7 +37,7 @@ The latest official GitHub Release remains v1.0.5; the v1.0.6 tag and GitHub Rel
 - The temporary pending-shutdown marker is cleared when engine stop is confirmed, preventing a completed shutdown from remaining labelled as pending.
 - Status snapshots are emitted on the first main-loop pass and then at intervals of at least 300 seconds. The main monitoring loop and default MacroButtons synchronization cadence are unchanged.
 - CI now checks the v1.0.6 candidate version, diagnostic summary semantics, pending-marker cleanup and snapshot interval/immediate-first-snapshot contracts.
-- The source and Portable ZIP are now published on `main` and `gh-pages`, respectively. The v1.0.6 tag and GitHub Release remain pending; v1.0.5 is still the latest official GitHub Release. The Defender detection of the downloaded ZIP remains an unresolved publication notice.
+- The source, Portable ZIP and v1.0.6 tag/GitHub Release are published. The release is the latest official GitHub Release; its tag points to the release snapshot, while subsequent documentation changes do not alter that tag. The Defender detection of the downloaded ZIP remains an unresolved publication notice.
 
 ## Current observations
 
@@ -100,9 +100,9 @@ Do not add these without a reproducible requirement and a separate design decisi
 7. Do not create or modify public release tags or published releases during routine source development; release operations are separate and require explicit maintainer approval.
 8. Do not create a numbered release merely to make progress on this roadmap.
 
-## Published release v1.0.5
+## Previously published release v1.0.5
 
-The maintainer published **v1.0.5** as the latest stable GitHub Release on 2026-11-22. The tag points to the validated source commit `ad60060dbe45323fb7c782ba6d4aa6df6b0b502f`. The release is not marked as a pre-release, and GitHub generated its tag-based source archive links automatically.
+The maintainer published **v1.0.5** as a stable GitHub Release on 2026-11-22; it has since been superseded by v1.0.6. The tag points to the validated source commit `ad60060dbe45323fb7c782ba6d4aa6df6b0b502f`. The release is not marked as a pre-release, and GitHub generated its tag-based source archive links automatically.
 
 - [x] Modular source integrated into public `main` through PR #10.
 - [x] Static Windows PowerShell 5.1, project-contract and C# checks passed on the release commit.
@@ -115,4 +115,4 @@ The private Beta workspace should remain an archive unless there is a separate r
 
 ## Status
 
-The v1.0.2 through v1.0.5 implementation work is integrated into public `main`. PR #10 was merged on 2026-11-22, and the v1.0.5 release was published on the same date. PR #13 was merged on 2026-11-24. The v1.0.6 source passed static CI and the maintainer-reported target-PC runtime test; the Portable ZIP is prepared. Creation of the v1.0.6 tag and GitHub Release is the remaining publication action. The v1.0.5 tag remains a snapshot of the validated source commit; later source or documentation changes do not alter that published tag.
+The v1.0.2 through v1.0.6 implementation work is integrated into public `main`. PR #15 was merged on 2026-11-24. The v1.0.6 source passed static CI and the maintainer-reported target-PC runtime test; its Portable ZIP, tag and stable GitHub Release are published. The release tag points to commit `d693ae05e28199b40ed10feae24c42b0a96d9f40`. Later source or documentation changes do not alter that published release snapshot.
