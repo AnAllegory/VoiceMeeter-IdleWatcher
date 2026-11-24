@@ -17,9 +17,9 @@ Before reviewing or modifying implementation:
 
 ## 2. Repository boundaries
 
-- Canonical repository: AnAllegory/VoiceMeeter-IdleWatcher, branch main, current v1.0.6 maintenance candidate; latest published stable release v1.0.5.
+- Canonical repository: AnAllegory/VoiceMeeter-IdleWatcher, branch `main`; v1.0.5 is the current published stable baseline. The v1.0.6 maintenance candidate is under review on a separate branch and is not yet merged or published.
 - The private AnAllegory/VoiceMeeter-IdleWatcher-Beta repository is retained as a historical development workspace; it is not the canonical source.
-- The modular source line is integrated on `main`. v1.0.5 remains the latest stable published release; v1.0.6 is a maintenance candidate until the maintainer separately publishes it. The v1.0.2-v1.0.4 numbers remain internal development milestones, not separate public releases.
+- The modular source line is integrated on `main`. v1.0.5 remains the latest stable published release; v1.0.6 is a maintenance candidate on a separate branch until the maintainer separately approves and publishes it. The v1.0.2-v1.0.4 numbers remain internal development milestones, not separate public releases.
 - Preserve the public repository's existing history, tags and releases. Do not create or move tags or publish releases unless the maintainer explicitly authorizes the publication action.
 - Keep the current workflow aligned with the modular source tree; the former monolithic workflow has been replaced.
 

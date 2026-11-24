@@ -5,7 +5,7 @@
 <a id="english"></a>
 ## English
 
-This document describes the current modular source line, being prepared as maintenance candidate v1.0.6; v1.0.5 remains the latest published stable release. It follows the earlier monolithic implementation and uses a CI workflow aligned with the modular source layout. See REPOSITORY_LINEAGE.md for the project history. The current source files define the implementation if any wording here becomes stale.
+This document describes the modular source structure released as v1.0.5. A v1.0.6 maintenance candidate is under review on a separate branch; v1.0.5 remains the latest published stable release. It follows the earlier monolithic implementation and uses a CI workflow aligned with the modular source layout. See REPOSITORY_LINEAGE.md for the project history. The current source files define the implementation if any wording here becomes stale.
 
 ### Modules and ownership
 
@@ -135,7 +135,7 @@ This confirms the post-wake end state and the shutdown sequence. It does **not**
 <a id="русский"></a>
 ## Русский
 
-Этот документ описывает текущую модульную исходную линию, подготавливаемую как кандидат на технический релиз v1.0.6; v1.0.5 остаётся последним опубликованным стабильным релизом. Она продолжает первоначальную монолитную реализацию, а workflow соответствует модульной структуре исходников. История проекта описана в REPOSITORY_LINEAGE.md. Если формулировка в документации расходится с исходниками, приоритет имеют актуальные исходники.
+Этот документ описывает модульную структуру исходников, опубликованную в версии v1.0.5. Кандидат на технический релиз v1.0.6 проходит проверку в отдельной ветке; v1.0.5 остаётся последним опубликованным стабильным релизом. Она продолжает первоначальную монолитную реализацию, а workflow соответствует модульной структуре исходников. История проекта описана в REPOSITORY_LINEAGE.md. Если формулировка в документации расходится с исходниками, приоритет имеют актуальные исходники.
 
 ### Модули и ответственность
 

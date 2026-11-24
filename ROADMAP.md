@@ -2,7 +2,7 @@
 
 This document records the current project state, possible follow-up observations and deliberate scope decisions. It is a planning note, not a promise that every item will be implemented.
 
-The latest published stable source release is v1.0.5. The current `main` branch contains the v1.0.6 maintenance candidate, which is not yet published. The public project and the project relationship are described in REPOSITORY_LINEAGE.md. Changes should be driven by reproducible behavior, a concrete use case or a clear maintenance benefit. Do not add complexity merely because it is technically possible.
+The latest published stable source release and current `main` baseline are v1.0.5. The v1.0.6 maintenance candidate is under review on a separate branch in PR #13; it has not been merged or published. The public project and the project relationship are described in REPOSITORY_LINEAGE.md. Changes should be driven by reproducible behavior, a concrete use case or a clear maintenance benefit. Do not add complexity merely because it is technically possible.
 
 ## Implemented in the modular development line
 
@@ -114,4 +114,4 @@ The private Beta workspace should remain an archive unless there is a separate r
 
 ## Status
 
-The v1.0.2 through v1.0.5 implementation work is integrated into public `main`. PR #10 was merged on 2026-11-22, and the v1.0.5 release was published on the same date. The v1.0.6 maintenance candidate is being prepared on a separate branch; its pull request and target-PC verification must be completed before the maintainer decides whether to publish it. No v1.0.6 tag or release has been created. The v1.0.5 tag remains a snapshot of the validated source commit; later source or documentation changes do not alter that published tag.
+The v1.0.2 through v1.0.5 implementation work is integrated into public `main`. PR #10 was merged on 2026-11-22, and the v1.0.5 release was published on the same date. The v1.0.6 maintenance candidate is being reviewed on a separate branch in PR #13; target-PC verification must be completed before the maintainer decides whether to merge and publish it. No v1.0.6 tag or release has been created. The v1.0.5 tag remains a snapshot of the validated source commit; later source or documentation changes do not alter that published tag.

@@ -4,8 +4,8 @@
 **Current repository:** AnAllegory/VoiceMeeter-IdleWatcher  
 **Default branch:** main  
 **Visibility:** Public  
-**Source baseline:** v1.0.6 maintenance candidate (not yet published)  
-**Status:** v1.0.5 remains the latest stable public GitHub Release. The current `main` source is being prepared as the v1.0.6 maintenance candidate; it is not yet tagged or published. Tag `v1.0.5` points to validated commit `ad60060dbe45323fb7c782ba6d4aa6df6b0b502f`; the release discussion is [#11](https://github.com/AnAllegory/VoiceMeeter-IdleWatcher/discussions/11).
+**Source baseline:** v1.0.5 published stable; v1.0.6 candidate under review on a separate branch  
+**Status:** `main` remains at the v1.0.5 published stable baseline. The v1.0.6 maintenance candidate is prepared on separate branch `prepare-v1.0.6-maintenance` and is under review in [PR #13](https://github.com/AnAllegory/VoiceMeeter-IdleWatcher/pull/13); it is not yet merged, tagged or published. Tag `v1.0.5` points to validated commit `ad60060dbe45323fb7c782ba6d4aa6df6b0b502f`; the release discussion is [#11](https://github.com/AnAllegory/VoiceMeeter-IdleWatcher/discussions/11).
 
 > For a new review or development session: read this document, REPOSITORY_LINEAGE.md, ARCHITECTURE.md, CHANGELOG.md, ROADMAP.md, SECURITY.md and AGENTS.md, then inspect the actual source files and the public modular workflow. The current source is authoritative if documentation and code ever disagree.
 
@@ -164,7 +164,7 @@ After waking the PC, the maintainer visually confirmed that MacroButton 1 was no
 
 ### v1.0.6 maintenance candidate (prepared 2026-11-24; not published)
 
-The current candidate contains two maintenance changes:
+The separate-branch v1.0.6 candidate contains two maintenance changes:
 
 - The periodic status snapshot is emitted on the first main-loop pass, then only when at least 300 seconds have elapsed since the previous snapshot. The main monitoring loop remains at its configured interval (10 seconds by default); the MacroButtons synchronization interval is separate and unchanged.
 - The diagnostic `Desired` summary now reports OFF only when the watcher has an accepted OFF write pending its own shutdown. If VoiceMeeter is confirmed stopped and no pre-shutdown OFF was accepted, the snapshot reports that writes are paused and the last accepted API state is retained. The writer, API gates and shutdown decision path are unchanged.

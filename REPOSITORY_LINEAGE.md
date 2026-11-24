@@ -4,7 +4,7 @@
 
 The canonical repository is AnAllegory/VoiceMeeter-IdleWatcher. The public main branch is the home for current source, documentation, CI and GitHub Pages.
 
-The current `main` source is being prepared as maintenance candidate v1.0.6. The latest published stable release remains v1.0.5. The number originated in the private development workspace; the public v1.0.0 and v1.0.1 tags remain unchanged historical releases. The `v1.0.5` tag points to validated `main` commit `ad60060dbe45323fb7c782ba6d4aa6df6b0b502f`.
+The current `main` baseline remains the latest published stable release v1.0.5. The v1.0.6 maintenance candidate is under review on a separate branch and has not been merged or published. The number originated in the private development workspace; the public v1.0.0 and v1.0.1 tags remain unchanged historical releases. The `v1.0.5` tag points to validated `main` commit `ad60060dbe45323fb7c782ba6d4aa6df6b0b502f`.
 
 ## How the project reached the modular source
 
