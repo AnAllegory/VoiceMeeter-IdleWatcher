@@ -2,7 +2,7 @@
 
 This document records the current project state, possible follow-up observations and deliberate scope decisions. It is a planning note, not a promise that every item will be implemented.
 
-The latest published stable source release and current `main` baseline are v1.0.5. The v1.0.6 maintenance candidate is under review on a separate branch in PR #13; it has not been merged or published. The public project and the project relationship are described in REPOSITORY_LINEAGE.md. Changes should be driven by reproducible behavior, a concrete use case or a clear maintenance benefit. Do not add complexity merely because it is technically possible.
+The latest published GitHub Release remains v1.0.5 until the v1.0.6 tag/Release is created. The v1.0.6 source is merged into `main` through PR #13 and passed static CI plus maintainer-reported target-PC runtime validation on 2026-11-24. Its Portable ZIP is prepared on `gh-pages`. The public project and the project relationship are described in REPOSITORY_LINEAGE.md. Changes should be driven by reproducible behavior, a concrete use case or a clear maintenance benefit. Do not add complexity merely because it is technically possible.
 
 ## Implemented in the modular development line
 
@@ -31,13 +31,13 @@ The latest published stable source release and current `main` baseline are v1.0.
 - After IsParametersDirty = -2 confirms server teardown, the watcher retains the last accepted indicator state rather than sending futile writes.
 - Startup/recovery paths no longer attempt OFF when Login indicates that no VoiceMeeter engine is running.
 
-### Maintenance diagnostics and logging cadence — v1.0.6 candidate
+### Maintenance diagnostics and logging cadence — v1.0.6
 
 - The diagnostic `Desired` summary reports OFF only when a pre-shutdown OFF write was accepted; a confirmed-stopped engine without such an accepted write is reported as writes paused with the last accepted state retained.
 - The temporary pending-shutdown marker is cleared when engine stop is confirmed, preventing a completed shutdown from remaining labelled as pending.
 - Status snapshots are emitted on the first main-loop pass and then at intervals of at least 300 seconds. The main monitoring loop and default MacroButtons synchronization cadence are unchanged.
 - CI now checks the v1.0.6 candidate version, diagnostic summary semantics, pending-marker cleanup and snapshot interval/immediate-first-snapshot contracts.
-- This is a maintenance candidate, not a published release. v1.0.5 remains the latest stable public release.
+- The source and Portable ZIP are prepared for publication. The v1.0.6 tag and GitHub Release remain the final publication step; v1.0.5 is still the latest published GitHub Release until then.
 
 ## Current observations
 
@@ -115,4 +115,4 @@ The private Beta workspace should remain an archive unless there is a separate r
 
 ## Status
 
-The v1.0.2 through v1.0.5 implementation work is integrated into public `main`. PR #10 was merged on 2026-11-22, and the v1.0.5 release was published on the same date. The v1.0.6 maintenance candidate is being reviewed on a separate branch in PR #13; target-PC verification must be completed before the maintainer decides whether to merge and publish it. No v1.0.6 tag or release has been created. The v1.0.5 tag remains a snapshot of the validated source commit; later source or documentation changes do not alter that published tag.
+The v1.0.2 through v1.0.5 implementation work is integrated into public `main`. PR #10 was merged on 2026-11-22, and the v1.0.5 release was published on the same date. PR #13 was merged on 2026-11-24. The v1.0.6 source passed static CI and the maintainer-reported target-PC runtime test; the Portable ZIP is prepared. Creation of the v1.0.6 tag and GitHub Release is the remaining publication action. The v1.0.5 tag remains a snapshot of the validated source commit; later source or documentation changes do not alter that published tag.

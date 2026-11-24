@@ -6,16 +6,16 @@
 
 Утилита автоматизации для Windows на PowerShell. Она отслеживает время бездействия пользователя и состояние питания дисплея, а затем отправляет команду выключения VoiceMeeter только после достижения заданного порога бездействия и при полностью выключенном дисплее.
 
-> **Последний стабильный релиз:** модульная реализация **v1.0.5**, остающаяся в `main`. Кандидат на технический релиз v1.0.6 проходит проверку в отдельной ветке и ещё не объединён с `main` и не опубликован. Для стабильной загрузки используйте [последний релиз](https://github.com/AnAllegory/VoiceMeeter-IdleWatcher/releases/latest), [обсуждение релиза](https://github.com/AnAllegory/VoiceMeeter-IdleWatcher/discussions/11) и [примечания к v1.0.5](RELEASE_NOTES_v1.0.5.md).
+> **Статус публикации:** v1.0.6 объединена с `main` и прошла статические проверки CI, а также runtime-проверку сопровождающим на целевом ПК 2026-11-24. Portable ZIP v1.0.6 подготовлен. Осталось создать Git-тег и страницу GitHub Release; до этого последним опубликованным GitHub Release остаётся v1.0.5. Подробные результаты проверки приведены в [примечаниях к v1.0.6](RELEASE_NOTES_v1.0.6.md).
 
 ## Быстрый запуск
 
-1. Скачайте [Portable ZIP v1.0.5](https://anallegory.github.io/VoiceMeeter-IdleWatcher/downloads/VoiceMeeter-IdleWatcher-v1.0.5-portable.zip) и распакуйте архив.
+1. Скачайте [Portable ZIP v1.0.6](https://anallegory.github.io/VoiceMeeter-IdleWatcher/downloads/VoiceMeeter-IdleWatcher-v1.0.6-portable.zip) и распакуйте архив.
 2. Держите все семь рабочих файлов вместе в одной папке. В архив также входит двуязычная инструкция `QUICK_START.txt`.
 3. Дважды щёлкните `VoiceMeeter-IdleWatcher.vbs` или выполните из этой папки команду `wscript.exe VoiceMeeter-IdleWatcher.vbs`.
 4. Для штатной остановки выполните из той же папки `wscript.exe VoiceMeeter-IdleWatcher.vbs /stop`.
 
-[Исходный ZIP с тегом v1.0.5](https://github.com/AnAllegory/VoiceMeeter-IdleWatcher/archive/refs/tags/v1.0.5.zip) доступен для просмотра исходников. Требования: Windows, Windows PowerShell 5.1, VoiceMeeter с DLL Remote API и включённый Windows Script Host.
+Текущий [ZIP исходников из main](https://github.com/AnAllegory/VoiceMeeter-IdleWatcher/archive/refs/heads/main.zip) доступен для просмотра исходников. Точный ZIP исходников с тегом v1.0.6 появится после создания тега релиза. Требования: Windows, Windows PowerShell 5.1, VoiceMeeter с DLL Remote API и включённый Windows Script Host.
 
 История перехода от первоначальной монолитной реализации к модульной структуре описана в [REPOSITORY_LINEAGE.md](REPOSITORY_LINEAGE.md).
 
@@ -118,7 +118,7 @@ wscript.exe VoiceMeeter-IdleWatcher.vbs /stop
 
 ## Статус проверки
 
-Публичный workflow GitHub Actions для исходников v1.0.5 успешно прошёл 2026-11-22. Он проверяет разбор Windows PowerShell 5.1, проектные контракты, компиляцию C# с подстановочным путём DLL, обработку неверного аргумента VBS-запускателем и PSScriptAnalyzer 1.25.0 для основного скрипта и PowerShell-модулей. Замечания уровня Error блокируют CI; Warning и Information отображаются, но не блокируют его. Все эти проверки статические: они не запускают VoiceMeeter и не проверяют интерфейс MacroButtons.
+Workflow GitHub Actions для v1.0.6 успешно прошёл на merge-коммите `c71b20d6f4b6987be3b66758073fe325fddb4209` 2026-11-24 (запуск [#45386275337](https://github.com/AnAllegory/VoiceMeeter-IdleWatcher/actions/runs/45386275337)). Он проверяет разбор Windows PowerShell 5.1, проектные контракты, компиляцию C#, обработку неверного аргумента VBS и PSScriptAnalyzer 1.25.0. Замечания уровня Error блокируют CI; Warning и Information отображаются, но не блокируют его. Все эти проверки статические: они не запускают VoiceMeeter и не проверяют интерфейс MacroButtons.
 
 Сопровождающий проекта сообщил об успешном автоматическом выключении на целевом ПК 2026-11-22: команда OFF принята, выдержана пауза 1000 мс, финальная проверка безопасности пройдена, Shutdown вернул код 0, остановка движка подтверждена. После пробуждения ПК сопровождающий увидел, что MacroButton 1 погашен, а VoiceMeeter не запущен. Точный визуальный момент погасания кнопки до остановки движка не наблюдался, поскольку дисплей в этот момент был выключен. Временные метки и границы доказательств приведены в PROJECT_CONTEXT.md.
 
@@ -134,7 +134,8 @@ wscript.exe VoiceMeeter-IdleWatcher.vbs /stop
 - [Историческое техническое ревью](GROK_REVIEW_BRIEF.md)
 - [Правила ревью и сопровождения](AGENTS.md)
 - [Правила поведения участников проекта](CODE_OF_CONDUCT.md)
-- [Примечания к релизу v1.0.5](RELEASE_NOTES_v1.0.5.md)
+- [Примечания к v1.0.6](RELEASE_NOTES_v1.0.6.md)
+- [Исторические примечания к v1.0.5](RELEASE_NOTES_v1.0.5.md)
 - [Примечания к релизу v1.0.0](RELEASE_NOTES_v1.0.0.md)
 - [Лицензия MIT](LICENSE)
 - [English README](README.md)

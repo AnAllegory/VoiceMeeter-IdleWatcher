@@ -17,9 +17,9 @@ Before reviewing or modifying implementation:
 
 ## 2. Repository boundaries
 
-- Canonical repository: AnAllegory/VoiceMeeter-IdleWatcher, branch `main`; v1.0.5 is the current published stable baseline. The v1.0.6 maintenance candidate is under review on a separate branch and is not yet merged or published.
+- Canonical repository: AnAllegory/VoiceMeeter-IdleWatcher, branch `main`; v1.0.6 is integrated on `main`. The release package and target-PC validation are complete; GitHub tag/Release publication is the remaining release-administration step.
 - The private AnAllegory/VoiceMeeter-IdleWatcher-Beta repository is retained as a historical development workspace; it is not the canonical source.
-- The modular source line is integrated on `main`. v1.0.5 remains the latest stable published release; v1.0.6 is a maintenance candidate on a separate branch until the maintainer separately approves and publishes it. The v1.0.2-v1.0.4 numbers remain internal development milestones, not separate public releases.
+- The modular source line is integrated on `main`. v1.0.5 remains the latest published GitHub Release until the v1.0.6 tag and Release are created. v1.0.6 source changes are merged and target-PC validated. The v1.0.2-v1.0.4 numbers remain internal development milestones, not separate public releases.
 - Preserve the public repository's existing history, tags and releases. Do not create or move tags or publish releases unless the maintainer explicitly authorizes the publication action.
 - Keep the current workflow aligned with the modular source tree; the former monolithic workflow has been replaced.
 
@@ -40,7 +40,7 @@ Before reviewing or modifying implementation:
 - On (1), Dimmed (2), unknown or unavailable display state blocks automatic shutdown.
 - A graceful /stop request also blocks dispatch.
 - Preserve final idle/display/STOP validation immediately before Command.Shutdown.
-- In the current v1.0.6 candidate path, successful pre-shutdown STATEONLY OFF is followed by a 1000ms allowance and then final safety validation. If validation fails, Shutdown is cancelled and ON is restored when possible.
+- In the v1.0.6 path, successful pre-shutdown STATEONLY OFF is followed by a 1000ms allowance and then final safety validation. If validation fails, Shutdown is cancelled and ON is restored when possible.
 - Stopping the watcher is not the same as shutting down VoiceMeeter.
 
 ### Remote API and MacroButtons
@@ -83,7 +83,7 @@ For findings, identify the file and function/section, trigger, impact, evidence 
 
 Inspect .github/workflows/powershell-check.yml before changing CI.
 
-The public workflow checks Windows PowerShell 5.1 parsing for the main PS1, PSD1 and modules; project contracts (including the v1.0.6 candidate version, API write gates, 300-second status-snapshot cadence, diagnostic-summary semantics and the 1000ms shutdown sequence); tab indentation; C# compilation using a placeholder DLL path; the no-log gap between final safety checks and shutdown dispatch; required project documents; the VBS invalid-argument path without starting the watcher; and PSScriptAnalyzer 1.25.0 across the main script and PowerShell modules, with Error-level findings blocking and Warning/Information findings non-blocking. It does not run VoiceMeeter, connect to a real Remote API server or verify MacroButtons UI/display hardware.
+The public workflow checks Windows PowerShell 5.1 parsing for the main PS1, PSD1 and modules; project contracts (including the v1.0.6 version, API write gates, 300-second status-snapshot cadence, diagnostic-summary semantics, pending-marker lifecycle and the 1000ms shutdown sequence); tab indentation; C# compilation using a placeholder DLL path; the no-log gap between final safety checks and shutdown dispatch; required project documents; the VBS invalid-argument path without starting the watcher; and PSScriptAnalyzer 1.25.0 across the main script and PowerShell modules, with Error-level findings blocking and Warning/Information findings non-blocking. It does not run VoiceMeeter, connect to a real Remote API server or verify MacroButtons UI/display hardware.
 
 Never describe CI as an end-to-end runtime test. Never claim a local runtime test was executed by the assistant; attribute the 2026-11-22 runtime evidence to the maintainer.
 

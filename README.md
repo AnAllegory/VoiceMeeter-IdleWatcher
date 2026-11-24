@@ -6,16 +6,16 @@
 
 A Windows PowerShell utility that monitors user idle time and display power state, then requests VoiceMeeter shutdown only when the configured idle threshold has elapsed and the display is fully Off.
 
-> **Latest stable release:** modular implementation **v1.0.5**, still on `main`. A v1.0.6 maintenance candidate is under review on a separate branch and has not yet been merged or published. For the stable download, use the [latest release](https://github.com/AnAllegory/VoiceMeeter-IdleWatcher/releases/latest), [release discussion](https://github.com/AnAllegory/VoiceMeeter-IdleWatcher/discussions/11), and [Release notes v1.0.5](RELEASE_NOTES_v1.0.5.md).
+> **Release status:** v1.0.6 is merged into `main` and passed static CI plus maintainer-reported target-PC runtime validation on 2026-11-24. The v1.0.6 Portable ZIP is prepared. The GitHub tag and Release page are the remaining publication step; until then, the latest published GitHub Release remains v1.0.5. See [Release notes v1.0.6](RELEASE_NOTES_v1.0.6.md) for exact test evidence.
 
 ## Quick start
 
-1. Download the [Portable ZIP v1.0.5](https://anallegory.github.io/VoiceMeeter-IdleWatcher/downloads/VoiceMeeter-IdleWatcher-v1.0.5-portable.zip) and extract it.
+1. Download the [Portable ZIP v1.0.6](https://anallegory.github.io/VoiceMeeter-IdleWatcher/downloads/VoiceMeeter-IdleWatcher-v1.0.6-portable.zip) and extract it.
 2. Keep all seven runtime files together in the same folder. The archive includes a bilingual `QUICK_START.txt`.
 3. Double-click `VoiceMeeter-IdleWatcher.vbs`, or run `wscript.exe VoiceMeeter-IdleWatcher.vbs` from that folder.
 4. To stop the watcher gracefully, run `wscript.exe VoiceMeeter-IdleWatcher.vbs /stop` from the same folder.
 
-The [tagged source ZIP v1.0.5](https://github.com/AnAllegory/VoiceMeeter-IdleWatcher/archive/refs/tags/v1.0.5.zip) is available for source inspection. Requirements: Windows, Windows PowerShell 5.1, VoiceMeeter with its Remote API DLL, and Windows Script Host.
+The current [main source ZIP](https://github.com/AnAllegory/VoiceMeeter-IdleWatcher/archive/refs/heads/main.zip) is available for source inspection. The exact tagged v1.0.6 source ZIP will be available when the release tag is created. Requirements: Windows, Windows PowerShell 5.1, VoiceMeeter with its Remote API DLL, and Windows Script Host.
 
 For the history of the transition from the original monolithic implementation to the modular source, read [REPOSITORY_LINEAGE.md](REPOSITORY_LINEAGE.md).
 
@@ -118,9 +118,9 @@ The launcher waits for explicit startup status. Graceful stop signals the existi
 
 ## Validation status
 
-The public GitHub Actions workflow for the v1.0.5 source release passed on 2026-11-22. It validates Windows PowerShell 5.1 parsing, project contracts, C# compilation with a placeholder DLL path, the VBS invalid-argument path and PSScriptAnalyzer 1.25.0 across the orchestrator and PowerShell modules. Error-level analyzer findings fail CI; Warning and Information findings are reported but do not block it. These checks are static: they do not run VoiceMeeter or inspect the MacroButtons UI.
+The v1.0.6 GitHub Actions run passed on merge commit `c71b20d6f4b6987be3b66758073fe325fddb4209` on 2026-11-24 (run [#45386275337](https://github.com/AnAllegory/VoiceMeeter-IdleWatcher/actions/runs/45386275337)). It validates Windows PowerShell 5.1 parsing, project contracts, C# compilation, the VBS invalid-argument path and PSScriptAnalyzer 1.25.0. Error-level analyzer findings fail CI; Warning and Information findings are reported but do not block it. These checks are static and do not run VoiceMeeter or inspect the MacroButtons UI.
 
-The maintainer also reported a successful v1.0.5 automatic-shutdown cycle on the target PC on 2026-11-22: OFF was accepted, the 1000ms allowance elapsed, final safety validation passed, Shutdown returned code 0 and the engine stop was confirmed. After waking the PC, the maintainer observed MacroButton 1 OFF and VoiceMeeter not running. The exact visual instant at which the button extinguished before engine shutdown was not directly observed while the display was Off. See PROJECT_CONTEXT.md for the timestamps and evidence boundaries.
+The maintainer-reported v1.0.6 target-PC test on 2026-11-24 confirmed the immediate first snapshot, successive status intervals of at least 300 seconds, the normal idle/display-Off shutdown cycle, STATEONLY OFF acceptance, the 1000ms allowance, final safety validation, Command.Shutdown return code 0, engine stop confirmation and subsequent API/engine recovery with MacroButton ON accepted. API acceptance is not visual UI readback. See [Release notes v1.0.6](RELEASE_NOTES_v1.0.6.md) for exact timestamps and evidence boundaries.
 
 ## Documentation
 
@@ -134,7 +134,8 @@ The maintainer also reported a successful v1.0.5 automatic-shutdown cycle on the
 - [Historical technical review brief](GROK_REVIEW_BRIEF.md)
 - [Review and maintenance rules](AGENTS.md)
 - [Contributor Covenant Code of Conduct](CODE_OF_CONDUCT.md)
-- [Release notes v1.0.5](RELEASE_NOTES_v1.0.5.md)
+- [Release notes v1.0.6](RELEASE_NOTES_v1.0.6.md)
+- [Historical release notes v1.0.5](RELEASE_NOTES_v1.0.5.md)
 - [Release notes v1.0.0](RELEASE_NOTES_v1.0.0.md)
 - [MIT License](LICENSE)
 - [Russian README](README.ru.md)
