@@ -2,7 +2,7 @@
 
 This document records the current project state, possible follow-up observations and deliberate scope decisions. It is a planning note, not a promise that every item will be implemented.
 
-The latest published GitHub Release remains v1.0.5 until the v1.0.6 tag/Release is created. The v1.0.6 source is merged into `main` through PR #13 and passed static CI plus maintainer-reported target-PC runtime validation on 2026-11-24. Its Portable ZIP is prepared on `gh-pages`. The public project and the project relationship are described in REPOSITORY_LINEAGE.md. Changes should be driven by reproducible behavior, a concrete use case or a clear maintenance benefit. Do not add complexity merely because it is technically possible.
+The latest official GitHub Release remains v1.0.5; the v1.0.6 tag and GitHub Release page are still pending. The v1.0.6 source is merged into `main` through PR #13 and passed static CI plus maintainer-reported target-PC runtime validation on 2026-11-24. Its Portable ZIP is published on `gh-pages` and the website links directly to the GitHub-hosted archive. Known issue: Microsoft Defender detected the downloaded ZIP as `Trojan:Script/Wacatac.H!ml` on the maintainer's Windows 11 PC and quarantined it; a separate custom scan of the installed application folder produced no recorded detection. This does not establish a false positive, and the cause remains unresolved. Keep this warning visible and do not advise users to disable Defender or restore quarantined copies. The public project and the project relationship are described in REPOSITORY_LINEAGE.md. Changes should be driven by reproducible behavior, a concrete use case or a clear maintenance benefit. Do not add complexity merely because it is technically possible.
 
 ## Implemented in the modular development line
 
@@ -37,7 +37,7 @@ The latest published GitHub Release remains v1.0.5 until the v1.0.6 tag/Release 
 - The temporary pending-shutdown marker is cleared when engine stop is confirmed, preventing a completed shutdown from remaining labelled as pending.
 - Status snapshots are emitted on the first main-loop pass and then at intervals of at least 300 seconds. The main monitoring loop and default MacroButtons synchronization cadence are unchanged.
 - CI now checks the v1.0.6 candidate version, diagnostic summary semantics, pending-marker cleanup and snapshot interval/immediate-first-snapshot contracts.
-- The source and Portable ZIP are prepared for publication. The v1.0.6 tag and GitHub Release remain the final publication step; v1.0.5 is still the latest published GitHub Release until then.
+- The source and Portable ZIP are now published on `main` and `gh-pages`, respectively. The v1.0.6 tag and GitHub Release remain pending; v1.0.5 is still the latest official GitHub Release. The Defender detection of the downloaded ZIP remains an unresolved publication notice.
 
 ## Current observations
 

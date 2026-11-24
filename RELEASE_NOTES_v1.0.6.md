@@ -1,10 +1,14 @@
 # VoiceMeeter IdleWatcher v1.0.6
 
-**Release status:** Final release package prepared; GitHub tag and Release publication pending  
+**Package status:** Portable ZIP v1.0.6 is published in the repository's `gh-pages` branch and served directly from GitHub. The official v1.0.6 tag and GitHub Release page are still pending; the latest official GitHub Release remains v1.0.5.  
 **Preparation date:** 2026-11-24  
 **Runtime:** Windows PowerShell 5.1
 
 ## English
+
+### Microsoft Defender notice
+
+On the maintainer's Windows 11 PC, Microsoft Defender detected the v1.0.6 Portable ZIP during download as `Trojan:Script/Wacatac.H!ml` and quarantined it. A separate custom scan of the installed application folder completed without a recorded detection. This single local result does not establish that the archive is a false positive or certify it as safe. The cause remains unresolved. Do not disable antivirus protection or restore a quarantined copy.
 
 ### Highlights
 
@@ -39,6 +43,10 @@ The successful API return confirms command acceptance, not visual UI readback. T
 ---
 
 ## Русский
+
+### Уведомление Microsoft Defender
+
+На компьютере сопровождающего под Windows 11 при загрузке Portable ZIP v1.0.6 Microsoft Defender обнаружил `Trojan:Script/Wacatac.H!ml` и поместил архив в карантин. Отдельная пользовательская проверка папки с установленной программой завершилась без зарегистрированного обнаружения. Этот единичный локальный результат не доказывает, что срабатывание на архив ошибочно, и не является сертификатом безопасности. Причина срабатывания пока не установлена. Не отключайте антивирусную защиту и не восстанавливайте архив из карантина.
 
 ### Главное в версии
 

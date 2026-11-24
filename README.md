@@ -6,11 +6,13 @@
 
 A Windows PowerShell utility that monitors user idle time and display power state, then requests VoiceMeeter shutdown only when the configured idle threshold has elapsed and the display is fully Off.
 
-> **Release status:** v1.0.6 is merged into `main` and passed static CI plus maintainer-reported target-PC runtime validation on 2026-11-24. The v1.0.6 Portable ZIP is prepared. The GitHub tag and Release page are the remaining publication step; until then, the latest published GitHub Release remains v1.0.5. See [Release notes v1.0.6](RELEASE_NOTES_v1.0.6.md) for exact test evidence.
+> **Release status:** v1.0.6 is merged into `main`; static CI and maintainer-reported target-PC runtime validation passed on 2026-11-24. The Portable ZIP is published in the repository's `gh-pages` branch and served directly from GitHub. The official v1.0.6 tag and GitHub Release page are still pending; the latest official GitHub Release remains v1.0.5. See [Release notes v1.0.6](RELEASE_NOTES_v1.0.6.md) for test evidence.
+>
+> **Microsoft Defender notice:** On the maintainer's Windows 11 PC, Microsoft Defender detected the v1.0.6 Portable ZIP during download as `Trojan:Script/Wacatac.H!ml` and quarantined it. A separate custom scan of the installed application folder completed without a recorded detection. This single local result does not establish that the archive is a false positive or certify the package as safe; the cause remains unresolved. Do not disable antivirus protection or restore a quarantined copy.
 
 ## Quick start
 
-1. Download the [Portable ZIP v1.0.6](https://anallegory.github.io/VoiceMeeter-IdleWatcher/downloads/VoiceMeeter-IdleWatcher-v1.0.6-portable.zip) and extract it.
+1. Download the [Portable ZIP v1.0.6](https://raw.githubusercontent.com/AnAllegory/VoiceMeeter-IdleWatcher/gh-pages/downloads/VoiceMeeter-IdleWatcher-v1.0.6-portable.zip) and extract it.
 2. Keep all seven runtime files together in the same folder. The archive includes a bilingual `QUICK_START.txt`.
 3. Double-click `VoiceMeeter-IdleWatcher.vbs`, or run `wscript.exe VoiceMeeter-IdleWatcher.vbs` from that folder.
 4. To stop the watcher gracefully, run `wscript.exe VoiceMeeter-IdleWatcher.vbs /stop` from the same folder.
