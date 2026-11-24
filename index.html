@@ -158,6 +158,18 @@
       box-shadow: var(--shadow);
     }
     .section-head { max-width: 760px; margin-bottom: 22px; }
+    .video-frame {
+      width: min(100%, 920px);
+      aspect-ratio: 16 / 9;
+      margin: 0 auto;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: #000;
+      box-shadow: var(--shadow);
+    }
+    .video-frame iframe { display: block; width: 100%; height: 100%; border: 0; }
+    .video-caption { max-width: 920px; margin: 10px auto 0; font-size: .92rem; }
     h2 { margin: 0 0 9px; font-size: clamp(1.5rem, 3vw, 2rem); line-height: 1.2; letter-spacing: -.03em; }
     h3 { margin: 0 0 7px; font-size: 1.08rem; }
     p { margin: 9px 0; }
@@ -353,6 +365,24 @@
         <a class="button secondary" href="https://github.com/AnAllegory/VoiceMeeter-IdleWatcher/releases/latest">GitHub Releases</a>
       </div>
     </header>
+
+    <section class="section" aria-labelledby="project-video-title-en">
+      <div class="section-head">
+        <div class="eyebrow">Watch</div>
+        <h2 id="project-video-title-en">VoiceMeeter IdleWatcher · Short intro</h2>
+        <p class="muted">A short animation inspired by the project emblem.</p>
+      </div>
+      <div class="video-frame">
+        <iframe
+          src="https://www.youtube-nocookie.com/embed/EXJE1YOYDeo?rel=0"
+          title="VoiceMeeter IdleWatcher · Short intro"
+          loading="lazy"
+          referrerpolicy="strict-origin-when-cross-origin"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+          allowfullscreen></iframe>
+      </div>
+      <p class="video-caption muted">Also available on <a href="https://www.youtube.com/watch?v=EXJE1YOYDeo" target="_blank" rel="noopener noreferrer">YouTube</a>.</p>
+    </section>
 
     <div class="facts" aria-label="Project at a glance">
       <div class="fact"><strong>8 minutes</strong><span>Default idle threshold</span></div>
@@ -556,6 +586,22 @@
         <a class="button" style="background:#1a2a43;color:#c2d4ff;border:1px solid #3b5273" href="https://github.com/AnAllegory/VoiceMeeter-IdleWatcher/releases/latest">Релизы GitHub</a>
         <a class="button" style="background:#1a2a43;color:#c2d4ff;border:1px solid #3b5273" href="https://github.com/AnAllegory/VoiceMeeter-IdleWatcher">Репозиторий</a>
       </div>
+
+      <div class="section-head" style="margin-top:30px">
+        <div class="eyebrow">Видео</div>
+        <h2 id="project-video-title-ru">VoiceMeeter IdleWatcher · Короткий ролик</h2>
+        <p class="muted">Небольшая анимация, созданная по мотивам эмблемы проекта.</p>
+      </div>
+      <div class="video-frame">
+        <iframe
+          src="https://www.youtube-nocookie.com/embed/EXJE1YOYDeo?rel=0"
+          title="VoiceMeeter IdleWatcher · Короткий ролик"
+          loading="lazy"
+          referrerpolicy="strict-origin-when-cross-origin"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+          allowfullscreen></iframe>
+      </div>
+      <p class="video-caption muted">Ролик также доступен на <a href="https://www.youtube.com/watch?v=EXJE1YOYDeo" target="_blank" rel="noopener noreferrer">YouTube</a>.</p>
 
       <h2 style="margin-top:30px">Что делает программа</h2>
       <p>IdleWatcher следит за временем бездействия Windows и состоянием питания дисплея. Когда одновременно выполнены оба условия безопасности, утилита отправляет команду на выключение VoiceMeeter через Remote API.</p>
