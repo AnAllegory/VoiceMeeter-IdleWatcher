@@ -1,6 +1,6 @@
 # VoiceMeeter IdleWatcher v1.0.6
 
-**Package status:** Portable ZIP v1.0.6 is published in the repository's `gh-pages` branch and served directly from GitHub. The official v1.0.6 tag and GitHub Release page are still pending; the latest official GitHub Release remains v1.0.5.  
+**Package status:** Portable ZIP v1.0.6 is published in the repository's `gh-pages` branch and served directly from GitHub. The v1.0.6 tag and stable GitHub Release are published; v1.0.6 is the latest official GitHub Release: https://github.com/AnAllegory/VoiceMeeter-IdleWatcher/releases/tag/v1.0.6.  
 **Preparation date:** 2026-11-24  
 **Runtime:** Windows PowerShell 5.1
 
