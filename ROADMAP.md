@@ -2,7 +2,7 @@
 
 This document records the current project state, possible follow-up observations and deliberate scope decisions. It is a planning note, not a promise that every item will be implemented.
 
-The current integrated modular source baseline is v1.0.5. The public project and the project relationship are described in REPOSITORY_LINEAGE.md. Changes should be driven by reproducible behavior, a concrete use case or a clear maintenance benefit. Do not add complexity merely because it is technically possible.
+The latest published stable source release is v1.0.5. The current `main` branch contains the v1.0.6 maintenance candidate, which is not yet published. The public project and the project relationship are described in REPOSITORY_LINEAGE.md. Changes should be driven by reproducible behavior, a concrete use case or a clear maintenance benefit. Do not add complexity merely because it is technically possible.
 
 ## Implemented in the modular development line
 
@@ -31,6 +31,13 @@ The current integrated modular source baseline is v1.0.5. The public project and
 - After IsParametersDirty = -2 confirms server teardown, the watcher retains the last accepted indicator state rather than sending futile writes.
 - Startup/recovery paths no longer attempt OFF when Login indicates that no VoiceMeeter engine is running.
 
+### Maintenance diagnostics and logging cadence — v1.0.6 candidate
+
+- The diagnostic `Desired` summary reports OFF only when a pre-shutdown OFF write was accepted; a confirmed-stopped engine without such an accepted write is reported as writes paused with the last accepted state retained.
+- Status snapshots are emitted on the first main-loop pass and then at intervals of at least 300 seconds. The main monitoring loop and default MacroButtons synchronization cadence are unchanged.
+- CI now checks the v1.0.6 candidate version, diagnostic summary semantics and snapshot interval/immediate-first-snapshot contracts.
+- This is a maintenance candidate, not a published release. v1.0.5 remains the latest stable public release.
+
 ## Current observations
 
 These are observations, not confirmed defects requiring immediate code changes.
@@ -53,11 +60,19 @@ An RDP session disconnect may be represented to the session as display Off. If t
 
 ### 4. Sleep / Wake behavior
 
-The current design does not implement a dedicated Sleep / Wake state machine. The latest test did confirm normal display-On handling after the PC was awakened, but it does not prove every sleep/resume configuration. Add dedicated handling only if a repeatable problem is found.
+The current design does not implement a dedicated Sleep / Wake state machine. The latest test did confirm normal display-On handling after the PC was awakened, but it does not prove every sleep/resume configuration. An independent review raised a possible event-ordering window around resume, but no repeatable failure has been demonstrated. Add dedicated handling only if a repeatable problem is found.
 
 ### 5. Logging clarity
 
 If a real troubleshooting case needs it, consider making the origin and reason for START / STOP requests easier to identify. Avoid adding high-volume logging without a concrete diagnostic benefit.
+
+### 6. Graceful stop after Shutdown dispatch
+
+A review raised a possible transient where /stop arrives after Command.Shutdown has been dispatched but before the Remote API reports the engine as stopped. Cleanup may still see the API as available and accept an ON write while the engine is already stopping. This has not been reproduced and does not currently justify changing cleanup behavior. Observe it on the target PC before proposing a code change.
+
+### 7. VoiceMeeter starts while idle and display Off
+
+A review identified a scenario worth observing: VoiceMeeter starts while the idle threshold is already satisfied and the display is Off, so the watcher may assert ON and then proceed through its normal OFF/allowance/final-check/Shutdown sequence. No unsafe behavior has been demonstrated. Verify the intended indicator behavior during a target-PC test before changing the state flow.
 
 ## Deliberately out of scope for now
 
@@ -99,4 +114,4 @@ The private Beta workspace should remain an archive unless there is a separate r
 
 ## Status
 
-The v1.0.2 through v1.0.5 implementation work is integrated into public `main`. PR #10 was merged on 2026-11-22, and the v1.0.5 release was published on the same date. The release tag remains a snapshot of the validated source commit; later documentation-only maintenance commits on `main` do not change the published tag. Runtime observations and future ideas remain separate from release completion.
+The v1.0.2 through v1.0.5 implementation work is integrated into public `main`. PR #10 was merged on 2026-11-22, and the v1.0.5 release was published on the same date. The v1.0.6 maintenance candidate is being prepared on a separate branch; its pull request and target-PC verification must be completed before the maintainer decides whether to publish it. No v1.0.6 tag or release has been created. The v1.0.5 tag remains a snapshot of the validated source commit; later source or documentation changes do not alter that published tag.

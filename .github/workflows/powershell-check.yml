@@ -88,8 +88,34 @@ jobs:
           }
 
           $ps1 = Get-Content -LiteralPath 'VoiceMeeter-IdleWatcher.ps1' -Raw
-          if ($ps1 -notmatch '\$WatcherVersion\s*=\s*''1\.0\.5''') {
-            throw 'Watcher version must match the integrated modular source baseline 1.0.5.'
+          if ($ps1 -notmatch '\$WatcherVersion\s*=\s*''1\.0\.6''') {
+            throw 'Watcher version must match the v1.0.6 maintenance candidate.'
+          }
+
+          $statusSnapshotMatch = [regex]::Match($ps1, '\(\$summaryNow - \$lastStatusSummaryAt\)\.TotalSeconds -ge (\d+)')
+          if (-not $statusSnapshotMatch.Success -or [int]$statusSnapshotMatch.Groups[1].Value -ne 300) {
+            throw 'Status snapshots must be throttled to a minimum interval of 300 seconds.'
+          }
+          if (-not $ps1.Contains('$lastStatusSummaryAt -eq [datetime]::MinValue')) {
+            throw 'The first status snapshot must remain immediate.'
+          }
+
+          $desiredSummaryStart = $ps1.IndexOf('$macroButtonDesiredSummary = if ($MacroButtonLogicalIndex -lt 0)')
+          if ($desiredSummaryStart -lt 0) {
+            throw 'Could not locate the MacroButtons status-summary logic.'
+          }
+          $desiredSummaryEnd = $ps1.IndexOf('$macroButtonStatus = Get-MacroButtonSyncStatus', $desiredSummaryStart)
+          if ($desiredSummaryEnd -le $desiredSummaryStart) {
+            throw 'Could not locate the end of the MacroButtons status-summary logic.'
+          }
+          $desiredSummaryBlock = $ps1.Substring($desiredSummaryStart, $desiredSummaryEnd - $desiredSummaryStart)
+          $offAcceptedPosition = $desiredSummaryBlock.IndexOf('elseif ($macroButtonOffForPendingShutdown)')
+          $unknownApiPosition = $desiredSummaryBlock.IndexOf('elseif (-not $apiEngineStateKnown)')
+          if (($offAcceptedPosition -lt 0) -or ($unknownApiPosition -lt 0) -or ($offAcceptedPosition -ge $unknownApiPosition) -or
+              ($desiredSummaryBlock -notmatch "'OFF \(accepted for pending shutdown\)'") -or
+              ($desiredSummaryBlock -notmatch "'Writes paused; last accepted state retained'") -or
+              ($desiredSummaryBlock -match '\$macroButtonOffForPendingShutdown\s+-or\s+\(-not\s+\$voiceMeeterIsRunning\)')) {
+            throw 'Desired summary must report OFF only from the accepted pre-shutdown flag and distinguish a stopped engine.'
           }
 
           $refreshDelayMatch = [regex]::Match($ps1, '\$macroButtonRefreshDelayMs\s*=\s*(\d+)')
@@ -182,7 +208,8 @@ jobs:
             'REPOSITORY_LINEAGE.md',
             'GROK_REVIEW_BRIEF.md',
             'RELEASE_NOTES_v1.0.0.md',
-            'RELEASE_NOTES_v1.0.5.md'
+            'RELEASE_NOTES_v1.0.5.md',
+            'RELEASE_NOTES_v1.0.6.md'
           )
           foreach ($path in $requiredFiles) {
             if (-not (Test-Path -LiteralPath $path -PathType Leaf)) {

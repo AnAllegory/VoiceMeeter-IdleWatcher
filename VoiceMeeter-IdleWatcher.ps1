@@ -165,7 +165,7 @@ try {
 
 	$MaxLogSize = Get-ValidatedConfigLong -Map $ConfigData -Key 'MaxLogSizeBytes' -DefaultValue 500KB -Minimum 4096 -Maximum 104857600
 	$FallbackMaxLogSize = Get-ValidatedConfigLong -Map $ConfigData -Key 'FallbackMaxLogSizeBytes' -DefaultValue 2MB -Minimum 4096 -Maximum 209715200
-	$WatcherVersion = '1.0.5'
+	$WatcherVersion = '1.0.6'
 	$ShutdownCommandLimit = Get-ValidatedConfigInt -Map $ConfigData -Key 'ShutdownCommandLimit' -DefaultValue 3 -Minimum 1 -Maximum 10
 	$CheckIntervalSec = Get-ValidatedConfigInt -Map $ConfigData -Key 'CheckIntervalSec' -DefaultValue 10 -Minimum 1 -Maximum 60
 	$RetryIntervalSec = Get-ValidatedConfigInt -Map $ConfigData -Key 'RetryIntervalSec' -DefaultValue 30 -Minimum 1 -Maximum 600
@@ -567,11 +567,14 @@ try {
 					$macroButtonDesiredSummary = if ($MacroButtonLogicalIndex -lt 0) {
 						'Disabled'
 					}
+					elseif ($macroButtonOffForPendingShutdown) {
+						'OFF (accepted for pending shutdown)'
+					}
 					elseif (-not $apiEngineStateKnown) {
 						'Unknown; writes paused'
 					}
-					elseif ($macroButtonOffForPendingShutdown -or (-not $voiceMeeterIsRunning)) {
-						'OFF'
+					elseif (-not $voiceMeeterIsRunning) {
+						'Writes paused; last accepted state retained'
 					}
 					else {
 						'ON'
