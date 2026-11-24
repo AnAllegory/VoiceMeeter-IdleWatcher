@@ -1,11 +1,11 @@
 # VoiceMeeter IdleWatcher — Project Context / Handover
 
-**Last reviewed:** 2026-11-22  
+**Last reviewed:** 2026-11-24  
 **Current repository:** AnAllegory/VoiceMeeter-IdleWatcher  
 **Default branch:** main  
 **Visibility:** Public  
-**Source baseline:** v1.0.5  
-**Status:** Modular v1.0.5 is published as the latest stable public GitHub Release. Tag `v1.0.5` points to validated `main` commit `ad60060dbe45323fb7c782ba6d4aa6df6b0b502f`; the release discussion is [#11](https://github.com/AnAllegory/VoiceMeeter-IdleWatcher/discussions/11).
+**Source baseline:** v1.0.5 published stable; v1.0.6 candidate under review on a separate branch  
+**Status:** `main` remains at the v1.0.5 published stable baseline. The v1.0.6 maintenance candidate is prepared on separate branch `prepare-v1.0.6-maintenance` and is under review in [PR #13](https://github.com/AnAllegory/VoiceMeeter-IdleWatcher/pull/13); it is not yet merged, tagged or published. Tag `v1.0.5` points to validated commit `ad60060dbe45323fb7c782ba6d4aa6df6b0b502f`; the release discussion is [#11](https://github.com/AnAllegory/VoiceMeeter-IdleWatcher/discussions/11).
 
 > For a new review or development session: read this document, REPOSITORY_LINEAGE.md, ARCHITECTURE.md, CHANGELOG.md, ROADMAP.md, SECURITY.md and AGENTS.md, then inspect the actual source files and the public modular workflow. The current source is authoritative if documentation and code ever disagree.
 
@@ -100,13 +100,13 @@ Numeric and named configuration values are bounded and validated at startup. STA
 - API return code 0 means the write was accepted; it is not a UI readback.
 - Desired, LastAccepted, WriterStatus and LastAcceptedAt are distinct. WriterStatus is the last writer result/status, not live API health. LastAccepted is not proof of the current visible button state.
 
-### API availability gate (v1.0.5)
+### API availability gate (introduced in v1.0.5; retained in v1.0.6)
 
 Periodic and manual-refresh writes require both a known API state and a confirmed running VoiceMeeter engine. A known-stopped state (IsParametersDirty = -2) means the server is unavailable, not that an OFF write can be sent. In this state, no repeated write is attempted and the last API-accepted indicator state is retained.
 
 At startup or recovery, a Login result that indicates there is no running engine does not cause an initial OFF write. When the engine later becomes available, the watcher asserts ON.
 
-### Automatic shutdown sequence (v1.0.4, retained in v1.0.5)
+### Automatic shutdown sequence (v1.0.4, retained in v1.0.6)
 
 1. Check idle threshold, display Off and no pending /stop.
 2. Attempt STATEONLY OFF while the API is available.
@@ -162,6 +162,16 @@ After waking the PC, the maintainer visually confirmed that MacroButton 1 was no
 
 **What it does not prove:** the exact visual instant when the MacroButtons window extinguished the button relative to engine shutdown. The maintainer could not observe the button while the display was Off. There is no API readback in this design.
 
+### v1.0.6 maintenance candidate (prepared 2026-11-24; not published)
+
+The separate-branch v1.0.6 candidate contains three maintenance changes:
+
+- The periodic status snapshot is emitted on the first main-loop pass, then only when at least 300 seconds have elapsed since the previous snapshot. The main monitoring loop remains at its configured interval (10 seconds by default); the MacroButtons synchronization interval is separate and unchanged.
+- The diagnostic `Desired` summary now reports OFF only when the watcher has an accepted OFF write pending its own shutdown. If VoiceMeeter is confirmed stopped and no pre-shutdown OFF was accepted, the snapshot reports that writes are paused and the last accepted API state is retained.
+- The temporary pending-shutdown marker is cleared when engine stop is confirmed or a successful API re-login confirms the engine state. The last API-accepted state remains independent; Remote API writes, API gates and shutdown eligibility are unchanged.
+
+The candidate has not yet received target-PC runtime verification. Before publication, the maintainer should confirm the immediate first snapshot, the minimum 300-second interval, and one normal idle-plus-display-Off shutdown cycle. Additional review scenarios remain observations to test, not confirmed defects: Sleep/Wake event ordering, /stop arriving after Shutdown dispatch while the Remote API is still responding, and VoiceMeeter starting when the idle threshold is already reached and the display is Off.
+
 ## 7. Accepted limitations and scope decisions
 
 ### Manual VoiceMeeter Exit
@@ -187,7 +197,7 @@ The public modular workflow is .github/workflows/powershell-check.yml. It runs o
 
 The workflow performs:
 - Windows PowerShell 5.1 parsing for the main script and PowerShell modules.
-- Static project-contract checks for v1.0.5, the 1000ms sequence, final safety validation, the STATEONLY invariant, no-readback contract and API write gates.
+- Static project-contract checks for the v1.0.6 candidate version, the 1000ms sequence, final safety validation, the STATEONLY invariant, no-readback contract, API write gates, diagnostic-summary semantics, pending-marker lifecycle and 300-second status-snapshot cadence.
 - Tab-indentation checks for source files.
 - C# interop compilation after the DLL marker is replaced with a placeholder path.
 - VBS invalid-argument validation without launching the watcher.
@@ -202,7 +212,7 @@ Always distinguish static CI, source inspection and maintainer-reported runtime 
 - README.md and README.ru.md — user-facing overview, requirements, configuration and start/stop instructions.
 - REPOSITORY_LINEAGE.md — history of the public monolithic source and its modular development workspace.
 - ARCHITECTURE.md — module boundaries, state flow and safety contracts.
-- CHANGELOG.md — public change history and the v1.0.5 release record.
+- CHANGELOG.md — public change history, v1.0.5 release record and v1.0.6 candidate changes.
 - PROJECT_CONTEXT.md — this handover, source invariants and runtime evidence.
 - GROK_REVIEW_BRIEF.md — historical technical review request and its disposition.
 - AGENTS.md — mandatory rules for future review and maintenance.
@@ -210,7 +220,8 @@ Always distinguish static CI, source inspection and maintainer-reported runtime 
 - SECURITY.md — vulnerability reporting guidance and safe handling of diagnostic material.
 - CONTRIBUTING.md and CONTRIBUTING.ru.md — contributor workflow, development requirements and project safety contracts.
 - .github/ISSUE_TEMPLATE/ and .github/PULL_REQUEST_TEMPLATE.md — structured issue and pull-request forms.
-- RELEASE_NOTES_v1.0.5.md — prepared release description and verification notes.
+- RELEASE_NOTES_v1.0.5.md — published stable-release description and verification notes.
+- RELEASE_NOTES_v1.0.6.md — prepared maintenance-candidate description and pre-publication runtime checklist.
 - LICENSE — MIT license terms.
 
 This repository is the canonical documentation and source location. Keep the bilingual guides and project records synchronized with implementation changes.

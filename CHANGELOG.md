@@ -6,7 +6,19 @@ The v1.0.0 release was published on 2026-11-19; v1.0.5 was published on 2026-11-
 
 ## [Unreleased]
 
-No changes yet.
+### Fixed
+
+- Corrected the MacroButtons diagnostic summary: OFF is shown only after the pre-shutdown OFF write was accepted. When VoiceMeeter is confirmed stopped and no such OFF write was accepted, the snapshot now reports that writes are paused and the last accepted state is retained.
+- Clear the temporary pending-shutdown marker after a confirmed engine stop or a successful API re-login that confirms the engine state. This prevents a completed shutdown from remaining labelled as pending without changing the last API-accepted state or shutdown behavior.
+
+### Changed
+
+- Status snapshots are emitted immediately on the first main-loop pass and then no more often than every 300 seconds. The 10-second monitoring loop and default MacroButtons synchronization interval remain unchanged.
+- Prepared the v1.0.6 maintenance candidate and aligned its version contract, bilingual documentation and release notes. v1.0.5 remains the latest published stable release until a separate publication action.
+
+### Validation
+
+- Extended CI contracts to protect diagnostic-summary semantics, pending-marker cleanup after confirmed engine stop/re-login, the immediate first snapshot and the 300-second snapshot interval. These are static checks; target-PC runtime verification remains separate.
 
 ## [1.0.5] - 2026-11-22
 

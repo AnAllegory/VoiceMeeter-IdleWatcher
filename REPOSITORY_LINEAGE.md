@@ -4,7 +4,7 @@
 
 The canonical repository is AnAllegory/VoiceMeeter-IdleWatcher. The public main branch is the home for current source, documentation, CI and GitHub Pages.
 
-The modular implementation in this repository uses source baseline v1.0.5, now published as the latest stable public release. The number originated in the private development workspace; the public v1.0.0 and v1.0.1 tags remain unchanged historical releases. The `v1.0.5` tag points to validated `main` commit `ad60060dbe45323fb7c782ba6d4aa6df6b0b502f`.
+The current `main` baseline remains the latest published stable release v1.0.5. The v1.0.6 maintenance candidate is under review on a separate branch and has not been merged or published. The number originated in the private development workspace; the public v1.0.0 and v1.0.1 tags remain unchanged historical releases. The `v1.0.5` tag points to validated `main` commit `ad60060dbe45323fb7c782ba6d4aa6df6b0b502f`.
 
 ## How the project reached the modular source
 
@@ -56,4 +56,4 @@ The monolithic and modular workflows are not interchangeable. Keep CI aligned wi
 
 ## Release status
 
-The public releases v1.0.0 and v1.0.1 remain historical releases. The integrated modular v1.0.5 source was published as the latest stable GitHub Release on 2026-11-22. The implementation milestones v1.0.2 through v1.0.4 were internal development stages, not separate public tags. Release discussion: [#11](https://github.com/AnAllegory/VoiceMeeter-IdleWatcher/discussions/11).
+The public releases v1.0.0 and v1.0.1 remain historical releases. The integrated modular v1.0.5 source was published as the latest stable GitHub Release on 2026-11-22. The v1.0.6 maintenance candidate is being prepared on a separate branch and is not yet a published release or tag. The implementation milestones v1.0.2 through v1.0.4 were internal development stages, not separate public tags. Release discussion: [#11](https://github.com/AnAllegory/VoiceMeeter-IdleWatcher/discussions/11).

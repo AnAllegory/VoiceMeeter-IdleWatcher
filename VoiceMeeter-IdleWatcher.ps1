@@ -165,7 +165,7 @@ try {
 
 	$MaxLogSize = Get-ValidatedConfigLong -Map $ConfigData -Key 'MaxLogSizeBytes' -DefaultValue 500KB -Minimum 4096 -Maximum 104857600
 	$FallbackMaxLogSize = Get-ValidatedConfigLong -Map $ConfigData -Key 'FallbackMaxLogSizeBytes' -DefaultValue 2MB -Minimum 4096 -Maximum 209715200
-	$WatcherVersion = '1.0.5'
+	$WatcherVersion = '1.0.6'
 	$ShutdownCommandLimit = Get-ValidatedConfigInt -Map $ConfigData -Key 'ShutdownCommandLimit' -DefaultValue 3 -Minimum 1 -Maximum 10
 	$CheckIntervalSec = Get-ValidatedConfigInt -Map $ConfigData -Key 'CheckIntervalSec' -DefaultValue 10 -Minimum 1 -Maximum 60
 	$RetryIntervalSec = Get-ValidatedConfigInt -Map $ConfigData -Key 'RetryIntervalSec' -DefaultValue 30 -Minimum 1 -Maximum 600
@@ -525,6 +525,8 @@ try {
 							else {
 								Write-Log 'VoiceMeeter engine/API stop detected (Remote API code -2). The server is unavailable, so MacroButtons OFF cannot be sent; the last accepted state is retained.' -Level 'WARN'
 							}
+							# A confirmed engine stop ends the pending-shutdown marker; LastAccepted remains separate.
+							$macroButtonOffForPendingShutdown = $false
 						}
 					}
 					else {
@@ -567,11 +569,14 @@ try {
 					$macroButtonDesiredSummary = if ($MacroButtonLogicalIndex -lt 0) {
 						'Disabled'
 					}
+					elseif ($macroButtonOffForPendingShutdown) {
+						'OFF (accepted for pending shutdown)'
+					}
 					elseif (-not $apiEngineStateKnown) {
 						'Unknown; writes paused'
 					}
-					elseif ($macroButtonOffForPendingShutdown -or (-not $voiceMeeterIsRunning)) {
-						'OFF'
+					elseif (-not $voiceMeeterIsRunning) {
+						'Writes paused; last accepted state retained'
 					}
 					else {
 						'ON'
@@ -643,9 +648,8 @@ try {
 							$loginCompleted = $true
 							$voiceMeeterIsRunning = ($relogin -eq 0)
 							$apiEngineStateKnown = $true
-							if ($voiceMeeterIsRunning) {
-								$macroButtonOffForPendingShutdown = $false
-							}
+							# Successful re-login resolves the engine state, whether running or stopped.
+							$macroButtonOffForPendingShutdown = $false
 							if ($voiceMeeterIsRunning) {
 								Invoke-MacroButtonStateSync -DesiredState 1 -Force
 							}
@@ -682,6 +686,8 @@ try {
 								else {
 									Write-Log 'VoiceMeeter engine stop confirmed by the shutdown monitor (Remote API code -2). MacroButtons cannot be updated after the server has disappeared; the last accepted state is retained.' -Level 'WARN'
 								}
+								# A confirmed engine stop ends the pending-shutdown marker; LastAccepted remains separate.
+								$macroButtonOffForPendingShutdown = $false
 							}
 							if ($shutdownSentThisIdle) {
 								if (-not $engineStoppedAfterShutdown) {

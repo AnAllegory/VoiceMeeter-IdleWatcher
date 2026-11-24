@@ -5,7 +5,7 @@
 <a id="english"></a>
 ## English
 
-This document describes the current modular source baseline v1.0.5 in the public repository. It follows the earlier monolithic implementation and uses a CI workflow aligned with the modular source layout. See REPOSITORY_LINEAGE.md for the project history. The current source files define the implementation if any wording here becomes stale.
+This document describes the modular source structure released as v1.0.5. A v1.0.6 maintenance candidate is under review on a separate branch; v1.0.5 remains the latest published stable release. It follows the earlier monolithic implementation and uses a CI workflow aligned with the modular source layout. See REPOSITORY_LINEAGE.md for the project history. The current source files define the implementation if any wording here becomes stale.
 
 ### Modules and ownership
 
@@ -83,6 +83,7 @@ MacroButtons is optional and non-fatal. Its module owns the only STATEONLY write
 - OFF is attempted before an IdleWatcher-issued automatic shutdown, while the API is still available.
 - Periodic synchronization and explicit refresh require both known API state and a confirmed running engine.
 - When IsParametersDirty = -2 confirms that the server is unavailable, no periodic/manual OFF write is attempted. The last API-accepted indicator state is retained.
+- When engine stop is confirmed, the temporary pending-shutdown marker is cleared. LastAccepted remains separate and continues to report the last API-accepted write.
 - On graceful watcher stop, ON is asserted only if the API confirms the engine is available. If not, the last accepted state is retained.
 
 The watcher does not use GetStatus for button-state readback and does not call MacroButton_IsDirty. A SetStatus return code of zero means that the Remote API accepted the command; it does not prove that the MacroButtons window has rendered the new state.
@@ -135,7 +136,7 @@ This confirms the post-wake end state and the shutdown sequence. It does **not**
 <a id="русский"></a>
 ## Русский
 
-Этот документ описывает текущую модульную исходную версию v1.0.5 в публичном репозитории. Она продолжает первоначальную монолитную реализацию, а workflow соответствует модульной структуре исходников. История проекта описана в REPOSITORY_LINEAGE.md. Если формулировка в документации расходится с исходниками, приоритет имеют актуальные исходники.
+Этот документ описывает модульную структуру исходников, опубликованную в версии v1.0.5. Кандидат на технический релиз v1.0.6 проходит проверку в отдельной ветке; v1.0.5 остаётся последним опубликованным стабильным релизом. Она продолжает первоначальную монолитную реализацию, а workflow соответствует модульной структуре исходников. История проекта описана в REPOSITORY_LINEAGE.md. Если формулировка в документации расходится с исходниками, приоритет имеют актуальные исходники.
 
 ### Модули и ответственность
 
@@ -213,6 +214,7 @@ MacroButtons остаётся необязательной функцией, о�
 - Перед автоматическим выключением по команде IdleWatcher отправляется OFF, пока API ещё доступен.
 - Периодическая синхронизация и принудительный Refresh требуют известного состояния API и подтверждённо работающего движка.
 - Когда IsParametersDirty = -2 подтверждает отсутствие сервера, периодические и ручные OFF-записи прекращаются. Сохраняется последнее состояние, принятое API.
+- После подтверждения остановки движка временный маркер ожидающего выключения очищается. Поле LastAccepted независимо сохраняет последнее состояние, принятое API.
 - При штатной остановке watcher команда ON отправляется только при подтверждённой доступности движка. Иначе последнее принятое состояние сохраняется.
 
 Watcher не использует GetStatus для обратного считывания состояния кнопки и не вызывает MacroButton_IsDirty. Возврат SetStatus с кодом 0 означает, что Remote API принял команду; он не подтверждает, что окно MacroButtons уже отобразило новое состояние.
