@@ -6,7 +6,7 @@
 
 Утилита автоматизации для Windows на PowerShell. Она отслеживает время бездействия пользователя и состояние питания дисплея, а затем отправляет команду выключения VoiceMeeter только после достижения заданного порога бездействия и при полностью выключенном дисплее.
 
-> **Статус публикации:** v1.0.6 объединена с `main`; статические проверки CI и runtime-проверка сопровождающим на целевом ПК успешно завершились 2026-11-24. Portable ZIP опубликован в ветке `gh-pages` и раздаётся непосредственно с GitHub. Git-тег и официальная страница GitHub Release для v1.0.6 пока не созданы; последним официальным GitHub Release остаётся v1.0.5. Подробные результаты проверки приведены в [примечаниях к v1.0.6](RELEASE_NOTES_v1.0.6.md).
+> **Статус публикации:** v1.0.6 объединена с `main`; статические проверки CI и runtime-проверка сопровождающим на целевом ПК успешно завершились 2026-11-24. Portable ZIP опубликован в ветке `gh-pages` и раздаётся непосредственно с GitHub. Git-тег и официальная страница GitHub Release для v1.0.6 опубликованы; v1.0.6 является последним официальным релизом: [страница релиза](https://github.com/AnAllegory/VoiceMeeter-IdleWatcher/releases/tag/v1.0.6). Подробные результаты проверки приведены в [примечаниях к v1.0.6](RELEASE_NOTES_v1.0.6.md).
 >
 > **Предупреждение Microsoft Defender:** На компьютере сопровождающего под Windows 11 при загрузке Portable ZIP v1.0.6 Microsoft Defender обнаружил `Trojan:Script/Wacatac.H!ml` и поместил архив в карантин. Отдельная пользовательская проверка папки с установленной программой завершилась без зарегистрированного обнаружения. Этот единичный локальный результат не доказывает, что срабатывание на архив ошибочно, и не является сертификатом безопасности. Причина срабатывания пока не установлена. Не отключайте антивирусную защиту и не восстанавливайте архив из карантина.
 
@@ -17,7 +17,7 @@
 3. Дважды щёлкните `VoiceMeeter-IdleWatcher.vbs` или выполните из этой папки команду `wscript.exe VoiceMeeter-IdleWatcher.vbs`.
 4. Для штатной остановки выполните из той же папки `wscript.exe VoiceMeeter-IdleWatcher.vbs /stop`.
 
-Текущий [ZIP исходников из main](https://github.com/AnAllegory/VoiceMeeter-IdleWatcher/archive/refs/heads/main.zip) доступен для просмотра исходников. Точный ZIP исходников с тегом v1.0.6 появится после создания тега релиза. Требования: Windows, Windows PowerShell 5.1, VoiceMeeter с DLL Remote API и включённый Windows Script Host.
+Текущий [ZIP исходников из main](https://github.com/AnAllegory/VoiceMeeter-IdleWatcher/archive/refs/heads/main.zip) доступен для просмотра исходников. Доступен точный [ZIP исходников с тегом v1.0.6](https://github.com/AnAllegory/VoiceMeeter-IdleWatcher/archive/refs/tags/v1.0.6.zip). Требования: Windows, Windows PowerShell 5.1, VoiceMeeter с DLL Remote API и включённый Windows Script Host.
 
 История перехода от первоначальной монолитной реализации к модульной структуре описана в [REPOSITORY_LINEAGE.md](REPOSITORY_LINEAGE.md).
 
