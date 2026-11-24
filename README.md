@@ -6,7 +6,7 @@
 
 A Windows PowerShell utility that monitors user idle time and display power state, then requests VoiceMeeter shutdown only when the configured idle threshold has elapsed and the display is fully Off.
 
-> **Release status:** v1.0.6 is merged into `main`; static CI and maintainer-reported target-PC runtime validation passed on 2026-11-24. The Portable ZIP is published in the repository's `gh-pages` branch and served directly from GitHub. The official v1.0.6 tag and GitHub Release page are still pending; the latest official GitHub Release remains v1.0.5. See [Release notes v1.0.6](RELEASE_NOTES_v1.0.6.md) for test evidence.
+> **Release status:** v1.0.6 is merged into `main`; static CI and maintainer-reported target-PC runtime validation passed on 2026-11-24. The Portable ZIP is published in the repository's `gh-pages` branch and served directly from GitHub. The v1.0.6 tag and GitHub Release are published; v1.0.6 is the latest official GitHub Release: [view release](https://github.com/AnAllegory/VoiceMeeter-IdleWatcher/releases/tag/v1.0.6). See [Release notes v1.0.6](RELEASE_NOTES_v1.0.6.md) for test evidence.
 >
 > **Microsoft Defender notice:** On the maintainer's Windows 11 PC, Microsoft Defender detected the v1.0.6 Portable ZIP during download as `Trojan:Script/Wacatac.H!ml` and quarantined it. A separate custom scan of the installed application folder completed without a recorded detection. This single local result does not establish that the archive is a false positive or certify the package as safe; the cause remains unresolved. Do not disable antivirus protection or restore a quarantined copy.
 
@@ -17,7 +17,7 @@ A Windows PowerShell utility that monitors user idle time and display power stat
 3. Double-click `VoiceMeeter-IdleWatcher.vbs`, or run `wscript.exe VoiceMeeter-IdleWatcher.vbs` from that folder.
 4. To stop the watcher gracefully, run `wscript.exe VoiceMeeter-IdleWatcher.vbs /stop` from the same folder.
 
-The current [main source ZIP](https://github.com/AnAllegory/VoiceMeeter-IdleWatcher/archive/refs/heads/main.zip) is available for source inspection. The exact tagged v1.0.6 source ZIP will be available when the release tag is created. Requirements: Windows, Windows PowerShell 5.1, VoiceMeeter with its Remote API DLL, and Windows Script Host.
+The current [main source ZIP](https://github.com/AnAllegory/VoiceMeeter-IdleWatcher/archive/refs/heads/main.zip) is available for source inspection. The exact [tagged v1.0.6 source ZIP](https://github.com/AnAllegory/VoiceMeeter-IdleWatcher/archive/refs/tags/v1.0.6.zip) is available. Requirements: Windows, Windows PowerShell 5.1, VoiceMeeter with its Remote API DLL, and Windows Script Host.
 
 For the history of the transition from the original monolithic implementation to the modular source, read [REPOSITORY_LINEAGE.md](REPOSITORY_LINEAGE.md).
 
