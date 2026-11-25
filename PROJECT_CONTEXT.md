@@ -212,7 +212,7 @@ Always distinguish static CI, source inspection and maintainer-reported runtime 
 - README.md and README.ru.md — user-facing overview, requirements, configuration and start/stop instructions.
 - REPOSITORY_LINEAGE.md — history of the public monolithic source and its modular development workspace.
 - ARCHITECTURE.md — module boundaries, state flow and safety contracts.
-- CHANGELOG.md — public change history, v1.0.5 release record and v1.0.6 candidate changes.
+- CHANGELOG.md — public change history and published release records, including v1.0.6.
 - PROJECT_CONTEXT.md — this handover, source invariants and runtime evidence.
 - GROK_REVIEW_BRIEF.md — historical technical review request and its disposition.
 - AGENTS.md — mandatory rules for future review and maintenance.
