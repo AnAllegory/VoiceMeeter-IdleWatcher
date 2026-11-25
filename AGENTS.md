@@ -17,9 +17,9 @@ Before reviewing or modifying implementation:
 
 ## 2. Repository boundaries
 
-- Canonical repository: AnAllegory/VoiceMeeter-IdleWatcher, branch `main`; v1.0.6 is integrated on `main`. The release package and target-PC validation are complete; GitHub tag/Release publication is the remaining release-administration step.
+- Canonical repository: AnAllegory/VoiceMeeter-IdleWatcher, branch `main`; v1.0.6 is integrated on `main` and published as the latest stable GitHub Release. The immutable `v1.0.6` tag points to the release snapshot; the Portable ZIP is published from `gh-pages`.
 - The private AnAllegory/VoiceMeeter-IdleWatcher-Beta repository is retained as a historical development workspace; it is not the canonical source.
-- The modular source line is integrated on `main`. v1.0.5 remains the latest published GitHub Release until the v1.0.6 tag and Release are created. v1.0.6 source changes are merged and target-PC validated. The v1.0.2-v1.0.4 numbers remain internal development milestones, not separate public releases.
+- The modular source line is integrated on `main`. v1.0.6 is the latest published stable GitHub Release (published 2026-11-24); v1.0.2-v1.0.4 remain internal development milestones, not separate public releases.
 - Preserve the public repository's existing history, tags and releases. Do not create or move tags or publish releases unless the maintainer explicitly authorizes the publication action.
 - Keep the current workflow aligned with the modular source tree; the former monolithic workflow has been replaced.
 
