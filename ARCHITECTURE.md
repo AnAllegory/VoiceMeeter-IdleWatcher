@@ -5,7 +5,7 @@
 <a id="english"></a>
 ## English
 
-This document describes the modular source structure integrated into public `main` and maintained as v1.0.6. The v1.0.6 source passed static CI and maintainer-reported target-PC runtime validation on 2026-11-24. The GitHub tag and Release publication are being finalized separately. It follows the earlier monolithic implementation and uses a CI workflow aligned with the modular source layout. See REPOSITORY_LINEAGE.md for the project history. The current source files define the implementation if any wording here becomes stale.
+This document describes the modular source structure integrated into public `main` and maintained as v1.0.6. The v1.0.6 source passed static CI and maintainer-reported target-PC runtime validation on 2026-11-24. The immutable `v1.0.6` tag and stable GitHub Release were published on 2026-11-24; the release notes and Portable ZIP are linked from the [GitHub Release](https://github.com/AnAllegory/VoiceMeeter-IdleWatcher/releases/tag/v1.0.6). It follows the earlier monolithic implementation and uses a CI workflow aligned with the modular source layout. See REPOSITORY_LINEAGE.md for the project history. The current source files define the implementation if any wording here becomes stale.
 
 ### Modules and ownership
 

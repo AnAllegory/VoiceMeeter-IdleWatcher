@@ -4,8 +4,8 @@
 **Current repository:** AnAllegory/VoiceMeeter-IdleWatcher  
 **Default branch:** main  
 **Visibility:** Public  
-**Source baseline:** v1.0.6 merged and target-PC validated; v1.0.5 remains the latest published GitHub Release until the v1.0.6 tag/Release is created  
-**Status:** PR #13 was merged into `main` on 2026-11-24 (merge commit `c71b20d6f4b6987be3b66758073fe325fddb4209`). The v1.0.6 source passed static CI and the maintainer-reported target-PC runtime test. The final Portable ZIP is prepared on `gh-pages`; GitHub tag/Release publication remains the final release-administration step. Tag `v1.0.5` still points to validated commit `ad60060dbe45323fb7c782ba6d4aa6df6b0b502f`; the v1.0.5 release discussion is [#11](https://github.com/AnAllegory/VoiceMeeter-IdleWatcher/discussions/11).
+**Source baseline:** v1.0.6 merged, target-PC validated and published as the latest stable GitHub Release  
+**Status:** The v1.0.6 source integration was merged through PR #13 on 2026-11-24 (merge commit `c71b20d6f4b6987be3b66758073fe325fddb4209`). PR #15 added the published Defender notice and produced release commit `d693ae05e28199b40ed10feae24c42b0a96d9f40`, to which the immutable `v1.0.6` tag points. The stable GitHub Release and Portable ZIP were published on 2026-11-24. PR #17 reconciled release documentation on `main`; PR #18 updated the tagged source links on `gh-pages`. The v1.0.5 tag remains unchanged at `ad60060dbe45323fb7c782ba6d4aa6df6b0b502f`, with its historical discussion at [#11](https://github.com/AnAllegory/VoiceMeeter-IdleWatcher/discussions/11). The current release is [v1.0.6](https://github.com/AnAllegory/VoiceMeeter-IdleWatcher/releases/tag/v1.0.6).
 
 > For a new review or development session: read this document, REPOSITORY_LINEAGE.md, ARCHITECTURE.md, CHANGELOG.md, ROADMAP.md, SECURITY.md and AGENTS.md, then inspect the actual source files and the public modular workflow. The current source is authoritative if documentation and code ever disagree.
 
@@ -212,7 +212,7 @@ Always distinguish static CI, source inspection and maintainer-reported runtime 
 - README.md and README.ru.md — user-facing overview, requirements, configuration and start/stop instructions.
 - REPOSITORY_LINEAGE.md — history of the public monolithic source and its modular development workspace.
 - ARCHITECTURE.md — module boundaries, state flow and safety contracts.
-- CHANGELOG.md — public change history, v1.0.5 release record and v1.0.6 candidate changes.
+- CHANGELOG.md — public change history and published release records, including v1.0.6.
 - PROJECT_CONTEXT.md — this handover, source invariants and runtime evidence.
 - GROK_REVIEW_BRIEF.md — historical technical review request and its disposition.
 - AGENTS.md — mandatory rules for future review and maintenance.
