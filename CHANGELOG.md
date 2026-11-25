@@ -2,7 +2,7 @@
 
 All notable changes to the repository are documented here.
 
-The v1.0.0 release was published on 2026-11-19; v1.0.5 was published on 2026-11-22. Entries are grouped by release.
+The v1.0.0 release was published on 2026-11-19, v1.0.5 on 2026-11-22 and v1.0.6 on 2026-11-24. Entries are grouped by release.
 
 ## [Unreleased]
 
