@@ -17,7 +17,7 @@ Before reviewing or modifying implementation:
 
 ## 2. Repository boundaries
 
-- Canonical repository: AnAllegory/VoiceMeeter-IdleWatcher, branch `main`; v1.0.6 is integrated on `main` and published as the latest stable GitHub Release. The immutable `v1.0.6` tag points to the release snapshot; the Portable ZIP is published from `gh-pages`.
+- Canonical repository: AnAllegory/VoiceMeeter-IdleWatcher, branch `main`; v1.0.6 is integrated on `main` and published as the latest stable GitHub Release. The immutable `v1.0.6` tag points to the release snapshot. The Portable ZIP was withdrawn from the public `gh-pages` download path on 2026-11-25; ready-to-run ZIP distribution is temporarily paused while reported Google Search Console and Microsoft Defender detections are investigated. GitHub-generated branch/tag source snapshots may remain accessible, but they are not project-built or approved runtime packages during this pause.
 - The private AnAllegory/VoiceMeeter-IdleWatcher-Beta repository is retained as a historical development workspace; it is not the canonical source.
 - The modular source line is integrated on `main`. v1.0.6 is the latest published stable GitHub Release (published 2026-11-24); v1.0.2-v1.0.4 remain internal development milestones, not separate public releases.
 - Preserve the public repository's existing history, tags and releases. Do not create or move tags or publish releases unless the maintainer explicitly authorizes the publication action.

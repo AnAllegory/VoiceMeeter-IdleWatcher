@@ -1,6 +1,6 @@
 # VoiceMeeter IdleWatcher v1.0.6
 
-**Package status:** Portable ZIP v1.0.6 is published in the repository's `gh-pages` branch and served directly from GitHub. The v1.0.6 tag and stable GitHub Release are published; v1.0.6 is the latest official GitHub Release: https://github.com/AnAllegory/VoiceMeeter-IdleWatcher/releases/tag/v1.0.6.  
+**Distribution status (2026-11-26):** Ready-to-run ZIP distribution is temporarily paused while the reported Google Search Console and Microsoft Defender detections are investigated. Google Search Console reported the v1.0.5 Portable ZIP and a page linking to it; Microsoft Defender detected the v1.0.6 Portable ZIP on the maintainer's Windows 11 PC as `Trojan:Script/Wacatac.H!ml` and quarantined it. No conclusion has been reached about whether either detection is a true positive or a false positive. Do not run previously downloaded Portable ZIPs, disable antivirus protection or restore quarantined copies. The immutable `v1.0.6` tag and stable GitHub Release remain published as release records: https://github.com/AnAllegory/VoiceMeeter-IdleWatcher/releases/tag/v1.0.6. The Portable ZIP initially published from `gh-pages` on 2026-11-24 was withdrawn from the public download path on 2026-11-25.  
 **Preparation date:** 2026-11-24  
 **Runtime:** Windows PowerShell 5.1
 
@@ -23,7 +23,7 @@ On the maintainer's Windows 11 PC, Microsoft Defender detected the v1.0.6 Portab
 - Automatic shutdown still requires the configured idle threshold, display fully Off (0), and no pending graceful `/stop` request.
 - An accepted STATEONLY OFF command is still followed by the 1000ms allowance and final idle/display/stop validation immediately before `Command.Shutdown`.
 - MacroButtons remains optional and non-fatal, with one STATEONLY writer and no UI-state readback.
-- No installer or EXE is included. The Portable ZIP contains the seven runtime files and this bilingual quick-start guide.
+- No installer or EXE is included. At its original publication, the Portable ZIP contained the seven runtime files and this bilingual quick-start guide. The package has since been withdrawn from the public download path while the security detections are investigated.
 
 ### Verification
 
@@ -61,7 +61,7 @@ The successful API return confirms command acceptance, not visual UI readback. T
 - Для автоматического выключения по-прежнему необходимы заданный порог бездействия, полностью выключенный дисплей (0) и отсутствие ожидающего запроса штатной остановки `/stop`.
 - После принятой команды STATEONLY OFF по-прежнему выдерживается пауза 1000 мс, затем непосредственно перед `Command.Shutdown` повторно проверяются бездействие, состояние дисплея и отсутствие запроса остановки.
 - MacroButtons остаётся необязательной и некритичной функцией: один writer STATEONLY, без считывания состояния интерфейса.
-- Установщик и EXE не входят в комплект. Portable ZIP содержит семь рабочих файлов и это двуязычное краткое руководство.
+- Установщик и EXE не входят в комплект. При первоначальной публикации Portable ZIP содержал семь рабочих файлов и это двуязычное краткое руководство. Позднее пакет был снят с публичного пути загрузки на время расследования обнаруженных сигналов безопасности.
 
 ### Проверка
 
