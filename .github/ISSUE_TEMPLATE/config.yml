@@ -1,4 +1,4 @@
-blank_issues_enabled: true
+blank_issues_enabled: false
 contact_links:
   - name: Questions and community support / Вопросы и поддержка
     url: https://github.com/AnAllegory/VoiceMeeter-IdleWatcher/discussions

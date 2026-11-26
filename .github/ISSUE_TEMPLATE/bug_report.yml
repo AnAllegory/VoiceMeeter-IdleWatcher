@@ -5,14 +5,14 @@ body:
   - type: markdown
     attributes:
       value: |
-        Please check existing Issues first. Do not include passwords, tokens, private keys, recovery codes or unredacted logs.
-        Перед отправкой проверьте существующие Issues. Не добавляйте пароли, токены, закрытые ключи, коды восстановления и неотредактированные журналы.
+        Please check existing Issues first. Do not include passwords, tokens, private keys, recovery codes or unredacted logs. Do not use public Issues to disclose an unpatched security vulnerability; follow [SECURITY.md](https://github.com/AnAllegory/VoiceMeeter-IdleWatcher/blob/main/SECURITY.md). Do not attach or run the suspended historical Portable ZIP packages.
+        Перед отправкой проверьте существующие Issues. Не добавляйте пароли, токены, закрытые ключи, коды восстановления и неотредактированные журналы. Не публикуйте сведения о неисправленной уязвимости в открытом Issue: следуйте инструкции в [SECURITY.md](https://github.com/AnAllegory/VoiceMeeter-IdleWatcher/blob/main/SECURITY.md). Не прикладывайте и не запускайте исторические Portable ZIP, распространение которых приостановлено.
   - type: input
     id: project-version
     attributes:
       label: Project version / Версия проекта
-      description: Exact release tag or commit SHA, for example v1.0.5.
-      placeholder: v1.0.5 or full commit SHA
+      description: Exact release tag or commit SHA, for example v1.0.6.
+      placeholder: v1.0.6 or full commit SHA
     validations:
       required: true
   - type: input
