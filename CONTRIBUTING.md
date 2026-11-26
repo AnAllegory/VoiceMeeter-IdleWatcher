@@ -7,6 +7,7 @@ This is a small Windows utility with a deliberately conservative shutdown and AP
 ## Before opening a pull request
 
 - **Bug reports:** open an Issue using the Bug report form. Include the exact release tag or commit SHA and concise reproduction steps.
+- **Test reports:** use the Test report form to record the exact source revision, environment, test area, outcome and relevant sanitized diagnostics. Test only the repository source or a build explicitly approved by the maintainer; do not run the suspended historical Portable ZIP packages.
 - **Feature ideas:** open an Issue using the Feature request form, or start a Discussion for an early design conversation. Significant behavior or architecture changes should be discussed before implementation.
 - **Security vulnerabilities:** do not report an unpatched vulnerability in a public Issue or Discussion. Follow [SECURITY.md](SECURITY.md).
 - **Questions:** use [GitHub Discussions](https://github.com/AnAllegory/VoiceMeeter-IdleWatcher/discussions).
