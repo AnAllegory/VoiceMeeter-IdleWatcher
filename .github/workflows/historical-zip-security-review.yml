@@ -78,14 +78,15 @@ jobs:
             Add-Type -AssemblyName System.IO.Compression.FileSystem
             $archive = [System.IO.Compression.ZipFile]::OpenRead($zipPath)
             try {
-              Write-Host ("ZIP central-directory entry count: {0}" -f $archive.Entries.Count)
-              foreach ($entry in $archive.Entries) {
+              $zipEntries = @($archive.Entries)
+              Write-Host ("ZIP central-directory entry count: {0}" -f $zipEntries.Count)
+              foreach ($entry in $zipEntries) {
                 Write-Host ("ZIP ENTRY | {0} | length={1} | compressed={2} | attributes={3}" -f $entry.FullName, $entry.Length, $entry.CompressedLength, $entry.ExternalAttributes)
               }
 
               New-Item -ItemType Directory -Path $expanded -Force | Out-Null
               $expandedRoot = [IO.Path]::GetFullPath($expanded).TrimEnd([IO.Path]::DirectorySeparatorChar) + [IO.Path]::DirectorySeparatorChar
-              foreach ($entry in $archive.Entries) {
+              foreach ($entry in $zipEntries) {
                 $normalizedEntry = $entry.FullName.Replace('/', [IO.Path]::DirectorySeparatorChar).Replace('\\', [IO.Path]::DirectorySeparatorChar)
                 $targetPath = [IO.Path]::GetFullPath((Join-Path $expanded $normalizedEntry))
                 if (-not $targetPath.StartsWith($expandedRoot, [StringComparison]::OrdinalIgnoreCase)) {
