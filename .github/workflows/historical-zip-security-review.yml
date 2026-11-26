@@ -223,6 +223,26 @@ jobs:
                   $match = ($archiveHash -eq $sourceHash)
                   Write-Host ("SOURCE COMPARE | {0} | match={1} | archived={2} | source={3}" -f $file.Name, $match, $archiveHash, $sourceHash)
                   if (-not $match) {
+                    $archiveText = [IO.File]::ReadAllText($file.FullName)
+                    $sourceText = [IO.File]::ReadAllText($sourcePath)
+                    if ($archiveText -ceq $sourceText) {
+                      Write-Host ("TEXT COMPARE | {0} | decoded text is identical; byte-level encoding/BOM differs" -f $file.Name)
+                    }
+                    else {
+                      Write-Host ("TEXT COMPARE | {0} | decoded text differs" -f $file.Name)
+                      $archiveLines = [IO.File]::ReadAllLines($file.FullName)
+                      $sourceLines = [IO.File]::ReadAllLines($sourcePath)
+                      $maxLines = [Math]::Max($archiveLines.Length, $sourceLines.Length)
+                      $reported = 0
+                      for ($lineIndex = 0; $lineIndex -lt $maxLines -and $reported -lt 8; $lineIndex++) {
+                        $archiveLine = if ($lineIndex -lt $archiveLines.Length) { $archiveLines[$lineIndex] } else { '<NO LINE>' }
+                        $sourceLine = if ($lineIndex -lt $sourceLines.Length) { $sourceLines[$lineIndex] } else { '<NO LINE>' }
+                        if ($archiveLine -cne $sourceLine) {
+                          Write-Host ("TEXT DIFF | {0} | line={1} | ZIP=[{2}] | SOURCE=[{3}]" -f $file.Name, ($lineIndex + 1), $archiveLine, $sourceLine)
+                          $reported++
+                        }
+                      }
+                    }
                     $allFindings += [pscustomobject]@{ Version='1.0.6'; Path=$file.Name; Type='Archive/source mismatch'; Detail=("archive {0}; source {1}" -f $archiveHash, $sourceHash) }
                   }
                 }
