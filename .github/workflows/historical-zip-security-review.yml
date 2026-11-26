@@ -312,7 +312,7 @@ jobs:
           Set-StrictMode -Version Latest
 
           function Get-Crc32 {
-            param([Parameter(Mandatory)][byte[]]$InputBytes)
+            param([Parameter(Mandatory)][AllowEmptyCollection()][byte[]]$InputBytes)
             [long]$crc = 4294967295
             foreach ($value in $InputBytes) {
               $crc = $crc -bxor [long]$value
