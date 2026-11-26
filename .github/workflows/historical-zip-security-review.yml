@@ -304,3 +304,145 @@ jobs:
 
           Write-Host '=== IMPORTANT LIMITATION ==='
           Write-Host 'This workflow only extracts, hashes, parses and scans the packages. It does not execute any project file. A clean result on a GitHub-hosted runner is not a universal safety guarantee and does not reproduce browser SmartScreen reputation.'
+
+      - name: Validate every local entry, CRC32, and central directory
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          Set-StrictMode -Version Latest
+
+          function Get-Crc32 {
+            param([Parameter(Mandatory)][byte[]]$InputBytes)
+            [long]$crc = 4294967295
+            foreach ($value in $InputBytes) {
+              $crc = $crc -bxor [long]$value
+              for ($bit = 0; $bit -lt 8; $bit++) {
+                if (($crc -band 1) -ne 0) {
+                  $crc = ($crc -shr 1) -bxor 3988292384
+                } else {
+                  $crc = $crc -shr 1
+                }
+              }
+            }
+            return [uint32]($crc -bxor 4294967295)
+          }
+
+          $sourceCommit = '3befd13d0ec2a384c5e71a595976320dd1ed1764'
+          $packages = @(
+            @{ Version='1.0.5'; Blob='5e5eb509026df683167b326b08a231f6ade4b15f'; ExpectedSize=83715 },
+            @{ Version='1.0.6'; Blob='be1e7bf0b939393129502005987202b9142e8506'; ExpectedSize=84958 }
+          )
+          git fetch --no-tags origin gh-pages
+          if ($LASTEXITCODE -ne 0) { throw 'Could not fetch the historical gh-pages object database.' }
+
+          $root = Join-Path $env:RUNNER_TEMP 'idlewatcher-zip-integrity'
+          New-Item -ItemType Directory -Path $root -Force | Out-Null
+
+          foreach ($package in $packages) {
+            $zipPath = Join-Path $root ("v{0}.zip" -f $package.Version)
+            $command = 'git cat-file blob ' + $package.Blob + ' > "' + $zipPath + '"'
+            & cmd.exe /d /s /c $command
+            if ($LASTEXITCODE -ne 0) { throw ("Could not recover ZIP {0}." -f $package.Version) }
+            $bytes = [IO.File]::ReadAllBytes($zipPath)
+            if ($bytes.Length -ne $package.ExpectedSize) { throw ("Unexpected size for ZIP {0}." -f $package.Version) }
+
+            Write-Host ("=== INTEGRITY v{0} ===" -f $package.Version)
+            Write-Host ("SHA256={0}" -f (Get-FileHash -LiteralPath $zipPath -Algorithm SHA256).Hash)
+            $localEntries = [System.Collections.Generic.List[object]]::new()
+            $localOffset = 0
+            $localValid = $true
+
+            while (($localOffset + 30) -le $bytes.Length -and [BitConverter]::ToString($bytes, $localOffset, 4) -eq '50-4B-03-04') {
+              $flags = [BitConverter]::ToUInt16($bytes, $localOffset + 6)
+              $method = [BitConverter]::ToUInt16($bytes, $localOffset + 8)
+              $expectedCrc = [BitConverter]::ToUInt32($bytes, $localOffset + 14)
+              $compressedSize = [BitConverter]::ToUInt32($bytes, $localOffset + 18)
+              $uncompressedSize = [BitConverter]::ToUInt32($bytes, $localOffset + 22)
+              $nameLength = [BitConverter]::ToUInt16($bytes, $localOffset + 26)
+              $extraLength = [BitConverter]::ToUInt16($bytes, $localOffset + 28)
+              $nameStart = $localOffset + 30
+              $dataStart = $nameStart + $nameLength + $extraLength
+              $entryName = [Text.Encoding]::UTF8.GetString($bytes, $nameStart, $nameLength)
+
+              if (($flags -band 1) -ne 0 -or ($flags -band 8) -ne 0 -or $method -ne 0) {
+                Write-Host ("LOCAL INVALID | unsupported flags/method | {0} flags=0x{1:X4} method={2}" -f $entryName, $flags, $method)
+                $localValid = $false
+                break
+              }
+              if ($dataStart + $compressedSize -gt $bytes.Length -or $compressedSize -ne $uncompressedSize) {
+                Write-Host ("LOCAL INVALID | invalid data bounds/size | {0}" -f $entryName)
+                $localValid = $false
+                break
+              }
+
+              $payload = New-Object byte[] ([int]$compressedSize)
+              if ($compressedSize -gt 0) { [Array]::Copy($bytes, [int]$dataStart, $payload, 0, [int]$compressedSize) }
+              $actualCrc = Get-Crc32 -InputBytes $payload
+              $crcMatch = ($actualCrc -eq $expectedCrc)
+              Write-Host ("LOCAL CRC | {0} | expected=0x{1:X8} actual=0x{2:X8} match={3} bytes={4}" -f $entryName, $expectedCrc, $actualCrc, $crcMatch, $uncompressedSize)
+              if (-not $crcMatch) { $localValid = $false }
+
+              $localEntries.Add([pscustomobject]@{
+                Name=$entryName
+                Offset=[uint32]$localOffset
+                Crc=[uint32]$expectedCrc
+                Compressed=[uint32]$compressedSize
+                Uncompressed=[uint32]$uncompressedSize
+                Method=[uint16]$method
+              })
+              $localOffset = [int]($dataStart + $compressedSize)
+            }
+
+            $eocdOffset = -1
+            for ($i = $bytes.Length - 22; $i -ge [Math]::Max(0, $bytes.Length - 65557); $i--) {
+              if ([BitConverter]::ToString($bytes, $i, 4) -eq '50-4B-05-06') { $eocdOffset = $i; break }
+            }
+            if ($eocdOffset -lt 0) { throw ("EOCD missing from ZIP {0}." -f $package.Version) }
+
+            $expectedCentralCount = [BitConverter]::ToUInt16($bytes, $eocdOffset + 10)
+            $centralSize = [BitConverter]::ToUInt32($bytes, $eocdOffset + 12)
+            $centralOffset = [BitConverter]::ToUInt32($bytes, $eocdOffset + 16)
+            $centralCursor = [int]$centralOffset
+            $centralEnd = [int]($centralOffset + $centralSize)
+            $centralEntries = [System.Collections.Generic.List[object]]::new()
+            $centralValid = ($centralEnd -eq $eocdOffset -and $centralOffset -lt $bytes.Length)
+            Write-Host ("EOCD | expectedEntries={0} centralOffset={1} centralSize={2} centralEnd={3} eocdOffset={4}" -f $expectedCentralCount, $centralOffset, $centralSize, $centralEnd, $eocdOffset)
+
+            while (($centralCursor + 46) -le $centralEnd -and $centralCursor -ge 0 -and [BitConverter]::ToString($bytes, $centralCursor, 4) -eq '50-4B-01-02') {
+              $flags = [BitConverter]::ToUInt16($bytes, $centralCursor + 8)
+              $method = [BitConverter]::ToUInt16($bytes, $centralCursor + 10)
+              $crc = [BitConverter]::ToUInt32($bytes, $centralCursor + 16)
+              $compressedSize = [BitConverter]::ToUInt32($bytes, $centralCursor + 20)
+              $uncompressedSize = [BitConverter]::ToUInt32($bytes, $centralCursor + 24)
+              $nameLength = [BitConverter]::ToUInt16($bytes, $centralCursor + 28)
+              $extraLength = [BitConverter]::ToUInt16($bytes, $centralCursor + 30)
+              $commentLength = [BitConverter]::ToUInt16($bytes, $centralCursor + 32)
+              $localOffset = [BitConverter]::ToUInt32($bytes, $centralCursor + 42)
+              $recordEnd = $centralCursor + 46 + $nameLength + $extraLength + $commentLength
+              if ($recordEnd -gt $centralEnd) { $centralValid = $false; break }
+              $name = [Text.Encoding]::UTF8.GetString($bytes, $centralCursor + 46, $nameLength)
+              $centralEntries.Add([pscustomobject]@{Name=$name;Offset=$localOffset;Crc=$crc;Compressed=$compressedSize;Uncompressed=$uncompressedSize;Method=$method;Flags=$flags})
+              Write-Host ("CENTRAL | {0} | localOffset={1} crc=0x{2:X8} csize={3} usize={4}" -f $name, $localOffset, $crc, $compressedSize, $uncompressedSize)
+              $centralCursor = $recordEnd
+            }
+
+            if ($centralCursor -ne $centralEnd -or $centralEntries.Count -ne $expectedCentralCount -or $centralEntries.Count -ne $localEntries.Count) {
+              $centralValid = $false
+            }
+
+            foreach ($central in $centralEntries) {
+              $local = $localEntries | Where-Object { $_.Offset -eq $central.Offset } | Select-Object -First 1
+              if ($null -eq $local -or $local.Name -cne $central.Name -or $local.Crc -ne $central.Crc -or $local.Compressed -ne $central.Compressed -or $local.Uncompressed -ne $central.Uncompressed -or $local.Method -ne $central.Method) {
+                Write-Host ("CENTRAL MISMATCH | {0} | localOffset={1}" -f $central.Name, $central.Offset)
+                $centralValid = $false
+              }
+            }
+
+            Write-Host ("RESULT | v{0} | localHeaders={1} localCRCValid={2} centralRecords={3}/{4} centralValid={5}" -f $package.Version, $localEntries.Count, $localValid, $centralEntries.Count, $expectedCentralCount, $centralValid)
+            if (-not $localValid -or -not $centralValid) {
+              $hexLength = [Math]::Min(128, [Math]::Max(0, $centralSize))
+              if ($hexLength -gt 0 -and $centralOffset + $hexLength -le $bytes.Length) {
+                Write-Host ("CENTRAL RAW HEX | {0}" -f [BitConverter]::ToString($bytes, [int]$centralOffset, $hexLength))
+              }
+            }
+          }
