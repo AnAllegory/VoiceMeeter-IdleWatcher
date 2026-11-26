@@ -212,6 +212,26 @@ jobs:
               }
             }
 
+            if ($package.Version -eq '1.0.6') {
+              Write-Host '=== Compare extracted v1.0.6 files with v1.0.6 source on main ==='
+              foreach ($file in $files) {
+                if ($file.Name -eq 'QUICK_START.txt') { continue }
+                $sourcePath = Join-Path $env:GITHUB_WORKSPACE $file.Name
+                if (Test-Path -LiteralPath $sourcePath -PathType Leaf) {
+                  $archiveHash = (Get-FileHash -LiteralPath $file.FullName -Algorithm SHA256).Hash
+                  $sourceHash = (Get-FileHash -LiteralPath $sourcePath -Algorithm SHA256).Hash
+                  $match = ($archiveHash -eq $sourceHash)
+                  Write-Host ("SOURCE COMPARE | {0} | match={1} | archived={2} | source={3}" -f $file.Name, $match, $archiveHash, $sourceHash)
+                  if (-not $match) {
+                    $allFindings += [pscustomobject]@{ Version='1.0.6'; Path=$file.Name; Type='Archive/source mismatch'; Detail=("archive {0}; source {1}" -f $archiveHash, $sourceHash) }
+                  }
+                }
+                else {
+                  Write-Warning ("No corresponding source file in the checked-out main branch: {0}" -f $file.Name)
+                }
+              }
+            }
+
             Write-Host ("=== End v{0} inventory ===" -f $package.Version)
           }
 
