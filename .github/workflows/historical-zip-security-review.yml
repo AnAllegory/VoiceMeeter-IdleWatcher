@@ -225,8 +225,21 @@ jobs:
                   if (-not $match) {
                     $archiveText = [IO.File]::ReadAllText($file.FullName)
                     $sourceText = [IO.File]::ReadAllText($sourcePath)
+                    $normalizedArchiveText = $archiveText.Replace("`r`n", "`n").Replace("`r", "`n")
+                    $normalizedSourceText = $sourceText.Replace("`r`n", "`n").Replace("`r", "`n")
                     if ($archiveText -ceq $sourceText) {
                       Write-Host ("TEXT COMPARE | {0} | decoded text is identical; byte-level encoding/BOM differs" -f $file.Name)
+                    }
+                    elseif ($normalizedArchiveText -ceq $normalizedSourceText) {
+                      $archiveBytes = [IO.File]::ReadAllBytes($file.FullName)
+                      $sourceBytes = [IO.File]::ReadAllBytes($sourcePath)
+                      $archiveCrlf = [regex]::Matches($archiveText, "`r`n").Count
+                      $archiveLf = [regex]::Matches($archiveText, "(?<!`r)`n").Count
+                      $archiveCr = [regex]::Matches($archiveText, "`r(?!`n)").Count
+                      $sourceCrlf = [regex]::Matches($sourceText, "`r`n").Count
+                      $sourceLf = [regex]::Matches($sourceText, "(?<!`r)`n").Count
+                      $sourceCr = [regex]::Matches($sourceText, "`r(?!`n)").Count
+                      Write-Host ("TEXT COMPARE | {0} | content matches after newline normalization | archiveBytes={1} CRLF={2} LF={3} CR={4} | sourceBytes={5} CRLF={6} LF={7} CR={8}" -f $file.Name, $archiveBytes.Length, $archiveCrlf, $archiveLf, $archiveCr, $sourceBytes.Length, $sourceCrlf, $sourceLf, $sourceCr)
                     }
                     else {
                       Write-Host ("TEXT COMPARE | {0} | decoded text differs" -f $file.Name)
