@@ -6,7 +6,10 @@ The v1.0.0 release was published on 2026-11-19, v1.0.5 on 2026-11-22 and v1.0.6 
 
 ## [Unreleased]
 
-No changes yet.
+### Documentation
+
+- Refresh PROJECT_CONTEXT.md as a durable recovery handover, with a Russian quick-resume section, the current Google Search Console / Microsoft Defender evidence boundaries, the Hyper-V lab configuration and explicit pending test steps.
+- Record the current chat-reset procedure and the rule to preserve unknowns as unknowns. Documentation only; no runtime source, dependencies, CI, tags, releases or distribution artifacts are changed.
 
 ## [1.0.6] - 2026-11-24
 
