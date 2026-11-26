@@ -1,0 +1,156 @@
+name: Historical Portable ZIP security scan
+
+on:
+  push:
+    branches:
+      - security-review/historical-zip-scan-2026-11-26
+
+permissions:
+  contents: read
+
+jobs:
+  inspect-historical-packages:
+    runs-on: windows-latest
+    timeout-minutes: 15
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+
+      - name: Recover and inspect historical ZIP files without executing them
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          Set-StrictMode -Version Latest
+
+          $sourceCommit = '3befd13d0ec2a384c5e71a595976320dd1ed1764'
+          $packages = @(
+            @{
+              Version = '1.0.5'
+              Blob = '5e5eb509026df683167b326b08a231f6ade4b15f'
+              ExpectedSize = 83715
+            },
+            @{
+              Version = '1.0.6'
+              Blob = 'be1e7bf0b939393129502005987202b9142e8506'
+              ExpectedSize = 84958
+            }
+          )
+
+          $root = Join-Path $env:RUNNER_TEMP 'idlewatcher-security-review'
+          New-Item -ItemType Directory -Path $root -Force | Out-Null
+
+          Write-Host '=== Runner and Defender status ==='
+          Write-Host ("OS: {0}" -f (Get-CimInstance Win32_OperatingSystem).Caption)
+          $defenderStatusAvailable = $false
+          try {
+            $mp = Get-MpComputerStatus -ErrorAction Stop
+            $defenderStatusAvailable = $true
+            $mp | Select-Object AMServiceEnabled, AntivirusEnabled, RealTimeProtectionEnabled, BehaviorMonitorEnabled, IoavProtectionEnabled, AntivirusSignatureVersion, AntivirusSignatureLastUpdated | Format-List | Out-String | Write-Host
+          }
+          catch {
+            Write-Warning ("Could not read Microsoft Defender status: {0}" -f $_.Exception.Message)
+          }
+
+          Write-Host '=== Fetch original Git objects from gh-pages history ==='
+          git fetch --no-tags origin gh-pages
+          if ($LASTEXITCODE -ne 0) { throw 'git fetch of gh-pages failed.' }
+          git cat-file -e "$sourceCommit^{commit}"
+          if ($LASTEXITCODE -ne 0) { throw 'Historical source commit is not available after fetching gh-pages.' }
+
+          $allFindings = @()
+          foreach ($package in $packages) {
+            $zipPath = Join-Path $root ("VoiceMeeter-IdleWatcher-v{0}-portable.zip" -f $package.Version)
+            $expanded = Join-Path $root ("v{0}" -f $package.Version)
+            $command = 'git cat-file blob ' + $package.Blob + ' > "' + $zipPath + '"'
+            & cmd.exe /d /s /c $command
+            if ($LASTEXITCODE -ne 0) { throw ("Could not recover ZIP v{0} from Git blob." -f $package.Version) }
+
+            $zipInfo = Get-Item -LiteralPath $zipPath
+            if ($zipInfo.Length -ne $package.ExpectedSize) {
+              throw ("ZIP v{0} size mismatch: expected {1}, got {2}." -f $package.Version, $package.ExpectedSize, $zipInfo.Length)
+            }
+
+            Write-Host ("=== v{0}: original ZIP ===" -f $package.Version)
+            Write-Host ("Size: {0}" -f $zipInfo.Length)
+            Write-Host ("SHA256: {0}" -f (Get-FileHash -LiteralPath $zipPath -Algorithm SHA256).Hash)
+            Write-Host ("SHA1: {0}" -f (Get-FileHash -LiteralPath $zipPath -Algorithm SHA1).Hash)
+
+            Expand-Archive -LiteralPath $zipPath -DestinationPath $expanded -Force
+            $files = @(Get-ChildItem -LiteralPath $expanded -File -Recurse -Force)
+            Write-Host ("Extracted file count: {0}" -f $files.Count)
+            foreach ($file in $files) {
+              $relative = $file.FullName.Substring($expanded.Length).TrimStart([IO.Path]::DirectorySeparatorChar)
+              $hash = (Get-FileHash -LiteralPath $file.FullName -Algorithm SHA256).Hash
+              Write-Host ("FILE | {0} | {1} bytes | SHA256 {2}" -f $relative, $file.Length, $hash)
+              if ($file.Extension -match '^\.(exe|dll|msi|scr|com|bat|cmd|js|jse|hta|lnk|ps1|psm1|vbs|wsf)$') {
+                $allFindings += [pscustomobject]@{ Version=$package.Version; Path=$relative; Type='Executable/script extension'; Detail=$file.Extension }
+              }
+            }
+
+            $textFiles = @($files | Where-Object { $_.Extension -in @('.ps1','.psm1','.psd1','.vbs','.cs','.txt','.md','.xml','.json') })
+            foreach ($file in $textFiles) {
+              $raw = [IO.File]::ReadAllText($file.FullName)
+              if ($file.Extension -in @('.ps1','.psm1')) {
+                $tokens = $null
+                $parseErrors = $null
+                [System.Management.Automation.Language.Parser]::ParseFile($file.FullName, [ref]$tokens, [ref]$parseErrors) | Out-Null
+                if ($parseErrors.Count -gt 0) {
+                  $allFindings += [pscustomobject]@{ Version=$package.Version; Path=$file.Name; Type='PowerShell parse error'; Detail=(($parseErrors | ForEach-Object Message) -join '; ') }
+                }
+              }
+
+              $rules = @(
+                @{ Name='network download'; Regex='(?i)Invoke-WebRequest|Invoke-RestMethod|DownloadString|DownloadFile|WebClient|HttpClient|Start-BitsTransfer|curl\.exe|wget\.exe|bitsadmin' },
+                @{ Name='Defender modification'; Regex='(?i)Add-MpPreference|Set-MpPreference|DisableRealtimeMonitoring|ExclusionPath|ExclusionProcess|ExclusionExtension' },
+                @{ Name='persistence'; Regex='(?i)CurrentVersion\\Run|RunOnce|Register-ScheduledTask|New-Service|CreateService|Winlogon|IFEO|schtasks' },
+                @{ Name='dynamic or encoded execution'; Regex='(?i)Invoke-Expression|FromBase64String|EncodedCommand|Assembly\.Load|VirtualAlloc|WriteProcessMemory|CreateRemoteThread' },
+                @{ Name='credential or browser access'; Regex='(?i)Get-Credential|CredentialManager|Get-Clipboard|Login Data|Cookies|Chrome\\User Data|wallet' }
+              )
+              foreach ($rule in $rules) {
+                foreach ($match in [regex]::Matches($raw, $rule.Regex)) {
+                  $lineNumber = ([regex]::Matches($raw.Substring(0, $match.Index), "`n")).Count + 1
+                  $lineText = ($raw -split "`r?`n")[$lineNumber - 1].Trim()
+                  $allFindings += [pscustomobject]@{ Version=$package.Version; Path=$file.Name; Type=$rule.Name; Detail=("line {0}: {1}" -f $lineNumber, $lineText) }
+                }
+              }
+            }
+
+            Write-Host ("=== End v{0} inventory ===" -f $package.Version)
+          }
+
+          Write-Host '=== Static review hits (manual interpretation required) ==='
+          if ($allFindings.Count -eq 0) {
+            Write-Host 'No matches in the configured static-review rules and no PowerShell parser errors.'
+          }
+          else {
+            $allFindings | Format-Table -AutoSize | Out-String -Width 240 | Write-Host
+          }
+
+          Write-Host '=== Microsoft Defender custom scan of extracted package files ==='
+          if ($defenderStatusAvailable -and (Get-Command Start-MpScan -ErrorAction SilentlyContinue)) {
+            try {
+              Start-MpScan -ScanType CustomScan -ScanPath $root -ErrorAction Stop
+              Write-Host 'Start-MpScan returned without an error.'
+            }
+            catch {
+              Write-Warning ("Defender custom scan command failed: {0}" -f $_.Exception.Message)
+            }
+            try {
+              $detections = @(Get-MpThreatDetection -ErrorAction Stop)
+              if ($detections.Count -eq 0) {
+                Write-Host 'Get-MpThreatDetection returned no detections.'
+              }
+              else {
+                $detections | Select-Object ThreatID, DetectionID, InitialDetectionTime, LastThreatStatusChangeTime, ActionSuccess, Resources | Format-List | Out-String -Width 240 | Write-Host
+              }
+            }
+            catch {
+              Write-Warning ("Could not retrieve Defender detections: {0}" -f $_.Exception.Message)
+            }
+          }
+          else {
+            Write-Warning 'Microsoft Defender status or Start-MpScan is unavailable on this runner; antivirus result is inconclusive.'
+          }
+
+          Write-Host '=== IMPORTANT LIMITATION ==='
+          Write-Host 'This workflow only extracts, hashes, parses and scans the packages. It does not execute any project file. A clean result on a GitHub-hosted runner is not a universal safety guarantee and does not reproduce browser SmartScreen reputation.'
