@@ -1,13 +1,71 @@
 # VoiceMeeter IdleWatcher — Project Context / Handover
 
-**Last reviewed:** 2026-11-24  
+**Last reviewed:** 2026-11-27  
 **Current repository:** AnAllegory/VoiceMeeter-IdleWatcher  
 **Default branch:** main  
 **Visibility:** Public  
 **Source baseline:** v1.0.6 merged, target-PC validated and published as the latest stable GitHub Release  
-**Status:** The v1.0.6 source integration was merged through PR #13 on 2026-11-24 (merge commit `c71b20d6f4b6987be3b66758073fe325fddb4209`). PR #15 added the published Defender notice and produced release commit `d693ae05e28199b40ed10feae24c42b0a96d9f40`, to which the immutable `v1.0.6` tag points. The stable GitHub Release and Portable ZIP were initially published on 2026-11-24. The Portable ZIP download path and public website ZIP links were withdrawn on 2026-11-25; ready-to-run ZIP distribution is temporarily paused while the Google Search Console and Microsoft Defender detections are investigated. The v1.0.6 tag and GitHub Release remain unchanged; the detections do not establish whether the packages are malicious or false positives. PR #17 reconciled release documentation on `main`; PR #18 updated the tagged source links on `gh-pages`. The v1.0.5 tag remains unchanged at `ad60060dbe45323fb7c782ba6d4aa6df6b0b502f`, with its historical discussion at [#11](https://github.com/AnAllegory/VoiceMeeter-IdleWatcher/discussions/11). The current release is [v1.0.6](https://github.com/AnAllegory/VoiceMeeter-IdleWatcher/releases/tag/v1.0.6).
+**Status:** The v1.0.6 source integration was merged through PR #13 on 2026-11-24 (merge commit `c71b20d6f4b6987be3b66758073fe325fddb4209`). PR #15 added the published Defender notice and produced release commit `d693ae05e28199b40ed10feae24c42b0a96d9f40`, to which the immutable `v1.0.6` tag points. The stable GitHub Release and Portable ZIP were initially published on 2026-11-24. The Portable ZIP download path and public website ZIP links were withdrawn on 2026-11-25; ready-to-run ZIP distribution is temporarily paused while the Google Search Console and Microsoft Defender detections are investigated. The v1.0.6 tag and GitHub Release remain unchanged; the detections do not establish whether the packages are malicious or false positives. PR #17 reconciled release documentation on `main`; PR #18 updated the tagged source links on `gh-pages`. The v1.0.5 tag remains unchanged at `ad60060dbe45323fb7c782ba6d4aa6df6b0b502f`, with its historical discussion at [#11](https://github.com/AnAllegory/VoiceMeeter-IdleWatcher/discussions/11). The current release is [v1.0.6](https://github.com/AnAllegory/VoiceMeeter-IdleWatcher/releases/tag/v1.0.6). As of 2026-11-27, the security investigation remains open and a clean Hyper-V guest is being prepared; no clean-guest Defender result or archive-execution result has yet been established.
 
 > For a new review or development session: read this document, REPOSITORY_LINEAGE.md, ARCHITECTURE.md, CHANGELOG.md, ROADMAP.md, SECURITY.md and AGENTS.md, then inspect the actual source files and the public modular workflow. The current source is authoritative if documentation and code ever disagree.
+
+
+## Краткая памятка для восстановления контекста (RU) — 2026-11-27
+
+Это главный файл передачи проекта следующему чату или сопровождающему. Сначала прочитать этот раздел, затем технические разделы ниже и документы из карты документации. При расхождении между пересказом и репозиторием приоритет имеют актуальный исходный код, workflow и подтверждённые журналы.
+
+### Проект и текущее состояние
+
+- Канонический репозиторий: [AnAllegory/VoiceMeeter-IdleWatcher](https://github.com/AnAllegory/VoiceMeeter-IdleWatcher), ветка main. Историческая Beta-ветка не является каноническим источником.
+- Последний опубликованный стабильный релиз: **v1.0.6**. Неизменяемые теги и релизы не перемещать.
+- Распространение готовых ZIP-пакетов приостановлено. Не запускать ранее скачанные Portable ZIP, не отключать Defender и не восстанавливать архивы из карантина.
+- Причина предупреждений Google Search Console и Microsoft Defender **не установлена**. Нельзя называть их ложным срабатыванием или подтверждённым заражением без новых доказательств.
+- На целевом ПК Defender обнаружил в Portable ZIP v1.0.6 угрозу **Trojan:Script/Wacatac.H!ml** и поместил архив в карантин. Отдельная пользовательская проверка папки установленного приложения не зафиксировала обнаружение. Это разные проверки, и отрицательный результат папки не оправдывает ZIP.
+- Google Search Console сообщил о Portable ZIP v1.0.5 и странице, ссылавшейся на него. Позднее проверка URL показала, что страница находится в индексе Google. Индексация URL не означает, что предупреждение «Проблемы безопасности» снято.
+- Итог отправки запроса на повторную проверку Google в имеющейся передаче не подтверждён. Проверить актуальный статус непосредственно в Search Console.
+- В переписке упоминалась проблема структуры ZIP, но её точное воспроизведение и перечень ошибочных путей пока не зафиксированы в канонических материалах. Не описывать её как установленный дефект, пока не исследованы точные архивы и их списки файлов.
+
+### Лаборатория Hyper-V
+
+Хост: Windows 11 Pro 26H2, сборка 26300.10075, Intel Core i5-9400F, RAM 16 ГБ. Hyper-V и аппаратная виртуализация включены. Установка выполняется с HDD, поэтому медленная работа диска ожидаема.
+
+Создана VM VM-Test-Windows11:
+- Поколение 2; 6 ГБ RAM; 2 виртуальных процессора.
+- Сеть Default Switch.
+- Динамически расширяемый VHDX, максимальный размер 80 ГБ:
+  E:\VM\VM-Test-Windows11\VM-Test-Windows11\Virtual Hard Disks\VM-Test-Windows11.vhdx
+- ISO:
+  E:\VM\Windows11_Client_x64_ru-ru_26300_9457.iso
+- SHA-256, вычисленный PowerShell на хосте и сверенный с опубликованным значением для этого ISO:
+  3DD71E8F84BFDC0054E1C4383DB2EAC921D21952AC03B2231CB6E9610A2F7423
+
+Первоначальная загрузка VM завершилась UEFI Boot Summary с ошибкой загрузки SCSI DVD. После временного отключения Secure Boot внутри VM установщик Windows запустился. Это наблюдаемая последовательность, но сама по себе она не доказывает окончательную причину сбоя. Secure Boot сейчас оставлен отключённым; не включать его и не менять шаблоны наугад. **Состояние виртуального TPM 2.0 в беседе не было надёжно подтверждено**: не утверждать, что он включён, пока это не проверено в параметрах VM. Виртуальный TPM Hyper-V не равен физическому TPM-чипу хоста.
+
+Внутри гостевой Windows выбрана редакция Windows 11 Pro, регион Россия и русская клавиатура. На этапе OOBE началась проверка/загрузка обновлений. Имя гостевого устройства VM-LAB-WIN11 и локальное имя пользователя LabUser предлагались как варианты, но окончательное подтверждение этих двух значений отсутствует. Точный текущий экран гостевой Windows следует уточнить у пользователя перед следующей инструкцией.
+
+В гостя не передавались физические диски хоста и общие папки. Default Switch предоставляет сетевой доступ через хост. Это снижает прямое смешение сред, но не является абсолютной гарантией изоляции. Не включать общий доступ к папкам/буферу обмена и не подключать личный диск E: без отдельной необходимости.
+
+### Следующие задачи лаборатории
+
+1. Завершить OOBE и штатные обновления Windows.
+2. Обновить Microsoft Defender Security Intelligence; проверить состояние защиты в реальном времени и другие актуальные параметры, ничего не отключая.
+3. Создать контрольную точку Hyper-V для чистой обновлённой системы до помещения исследуемых архивов.
+4. Получить только точные исторические артефакты v1.0.5 и v1.0.6, зафиксировать источник, имена, размеры и SHA-256. Не восстанавливать копию из карантина хоста.
+5. Сначала сканировать архивы и содержимое без запуска. Сохранить точное имя обнаружения, действие Defender, время и версию сигнатур.
+6. Сравнить результаты с исходниками и историей сборки. Исполнение программы не является первым шагом и требует отдельного обоснования и подготовленного снимка VM.
+7. Не возвращать ZIP-загрузки на сайт, пока причины сигналов не исследованы и сопровождающий не примет отдельное решение о распространении.
+
+### Как вести дальнейшую работу
+
+- Общаться по-русски, давать **одно конкретное действие за раз** и ориентироваться на фактические названия элементов на экране. Не придумывать кнопки, не повторять уже пройденные шаги и не менять настройки без объяснения причины.
+- Не устанавливать в гостевую Windows драйверы материнской платы, физического CPU/GPU, Realtek и прочих устройств хоста. Это виртуальное оборудование Hyper-V; использовать штатные драйверы Windows и обновления, не ставить сборники драйверов и оптимизаторы.
+- Разделять подтверждённые факты, результаты CI, пользовательские наблюдения и гипотезы. Не выдавать пользовательский тест за тест, выполненный помощником.
+- После завершения расследования обновить этот файл, CHANGELOG и, при необходимости, отдельные публичные заметки на двух языках. Не менять исходный код, версии, теги или релизы в рамках чисто документальной передачи.
+
+### Безопасная проверка восстановления после очистки чатов
+
+Не удалять старые чаты до проверки восстановления. Сначала дождаться слияния документационного PR, затем открыть новый чат и попросить прочитать [PROJECT_CONTEXT.md](https://github.com/AnAllegory/VoiceMeeter-IdleWatcher/blob/main/PROJECT_CONTEXT.md), [REPOSITORY_LINEAGE.md](https://github.com/AnAllegory/VoiceMeeter-IdleWatcher/blob/main/REPOSITORY_LINEAGE.md), [ARCHITECTURE.md](https://github.com/AnAllegory/VoiceMeeter-IdleWatcher/blob/main/ARCHITECTURE.md), [CHANGELOG.md](https://github.com/AnAllegory/VoiceMeeter-IdleWatcher/blob/main/CHANGELOG.md), [ROADMAP.md](https://github.com/AnAllegory/VoiceMeeter-IdleWatcher/blob/main/ROADMAP.md), [SECURITY.md](https://github.com/AnAllegory/VoiceMeeter-IdleWatcher/blob/main/SECURITY.md) и [AGENTS.md](https://github.com/AnAllegory/VoiceMeeter-IdleWatcher/blob/main/AGENTS.md). Попросить новый чат назвать текущий этап, подтверждённые факты и единственный следующий шаг. Удалять старые переписки только после успешной проверки и, желательно, после сохранения собственного экспорта/резервной копии истории.
+
 
 ## 1. Repository relationship and lineage
 
@@ -236,3 +294,113 @@ This repository is the canonical documentation and source location. Keep the bil
 - Do not claim a runtime test was executed by the assistant. Attribute local test results to the maintainer.
 - Keep documentation consistent in English and Russian where both versions exist.
 - Do not create or move public tags, or publish releases, unless the maintainer explicitly authorizes the release action.
+
+
+## 11. Security and distribution investigation (2026-11-25 to 2026-11-27)
+
+This section separates documented observations from unresolved explanations. It is not a security verdict.
+
+### Timeline and established observations
+
+- **2026-11-24:** v1.0.6 source integration and maintenance release were published. Static CI passed and the maintainer reported target-PC runtime validation. The Portable ZIP was initially published as a release artifact.
+- **2026-11-25:** The maintainer reported a Google Search Console Security Issues warning involving the v1.0.5 Portable ZIP and a page that linked to it. The maintainer also reported a Microsoft Defender detection on the downloaded v1.0.6 Portable ZIP: Trojan:Script/Wacatac.H!ml; Defender quarantined the archive.
+- A separate custom scan of the installed application folder completed with no recorded detection. This is not equivalent to scanning the original ZIP and does not establish that the archive is safe.
+- The public ZIP download path and website download links were withdrawn. The website and both READMEs now display a bilingual, evidence-limited warning. Ready-to-run distribution remains paused.
+- During a later Search Console URL inspection, the maintainer saw that the project page was indexed by Google. URL indexing is not the same as a clean Security Issues report, a successful review request or the removal of a security warning.
+- The maintainer opened the Search Console Security Issues area and attempted to request a review. One form attempt was blocked by the required acknowledgement field. The final submission status and Google's final decision are not established by the repository evidence available at this handover date; check the live Search Console property before reporting a result.
+
+### Evidence boundaries
+
+| Question | Current evidence | What remains unproven |
+|---|---|---|
+| Did Google flag the v1.0.5 Portable ZIP / linking page? | Reported in Search Console and documented on the site and in repository notices. | The exact underlying Google classifier reason and final review outcome. |
+| Did Defender detect v1.0.6 Portable ZIP? | Yes; Trojan:Script/Wacatac.H!ml was reported and the downloaded archive was quarantined on the maintainer's Windows 11 PC. | Whether this is a true positive, false positive or packaging/heuristic interaction. |
+| Did a separate folder scan detect the same threat? | The maintainer reported no detection event in a separate custom scan of the installed application folder. | This does not clear the ZIP, the extracted contents, every file or every execution path. |
+| Has the same archive been tested in a clean guest? | No result is recorded as of 2026-11-27; the Hyper-V guest is still being prepared. | Clean-guest scan result and any later controlled runtime behavior. |
+| Is there a confirmed ZIP layout defect? | A ZIP-structure/layout concern was mentioned during recent conversations. | The exact malformed/duplicate/missing paths and a reproducible comparison have not been captured in the canonical record. Do not describe it as confirmed until the original archives are inspected. |
+| Is the source proven safe? | Static CI and prior source review/target-PC validation exist. | CI is not malware analysis and does not certify packaged archives or prove absence of malicious behavior. |
+
+### Required handling
+
+- Do not run historical Portable ZIPs on the host.
+- Do not disable Defender, bypass a warning or restore a quarantined archive.
+- Keep the public ZIP distribution pause and bilingual warning until the maintainer makes a new, evidence-based decision.
+- Record exact artifact provenance, version, filename, byte size and SHA-256 before comparing results.
+- Preserve the distinction between archive scan, extracted-folder scan, individual-file scan, static source review and runtime execution.
+- If Defender detects an item, record the threat name, affected path, action, time and Security Intelligence version. Do not restore it merely to continue.
+- Do not infer that a page being indexed means Google has cleared the security issue.
+
+## 12. Hyper-V investigation lab — host and guest record (created 2026-11-26/27)
+
+### Host
+
+- Windows 11 Pro 26H2, OS build 26300.10075.
+- Intel Core i5-9400F; 16 GB RAM.
+- Hyper-V was enabled through Windows Features; CPU virtualization was already enabled.
+- The user reports that the E: storage device is an HDD, so guest installation and updates may be slow.
+
+### Virtual machine configuration
+
+| Setting | Recorded value |
+|---|---|
+| Hyper-V VM name | VM-Test-Windows11 |
+| Generation | 2 |
+| Startup memory | 6144 MB; dynamic memory was not selected in the wizard |
+| Virtual processors | 2 |
+| Virtual switch | Default Switch |
+| Virtual disk | Dynamically expanding VHDX, maximum 80 GB |
+| VHDX path | E:\VM\VM-Test-Windows11\VM-Test-Windows11\Virtual Hard Disks\VM-Test-Windows11.vhdx |
+| Installation ISO | E:\VM\Windows11_Client_x64_ru-ru_26300_9457.iso |
+| ISO build | Windows 11 Client x64, Russian, build 26300.9457 |
+| ISO SHA-256 | 3DD71E8F84BFDC0054E1C4383DB2EAC921D21952AC03B2231CB6E9610A2F7423 |
+
+The maintainer computed the ISO SHA-256 with PowerShell and reported that it matched the Microsoft-published hash checked during download. The ISO is an installation medium; Windows itself is installed inside the VHDX. The dynamically expanding 80 GB value is a maximum virtual size, not 80 GB preallocated on E:.
+
+### Boot and security settings
+
+The initial Generation 2 boot attempt displayed a UEFI boot summary in which the SCSI DVD boot loader failed; the empty virtual disk and unavailable network boot image were also listed. After Secure Boot was temporarily disabled in this VM's settings, Windows Setup proceeded to the language-selection screen. This establishes the observed sequence, not a fully isolated root-cause diagnosis.
+
+Current handover facts:
+- Secure Boot was left **disabled inside this VM** as the workaround that allowed Setup to proceed. Do not imply that this is the preferred final hardening state.
+- The Secure Boot template had been set to **Microsoft Windows** before the failed boot.
+- **Virtual TPM 2.0 status was not positively verified in the conversation.** Do not state that it is enabled. If Windows 11 requirements or a later test depends on it, inspect the separate TPM checkbox in VM Security settings and record its actual state. A Hyper-V virtual TPM is a guest virtual device and is not the same thing as a physical TPM chip in the host.
+- The VM uses Default Switch, so the guest has network connectivity through the host's connection. This is not an independent physical network connection.
+- No host physical disk was passed through and no host shared folder was intentionally configured. Do not describe the VM as an absolute security boundary.
+
+### Guest installation progress at last handover
+
+- Windows 11 Pro was selected in Windows Setup.
+- The guest region was set to Russia and the keyboard to Russian.
+- The guest device name VM-LAB-WIN11 and local account name LabUser were suggested during OOBE, but their final acceptance is not confirmed in this record.
+- OOBE reached a Windows update check/download screen, which indicated that the process could take around 30 minutes. The exact current screen and update completion must be confirmed with the maintainer at the next interaction.
+- No third-party hardware-driver bundles, optimization utilities or additional antivirus products have been installed as part of the recorded lab preparation.
+
+### Minimal lab policy
+
+Use Windows Update, Defender platform/security-intelligence updates and inbox Hyper-V virtual-device drivers. Do not install host motherboard, physical CPU, GPU, Realtek or other OEM drivers into this guest. Do not add unnecessary developer tools or applications. Keep Defender enabled. Do not enable host folder sharing or attach personal physical disks for convenience.
+
+## 13. Next actions for the clean-guest investigation
+
+1. Finish the guest OOBE and Windows Update. Confirm the guest reaches the desktop and reboots normally from its VHDX with the ISO no longer needed for boot.
+2. Update Microsoft Defender Security Intelligence and verify that real-time protection is enabled. Record the actual state and version rather than assuming defaults.
+3. Create and name a Hyper-V checkpoint for the updated, Defender-ready guest before importing any historical sample.
+4. Obtain the exact historical v1.0.5 and v1.0.6 Portable artifacts from a traceable source. Do not recover the quarantined host copy. If an original artifact is unavailable, state that limitation instead of substituting a GitHub-generated source snapshot.
+5. Record artifact filenames, sizes and SHA-256 hashes. Compare ZIP entry lists and directory structure before extraction. Keep the two versions separate.
+6. Scan the ZIP archives without executing them. Record Defender's detection name, affected path, action, timestamp and intelligence version. If a sample is quarantined, do not restore it just to continue.
+7. Compare archive contents with the corresponding tagged source/release records. Do not infer a false positive from a clean folder scan or a clean scan of a different artifact.
+8. Only consider runtime execution after static/archive evidence has been reviewed and the maintainer explicitly chooses a controlled test. Use a fresh checkpoint and disable guest networking before any run that does not require network access. Never expose host folders or personal data to the guest.
+
+No clean-guest scan, archive comparison or runtime result is established by this handover. These are pending tasks, not completed work.
+
+## 14. Recovering project continuity after chat cleanup
+
+The repository, not the chat list, should be the durable record. Before deleting old chats:
+
+1. Merge the documentation update and verify that PROJECT_CONTEXT.md is readable on GitHub.
+2. Start a new chat and ask it to read this file first, then REPOSITORY_LINEAGE.md, ARCHITECTURE.md, CHANGELOG.md, ROADMAP.md, SECURITY.md and AGENTS.md.
+3. Ask the new chat to report the canonical repository/release, unresolved security questions, exact Hyper-V lab state and the single next action. Correct any discrepancy while the old chats are still available.
+4. Keep a local/exported copy of important conversations or the handover if you want an additional fallback.
+5. Only then decide whether to delete old conversations.
+
+A new chat may need the repository URL or a copy of this document if it does not have repository access. Do not assume that deleting chats automatically gives a new chat access to every repository or file.
+
