@@ -76,11 +76,10 @@ jobs:
             Write-Host ("SHA1: {0}" -f (Get-FileHash -LiteralPath $zipPath -Algorithm SHA1).Hash)
 
             $bytes = [IO.File]::ReadAllBytes($zipPath)
-            $localSignature = [byte[]](0x50,0x4B,0x03,0x04)
-            $centralSignature = [byte[]](0x50,0x4B,0x01,0x02)
-            $endSignature = [byte[]](0x50,0x4B,0x05,0x06)
             $offset = 0
             $localCount = 0
+            New-Item -ItemType Directory -Path $expanded -Force | Out-Null
+            $expandedRoot = [IO.Path]::GetFullPath($expanded).TrimEnd([IO.Path]::DirectorySeparatorChar) + [IO.Path]::DirectorySeparatorChar
             while (($offset + 30) -le $bytes.Length) {
               $sig = [BitConverter]::ToString($bytes, $offset, 4)
               if ($sig -ne '50-4B-03-04') { break }
@@ -101,14 +100,42 @@ jobs:
               $entryName = [Text.Encoding]::UTF8.GetString($bytes, $nameStart, $nameLength)
               Write-Host ("LOCAL ENTRY | {0} | method={1} flags=0x{2:X4} crc=0x{3:X8} compressed={4} uncompressed={5} dataOffset={6}" -f $entryName, $method, $flags, $crc, $compressedSize, $uncompressedSize, $dataStart)
               $localCount++
-              if (($flags -band 0x0008) -ne 0) {
-                Write-Warning 'ZIP entry uses a trailing data descriptor; sequential local-header parsing stops here.'
+
+              $normalizedEntry = $entryName.Replace('/', [IO.Path]::DirectorySeparatorChar).Replace([string][char]92, [string][char]92)
+              $targetPath = [IO.Path]::GetFullPath((Join-Path $expanded $normalizedEntry))
+              if (-not $targetPath.StartsWith($expandedRoot, [StringComparison]::OrdinalIgnoreCase)) {
+                throw ("Unsafe ZIP path traversal entry rejected: {0}" -f $entryName)
+              }
+
+              if ($entryName.EndsWith('/')) {
+                New-Item -ItemType Directory -Path $targetPath -Force | Out-Null
+              }
+              elseif (($flags -band 0x0008) -ne 0) {
+                Write-Warning ("ZIP entry uses a trailing data descriptor; manual extraction skipped: {0}" -f $entryName)
                 break
               }
+              elseif ($method -eq 0) {
+                $targetDirectory = Split-Path -Parent $targetPath
+                New-Item -ItemType Directory -Path $targetDirectory -Force | Out-Null
+                $payload = New-Object byte[] ([int]$compressedSize)
+                if ($compressedSize -gt 0) {
+                  [Array]::Copy($bytes, [int]$dataStart, $payload, 0, [int]$compressedSize)
+                }
+                [IO.File]::WriteAllBytes($targetPath, $payload)
+                if ($compressedSize -ne $uncompressedSize) {
+                  Write-Warning ("Stored entry size mismatch: {0}" -f $entryName)
+                }
+              }
+              else {
+                Write-Warning ("Manual extraction skipped unsupported ZIP compression method {0}: {1}" -f $method, $entryName)
+                break
+              }
+
+              if (($flags -band 0x0008) -ne 0) { break }
               $offset = [int]($dataStart + $compressedSize)
             }
-
             Write-Host ("Sequential local-file-header count: {0}" -f $localCount)
+
             $eocdOffset = -1
             $searchStart = [Math]::Max(0, $bytes.Length - 65557)
             for ($i = $bytes.Length - 22; $i -ge $searchStart; $i--) {
@@ -122,25 +149,28 @@ jobs:
               $totalEntries = [BitConverter]::ToUInt16($bytes, $eocdOffset + 10)
               $centralSize = [BitConverter]::ToUInt32($bytes, $eocdOffset + 12)
               $centralOffset = [BitConverter]::ToUInt32($bytes, $eocdOffset + 16)
-              $commentLength = [BitConverter]::ToUInt16($bytes, $eocdOffset + 20)
-              Write-Host ("EOCD | offset={0} diskEntries={1} totalEntries={2} centralDirectorySize={3} centralDirectoryOffset={4} commentLength={5}" -f $eocdOffset, $diskEntries, $totalEntries, $centralSize, $centralOffset, $commentLength)
+              Write-Host ("EOCD | offset={0} diskEntries={1} totalEntries={2} centralDirectorySize={3} centralDirectoryOffset={4}" -f $eocdOffset, $diskEntries, $totalEntries, $centralSize, $centralOffset)
+
+              $centralCursor = [int]$centralOffset
+              $centralEnd = [Math]::Min($eocdOffset, [int]($centralOffset + $centralSize))
+              $centralCount = 0
+              while (($centralCursor + 46) -le $centralEnd) {
+                if ([BitConverter]::ToString($bytes, $centralCursor, 4) -ne '50-4B-01-02') { break }
+                $centralNameLength = [BitConverter]::ToUInt16($bytes, $centralCursor + 28)
+                $centralExtraLength = [BitConverter]::ToUInt16($bytes, $centralCursor + 30)
+                $centralCommentLength = [BitConverter]::ToUInt16($bytes, $centralCursor + 32)
+                $centralCompressedSize = [BitConverter]::ToUInt32($bytes, $centralCursor + 20)
+                $centralUncompressedSize = [BitConverter]::ToUInt32($bytes, $centralCursor + 24)
+                $centralLocalOffset = [BitConverter]::ToUInt32($bytes, $centralCursor + 42)
+                $centralName = [Text.Encoding]::UTF8.GetString($bytes, $centralCursor + 46, $centralNameLength)
+                Write-Host ("CENTRAL ENTRY | {0} | compressed={1} uncompressed={2} localOffset={3}" -f $centralName, $centralCompressedSize, $centralUncompressedSize, $centralLocalOffset)
+                $centralCount++
+                $centralCursor += 46 + $centralNameLength + $centralExtraLength + $centralCommentLength
+              }
+              Write-Host ("Parsed central-directory record count: {0}; EOCD count: {1}" -f $centralCount, $totalEntries)
             }
             else {
               Write-Warning 'End-of-central-directory (PK 05 06) signature not found in the final 65,557 bytes.'
-            }
-
-            Add-Type -AssemblyName System.IO.Compression.FileSystem
-            $archive = [System.IO.Compression.ZipFile]::OpenRead($zipPath)
-            try {
-              $zipEntries = @($archive.Entries)
-              Write-Host ("ZIP central-directory entry count: {0}" -f $zipEntries.Count)
-              New-Item -ItemType Directory -Path $expanded -Force | Out-Null
-              if ($zipEntries.Count -gt 0) {
-                Expand-Archive -LiteralPath $zipPath -DestinationPath $expanded -Force
-              }
-            }
-            finally {
-              $archive.Dispose()
             }
 
             $files = @(Get-ChildItem -LiteralPath $expanded -File -Recurse -Force)
