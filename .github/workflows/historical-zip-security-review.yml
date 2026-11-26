@@ -79,9 +79,20 @@ jobs:
             $archive = [System.IO.Compression.ZipFile]::OpenRead($zipPath)
             try {
               $zipEntries = @($archive.Entries)
+              Write-Host ("ZIP object type: {0}" -f $archive.GetType().FullName)
+              Write-Host ("ZIP entries collection type: {0}" -f $archive.Entries.GetType().FullName)
               Write-Host ("ZIP central-directory entry count: {0}" -f $zipEntries.Count)
               foreach ($entry in $zipEntries) {
-                Write-Host ("ZIP ENTRY | {0} | length={1} | compressed={2} | attributes={3}" -f $entry.FullName, $entry.Length, $entry.CompressedLength, $entry.ExternalAttributes)
+                Write-Host ("ZIP ENTRY OBJECT TYPE: {0}" -f $entry.GetType().FullName)
+                Write-Host ("ZIP ENTRY VALUE: {0}" -f $entry.ToString())
+                $entry | Get-Member | Out-String | Write-Host
+                if ($entry -is [System.IO.Compression.ZipArchiveEntry]) {
+                  Write-Host ("ZIP ENTRY | {0} | length={1} | compressed={2} | attributes={3}" -f $entry.FullName, $entry.Length, $entry.CompressedLength, $entry.ExternalAttributes)
+                }
+              }
+
+              if (@($zipEntries | Where-Object { $_ -isnot [System.IO.Compression.ZipArchiveEntry] }).Count -gt 0) {
+                throw 'ZIP Entries collection returned an unexpected object type; preserve diagnostics and do not extract.'
               }
 
               New-Item -ItemType Directory -Path $expanded -Force | Out-Null
