@@ -12,7 +12,7 @@
 
 ## Краткая памятка для восстановления контекста (RU) — 2026-11-27
 
-Это главный файл передачи проекта следующему чату или сопровождающему. Сначала прочитать этот раздел, затем технические разделы ниже и документы из карты документации. При расхождении между пересказом и репозиторием приоритет имеют актуальный исходный код, workflow и подтверждённые журналы.
+Это главный файл передачи проекта следующему чату или сопровождающему. Он собран из канонических документов и истории репозитория, доступных файлов Библиотеки и текущего диалога; это **не полный экспорт всех прежних переписок**. Автоматически прочитать весь архив чатов не удалось, поэтому пробелы отмечены явно. Сначала прочитать этот раздел, затем технические разделы ниже и документы из карты документации. При расхождении между пересказом и репозиторием приоритет имеют актуальный исходный код, workflow и подтверждённые журналы.
 
 ### Проект и текущее состояние
 
@@ -393,6 +393,8 @@ Use Windows Update, Defender platform/security-intelligence updates and inbox Hy
 No clean-guest scan, archive comparison or runtime result is established by this handover. These are pending tasks, not completed work.
 
 ## 14. Recovering project continuity after chat cleanup
+
+This handover was compiled from the canonical repository documents and PR history, available Library files, and the current conversation. It is not a complete archive or transcript of every previous chat; the Files search available for this task surfaced Library files, not arbitrary full chat transcripts. Treat unrecorded historical details as unknown until they are recovered from an export or another primary source.
 
 The repository, not the chat list, should be the durable record. Before deleting old chats:
 
