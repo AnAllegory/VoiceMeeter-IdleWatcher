@@ -406,3 +406,17 @@ The repository, not the chat list, should be the durable record. Before deleting
 
 A new chat may need the repository URL or a copy of this document if it does not have repository access. Do not assume that deleting chats automatically gives a new chat access to every repository or file.
 
+
+## 15. Additional operational log reviewed (2026-11-25/26)
+
+A saved maintainer-provided v1.0.6 log was inspected during this handover update. This is a log review, not an assistant-executed runtime test.
+
+- **2026-11-25 16:52:59:** The recorded graceful stop completed its cleanup path: the API accepted MacroButton ON, Logout succeeded, display notifications and named events were closed, and the single-instance mutex was released. This is a clean-stop sequence in the available log.
+- **2026-11-26 01:14:28:** A v1.0.6 start was recorded. The watcher found the 64-bit Remote API DLL, prepared graceful stop, observed DisplayState=On and successfully logged in; the initial status reported API available and VoiceMeeter running.
+- **2026-11-26 12:32:29:** A second v1.0.6 start was recorded. The first status snapshot followed immediately at 12:32:30.743. It reported API available, VoiceMeeter running and DisplayState=1 (On).
+- Subsequent snapshots were recorded at approximately five-minute intervals through 14:47:41.486. The measured intervals in this log ranged from about 300.324 to 300.784 seconds, consistent with the v1.0.6 300-second snapshot cadence.
+- Across the available snapshots, DisplayState remained 1 (On), ShutdownSentThisIdle remained False and ShutdownCommandsSinceLastEngineStop remained 0. Therefore this log does **not** contain an automatic-shutdown test; the display-On safety gate correctly kept shutdown ineligible.
+- No ERROR, WARN, WARNING or FATAL entries were present in this saved log.
+
+The log records two starts but does not establish why the earlier watcher session ended or what prompted the later start. A maintainer-reported manual restart is a possible explanation, but the log alone cannot prove it. This record must not be used to claim that the display-Off shutdown path was tested on 2026-11-26.
+
