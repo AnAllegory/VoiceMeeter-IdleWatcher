@@ -1,0 +1,116 @@
+name: Test report / Отчёт о тестировании
+description: Report a reproducible test run and its result / Зафиксируйте условия теста и полученный результат
+title: "test: "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this form to report a test performed against the repository source or a build explicitly approved by the maintainer.
+        Do not run or attach the historical Portable ZIP packages whose distribution is currently suspended. Do not disable antivirus protection or restore quarantined files. Do not disclose unpatched security vulnerabilities in a public Issue; follow SECURITY.md instead.
+        
+        Используйте эту форму для отчёта о проверке исходного кода репозитория или сборки, явно разрешённой сопровождающим.
+        Не запускайте и не прикладывайте исторические Portable ZIP, распространение которых приостановлено. Не отключайте антивирус и не восстанавливайте файлы из карантина. Не публикуйте сведения о неисправленных уязвимостях в открытом Issue: следуйте инструкции SECURITY.md.
+  - type: input
+    id: project-revision
+    attributes:
+      label: Project revision / Версия или ревизия проекта
+      description: Exact release tag or full commit SHA that was tested.
+      placeholder: v1.0.6 or full commit SHA
+    validations:
+      required: true
+  - type: input
+    id: windows-version
+    attributes:
+      label: Windows version and build / Версия и сборка Windows
+      placeholder: Windows 11 24H2, OS Build 26100.x
+    validations:
+      required: true
+  - type: input
+    id: powershell-version
+    attributes:
+      label: PowerShell version / Версия PowerShell
+      placeholder: Windows PowerShell 5.1.x
+    validations:
+      required: false
+  - type: input
+    id: voicemeeter-version
+    attributes:
+      label: VoiceMeeter edition and version / Редакция и версия VoiceMeeter
+      placeholder: Banana / Potato / Standard and version
+    validations:
+      required: false
+  - type: dropdown
+    id: test-area
+    attributes:
+      label: Test area / Что проверялось
+      description: Select the main area covered by this test.
+      options:
+        - Startup and initialization / Запуск и инициализация
+        - Idle threshold / Порог бездействия
+        - Display power-state gate / Проверка состояния дисплея
+        - VoiceMeeter Remote API / VoiceMeeter Remote API
+        - Shutdown request and engine state / Команда выключения и состояние движка
+        - Graceful stop and restart / Штатная остановка и перезапуск
+        - Logging and diagnostics / Журналы и диагностика
+        - Other / Другое
+    validations:
+      required: true
+  - type: dropdown
+    id: test-result
+    attributes:
+      label: Test result / Результат теста
+      options:
+        - Passed / Успешно
+        - Failed / Не пройдено
+        - Blocked / Заблокировано
+        - Inconclusive / Неоднозначно
+    validations:
+      required: true
+  - type: textarea
+    id: test-conditions
+    attributes:
+      label: Test conditions and steps / Условия и шаги проверки
+      description: Describe the starting state, configuration and exact sequence.
+      placeholder: |
+        1. Initial state:
+        2. Configuration:
+        3. Steps:
+    validations:
+      required: true
+  - type: textarea
+    id: expected-result
+    attributes:
+      label: Expected result / Ожидаемый результат
+      placeholder: What should the application have done?
+    validations:
+      required: true
+  - type: textarea
+    id: actual-result
+    attributes:
+      label: Actual result / Фактический результат
+      placeholder: What happened? Include exact error text when relevant.
+    validations:
+      required: true
+  - type: textarea
+    id: diagnostics
+    attributes:
+      label: Relevant diagnostics / Диагностические данные
+      description: Include only short, relevant and redacted excerpts. Remove usernames, local paths, tokens and unrelated personal data.
+      placeholder: Paste relevant log lines here. Do not attach executables or Portable ZIP archives.
+      render: shell
+    validations:
+      required: false
+  - type: checkboxes
+    id: safe-test
+    attributes:
+      label: Safe testing confirmation / Подтверждение безопасной проверки
+      options:
+        - label: I did not run suspended historical Portable ZIP packages, disable antivirus protection or restore quarantined files. / Я не запускал архивы Portable ZIP, распространение которых приостановлено, не отключал антивирус и не восстанавливал файлы из карантина.
+          required: true
+  - type: checkboxes
+    id: privacy-check
+    attributes:
+      label: Privacy check / Проверка приватности
+      options:
+        - label: I removed secrets and unrelated personal information from the report. / Я удалил из отчёта секреты и посторонние личные данные.
+          required: true
