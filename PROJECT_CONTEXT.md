@@ -358,8 +358,7 @@ This section separates documented observations from unresolved explanations. It 
 | Virtual switch | Default Switch |
 | Virtual disk | Dynamically expanding VHDX, maximum 80 GB |
 | Virtual disk location | Host-local path intentionally omitted from this public handover. |
-| Installation ISO | Windows 11 Client x64, Russian, build 26300.9457; local filename/path omitted. |
-| ISO build | Windows 11 Client x64, Russian, build 26300.9457 |
+| Installation media | Windows 11 Client x64, Russian, build 26300.9457; local filename/path omitted. |
 | ISO SHA-256 | 3DD71E8F84BFDC0054E1C4383DB2EAC921D21952AC03B2231CB6E9610A2F7423 |
 
 The maintainer computed the ISO SHA-256 with PowerShell and reported that it matched the Microsoft-published hash checked during download. The ISO is an installation medium; Windows itself is installed inside the VHDX. The dynamically expanding 80 GB value is a maximum virtual size, not 80 GB preallocated on E:.
@@ -442,5 +441,5 @@ This section supersedes the earlier clean-guest pending statements in sections 1
 - The v1.0.6 QUICK_START.txt displays correctly when explicitly read as UTF-8. Earlier garbling came from PowerShell 5.1 default decoding.
 - A limited VBS-driven v1.0.6 test in the guest, with guest networking disconnected and no VoiceMeeter installed, produced the logged missing VoicemeeterRemote64.dll failure. Control flow stops before C# compilation, VoiceMeeter API Login, the main loop and Command.Shutdown. This is not a full working-mode test.
 - Manual review of all seven source files found no direct networking/download, Defender modification, credential/browser/clipboard collection, process injection, registry/service/task/Run-key persistence or similar mechanisms. The review did identify two noteworthy trust/heuristic features: hidden PowerShell launched with -ExecutionPolicy Bypass, and a Remote API DLL selected from registry/standard paths without Authenticode verification. Neither proves malware or explains Wacatac.
-- The current main workflow tests/parses source and compiles C#; it does not package ZIPs. No packaging recipe was found in the inspected current main tree; the historical gh-pages ZIP commits are binary-only. The source of the 44-byte central-directory defect remains unknown.
+- The current main workflow tests/parses source and compiles C#; it does not package ZIPs. No packaging recipe was found in the inspected current main tree; the historical gh-pages ZIP commits included a commit that also changed index.html (theme color, dark-theme CSS and download links), followed by a ZIP-only replacement. The source of the 44-byte central-directory defect remains unknown.
 - Remaining unresolved: host Defender detection rationale, Google Search Console classifier/review outcome, v1.0.6 packaging tool/root cause, SmartScreen reputation, and full runtime behavior with VoiceMeeter installed. Keep public ZIP distribution paused.
