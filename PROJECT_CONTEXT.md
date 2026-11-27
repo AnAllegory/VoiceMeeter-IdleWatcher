@@ -5,7 +5,7 @@
 **Default branch:** main  
 **Visibility:** Public  
 **Source baseline:** v1.0.6 merged, target-PC validated and published as the latest stable GitHub Release  
-**Status:** The v1.0.6 source integration was merged through PR #13 on 2026-11-24 (merge commit `c71b20d6f4b6987be3b66758073fe325fddb4209`). PR #15 added the published Defender notice and produced release commit `d693ae05e28199b40ed10feae24c42b0a96d9f40`, to which the immutable `v1.0.6` tag points. The stable GitHub Release and Portable ZIP were initially published on 2026-11-24. The Portable ZIP download path and public website ZIP links were withdrawn on 2026-11-25; ready-to-run ZIP distribution is temporarily paused while the Google Search Console and Microsoft Defender detections are investigated. The v1.0.6 tag and GitHub Release remain unchanged; the detections do not establish whether the packages are malicious or false positives. PR #17 reconciled release documentation on `main`; PR #18 updated the tagged source links on `gh-pages`. The v1.0.5 tag remains unchanged at `ad60060dbe45323fb7c782ba6d4aa6df6b0b502f`, with its historical discussion at [#11](https://github.com/AnAllegory/VoiceMeeter-IdleWatcher/discussions/11). The current release is [v1.0.6](https://github.com/AnAllegory/VoiceMeeter-IdleWatcher/releases/tag/v1.0.6). As of 2026-11-27, the security investigation remains open and a clean Hyper-V guest is being prepared; no clean-guest Defender result or archive-execution result has yet been established.
+**Status:** The v1.0.6 source integration was merged through PR #13 on 2026-11-24 (merge commit `c71b20d6f4b6987be3b66758073fe325fddb4209`). PR #15 added the published Defender notice and produced release commit `d693ae05e28199b40ed10feae24c42b0a96d9f40`, to which the immutable `v1.0.6` tag points. The stable GitHub Release and Portable ZIP were initially published on 2026-11-24. The Portable ZIP download path and public website ZIP links were withdrawn on 2026-11-25; ready-to-run ZIP distribution is temporarily paused while the Google Search Console and Microsoft Defender detections are investigated. The v1.0.6 tag and GitHub Release remain unchanged; the detections do not establish whether the packages are malicious or false positives. PR #17 reconciled release documentation on `main`; PR #18 updated the tagged source links on `gh-pages`. The v1.0.5 tag remains unchanged at `ad60060dbe45323fb7c782ba6d4aa6df6b0b502f`, with its historical discussion at [#11](https://github.com/AnAllegory/VoiceMeeter-IdleWatcher/discussions/11). The current release is [v1.0.6](https://github.com/AnAllegory/VoiceMeeter-IdleWatcher/releases/tag/v1.0.6). As of 2026-11-27, clean-guest Defender scans have completed for both historical ZIPs and extracted folders with no detections in that guest; a limited v1.0.6 missing-DLL startup-failure test and manual source review are also complete. The host Wacatac detection, Google Search Console warning, v1.0.6 ZIP packaging cause, SmartScreen reputation and full VoiceMeeter runtime behavior remain unresolved.
 
 > For a new review or development session: read this document, REPOSITORY_LINEAGE.md, ARCHITECTURE.md, CHANGELOG.md, ROADMAP.md, SECURITY.md and AGENTS.md, then inspect the actual source files and the public modular workflow. The current source is authoritative if documentation and code ever disagree.
 
@@ -23,7 +23,7 @@
 - На целевом ПК Defender обнаружил в Portable ZIP v1.0.6 угрозу **Trojan:Script/Wacatac.H!ml** и поместил архив в карантин. Отдельная пользовательская проверка папки установленного приложения не зафиксировала обнаружение. Это разные проверки, и отрицательный результат папки не оправдывает ZIP.
 - Google Search Console сообщил о Portable ZIP v1.0.5 и странице, ссылавшейся на него. Позднее проверка URL показала, что страница находится в индексе Google. Индексация URL не означает, что предупреждение «Проблемы безопасности» снято.
 - Итог отправки запроса на повторную проверку Google в имеющейся передаче не подтверждён. Проверить актуальный статус непосредственно в Search Console.
-- В переписке упоминалась проблема структуры ZIP, но её точное воспроизведение и перечень ошибочных путей пока не зафиксированы в канонических материалах. Не описывать её как установленный дефект, пока не исследованы точные архивы и их списки файлов.
+- Дефект центрального каталога v1.0.6 подтверждён: стандартные ZIP-разборщики не читают записи, а диагностическая интерпретация с фиксированной частью 44 байта согласуется с локальными заголовками; стандартный формат требует 46 байт. Все CRC32 локальных данных совпали. Причина и инструмент упаковки пока не установлены.
 
 ### Лаборатория Hyper-V
 
@@ -45,15 +45,23 @@
 
 В гостя не передавались физические диски хоста и общие папки. Default Switch предоставляет сетевой доступ через хост. Это снижает прямое смешение сред, но не является абсолютной гарантией изоляции. Не включать общий доступ к папкам/буферу обмена и не подключать личный диск E: без отдельной необходимости.
 
+
+### Последние лабораторные результаты (27.11.2026)
+
+- Гостевая Windows: Windows 11 Pro 26H2, сборка 10.0.26300.9974, пользователь VM-LAB-WIN11. VoiceMeeter не устанавливался.
+- Defender: служба, антивирус, real-time, Behavior Monitor и IOAV включены; Security Intelligence 1.463.492.0 (обновлено 27.11.2026 07:20:29).
+- Оба архива и обе извлечённые папки прошли явные выборочные сканирования Defender без обнаружений; команды MpCmdRun завершились ExitCode=0.
+- v1.0.5 штатно открывается .NET ZipFile/tar и распаковывается Expand-Archive. v1.0.6 не читается стандартными ZIP-разборщиками; ручной разбор 8 локальных записей показал совпадение всех CRC32, и файлы были извлечены без исполнения.
+- Семь runtime/source-файлов каждого архива совпали побайтно с соответствующим исходным тегом. В v1.0.6 QUICK_START.txt корректно читается при явном UTF-8; прежнее искажение было ошибкой декодирования PowerShell 5.1.
+- В VM без сети запущен только VBS v1.0.6. Журнал подтвердил отсутствие VoicemeeterRemote64.dll. Старт завершился до компиляции C#, API Login и основного цикла; это проверка отказа, не полный рабочий тест.
+- После этой проверки пользователь самостоятельно восстановил сетевое подключение VM. Текущее состояние питания VM в этой записи не фиксируется.
+
 ### Следующие задачи лаборатории
 
-1. Завершить OOBE и штатные обновления Windows.
-2. Обновить Microsoft Defender Security Intelligence; проверить состояние защиты в реальном времени и другие актуальные параметры, ничего не отключая.
-3. Создать контрольную точку Hyper-V для чистой обновлённой системы до помещения исследуемых архивов.
-4. Получить только точные исторические артефакты v1.0.5 и v1.0.6, зафиксировать источник, имена, размеры и SHA-256. Не восстанавливать копию из карантина хоста.
-5. Сначала сканировать архивы и содержимое без запуска. Сохранить точное имя обнаружения, действие Defender, время и версию сигнатур.
-6. Сравнить результаты с исходниками и историей сборки. Исполнение программы не является первым шагом и требует отдельного обоснования и подготовленного снимка VM.
-7. Не возвращать ZIP-загрузки на сайт, пока причины сигналов не исследованы и сопровождающий не примет отдельное решение о распространении.
+1. Установить происхождение дефектной упаковки v1.0.6: найти исходную команду/инструмент или воспроизводимый процесс создания ZIP.
+2. Проверить SmartScreen/репутацию запуска отдельно от сканирования Defender, не восстанавливая карантинный архив и не снимая защиту.
+3. При необходимости провести отдельный контролируемый тест рабочего режима с установленным VoiceMeeter только после анализа и подготовки нового контрольного снимка; этот этап не был выполнен.
+4. Сохранить паузу публичной раздачи Portable ZIP до разрешения предупреждений и устранения/объяснения дефекта упаковки.
 
 ### Как вести дальнейшую работу
 
@@ -420,3 +428,18 @@ A saved maintainer-provided v1.0.6 log was inspected during this handover update
 
 The log records two starts but does not establish why the earlier watcher session ended or what prompted the later start. A maintainer-reported manual restart is a possible explanation, but the log alone cannot prove it. This record must not be used to claim that the display-Off shutdown path was tested on 2026-11-26.
 
+
+
+## 16. Security investigation update — 2026-11-27
+
+This section supersedes the earlier clean-guest pending statements in sections 11-13. The bilingual historical ZIP audit reports now contain the full dated addendum.
+
+- The updated Hyper-V guest is Windows 11 Pro 26H2 build 10.0.26300.9974. Defender service, antivirus, real-time protection, behavior monitoring and IOAV were enabled; Security Intelligence was 1.463.492.0.
+- Both exact historical ZIPs and both extracted folders were explicitly scanned. MpCmdRun completed with exit code 0 and reported no threats found in the guest. This does not negate the host Wacatac detection or clear either package for distribution.
+- v1.0.5 was read and extracted by standard ZIP tools. v1.0.6 remains malformed: standard readers fail to enumerate/extract its central directory; all eight manually parsed local records passed CRC32 and were extracted without running their contents.
+- Seven runtime/source files in each archive match their corresponding release tag byte-for-byte. Between v1.0.5 and v1.0.6, only the main PS1 and PSD1 files differ; five implementation files are identical. The PSD1 values are unchanged; the PS1 differences are the v1.0.6 maintenance changes described in the audit addendum.
+- The v1.0.6 QUICK_START.txt displays correctly when explicitly read as UTF-8. Earlier garbling came from PowerShell 5.1 default decoding.
+- A limited VBS-driven v1.0.6 test in the guest, with guest networking disconnected and no VoiceMeeter installed, produced the logged missing VoicemeeterRemote64.dll failure. Control flow stops before C# compilation, VoiceMeeter API Login, the main loop and Command.Shutdown. This is not a full working-mode test.
+- Manual review of all seven source files found no direct networking/download, Defender modification, credential/browser/clipboard collection, process injection, registry/service/task/Run-key persistence or similar mechanisms. The review did identify two noteworthy trust/heuristic features: hidden PowerShell launched with -ExecutionPolicy Bypass, and a Remote API DLL selected from registry/standard paths without Authenticode verification. Neither proves malware or explains Wacatac.
+- The current main workflow tests/parses source and compiles C#; it does not package ZIPs. No packaging recipe was found in the inspected current main tree; the historical gh-pages ZIP commits are binary-only. The source of the 44-byte central-directory defect remains unknown.
+- Remaining unresolved: host Defender detection rationale, Google Search Console classifier/review outcome, v1.0.6 packaging tool/root cause, SmartScreen reputation, and full runtime behavior with VoiceMeeter installed. Keep public ZIP distribution paused.
