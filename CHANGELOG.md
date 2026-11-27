@@ -10,6 +10,7 @@ The v1.0.0 release was published on 2026-11-19, v1.0.5 on 2026-11-22 and v1.0.6 
 
 - Refresh PROJECT_CONTEXT.md as a durable recovery handover, with a Russian quick-resume section, the current Google Search Console / Microsoft Defender evidence boundaries, the Hyper-V lab configuration and explicit pending test steps.
 - Record the current chat-reset procedure and the rule to preserve unknowns as unknowns. Documentation only; no runtime source, dependencies, CI, tags, releases or distribution artifacts are changed.
+- Extend the historical Portable ZIP security review with clean Windows 11 guest scans, byte-for-byte source comparisons, a limited missing-DLL startup-failure test and a manual review of all seven runtime/source files. No runtime code, tags, releases or ZIP distribution status are changed.
 
 ## [1.0.6] - 2026-11-24
 
