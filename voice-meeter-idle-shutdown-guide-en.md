@@ -16,6 +16,8 @@ permalink: /voice-meeter-idle-shutdown-guide-en/
 <meta property="og:title" content="How to Automatically Shut Down VoiceMeeter After Inactivity">
 <meta property="og:description" content="A practical explanation of idle-aware VoiceMeeter shutdown on Windows, including the display-off safety condition and Remote API requirements.">
 <meta property="og:url" content="https://anallegory.github.io/VoiceMeeter-IdleWatcher/voice-meeter-idle-shutdown-guide-en/">
+<meta property="og:locale" content="en_US">
+<meta property="og:locale:alternate" content="ru_RU">
 <title>Automatically Shut Down VoiceMeeter After Inactivity | IdleWatcher Guide</title>
 <script type="application/ld+json">
 {
