@@ -4,7 +4,17 @@ permalink: /security-audit-ru/
 
 <!doctype html>
 <html lang="ru">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="robots" content="index,follow"><meta name="description" content="Предварительная техническая проверка исторических архивов VoiceMeeter IdleWatcher Portable ZIP v1.0.5 и v1.0.6, результаты анализа структуры и ограничения."><title>Проверка исторических Portable ZIP | VoiceMeeter IdleWatcher</title>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="robots" content="index,follow"><meta name="description" content="Предварительная техническая проверка исторических архивов VoiceMeeter IdleWatcher Portable ZIP v1.0.5 и v1.0.6, результаты анализа структуры и ограничения.">
+<link rel="canonical" href="https://anallegory.github.io/VoiceMeeter-IdleWatcher/security-audit-ru/">
+<link rel="alternate" hreflang="en" href="https://anallegory.github.io/VoiceMeeter-IdleWatcher/security-audit-en/">
+<link rel="alternate" hreflang="ru" href="https://anallegory.github.io/VoiceMeeter-IdleWatcher/security-audit-ru/">
+<link rel="alternate" hreflang="x-default" href="https://anallegory.github.io/VoiceMeeter-IdleWatcher/security-audit-en/">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Проверка исторических Portable ZIP | VoiceMeeter IdleWatcher">
+<meta property="og:description" content="Предварительная техническая проверка исторических архивов VoiceMeeter IdleWatcher Portable ZIP v1.0.5 и v1.0.6, результаты анализа структуры и ограничения.">
+<meta property="og:url" content="https://anallegory.github.io/VoiceMeeter-IdleWatcher/security-audit-ru/">
+<meta property="og:locale" content="ru_RU">
+<meta property="og:locale:alternate" content="en_US"><title>Проверка исторических Portable ZIP | VoiceMeeter IdleWatcher</title>
 <style>
 :root{color-scheme:dark;--bg:#0d1422;--panel:#141f31;--ink:#e7edf7;--muted:#a5b4c9;--line:#2b3a52;--link:#a9c5ff;--amber:#f3c678}
 *{box-sizing:border-box}
