@@ -53,6 +53,7 @@ code{padding:2px 5px;border-radius:5px;background:#26364e}footer{text-align:cent
 <li><strong>Display power state:</strong> the display must be fully Off. On, Dimmed, unknown or unavailable states block automatic shutdown.</li>
 </ul>
 <p>Only when both conditions are satisfied does the watcher request VoiceMeeter shutdown through the VoiceMeeter Remote API. It does not shut down Windows.</p>
+<div class="notice"><strong>Important limitation: idle is not the same as silent.</strong><br>IdleWatcher does not measure audio playback or determine whether a stream, recording, download, render or other background task is still active. If VoiceMeeter must remain available while unattended audio is playing, do not enable automatic shutdown for that situation. Choose the idle threshold with this limitation in mind.</div>
 
 <h2>How VoiceMeeter IdleWatcher works</h2>
 <ol>
@@ -82,6 +83,8 @@ code{padding:2px 5px;border-radius:5px;background:#26364e}footer{text-align:cent
 <h2>Frequently asked questions</h2>
 <h3>Can VoiceMeeter shut down while I am still using the PC?</h3>
 <p>The configured idle threshold must have elapsed and the display must be fully Off. Display On, Dimmed or unknown blocks the automatic shutdown request. The conditions are checked again immediately before the request.</p>
+<h3>Can it shut down while unattended audio is playing?</h3>
+<p>Potentially, yes. IdleWatcher checks user inactivity and display power state, not audio playback. If playback or another background task must continue, do not rely on the idle/display conditions alone.</p>
 <h3>Does stopping the watcher shut down VoiceMeeter?</h3>
 <p>No. Stopping IdleWatcher stops the watcher and performs cleanup. It does not issue a VoiceMeeter shutdown request.</p>
 <h3>Can I use it without VoiceMeeter Remote API?</h3>
