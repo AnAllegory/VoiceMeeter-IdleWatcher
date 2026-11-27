@@ -1,4 +1,5 @@
 ---
+layout: null
 permalink: /voice-meeter-idle-shutdown-guide-en/
 ---
 <!doctype html>
