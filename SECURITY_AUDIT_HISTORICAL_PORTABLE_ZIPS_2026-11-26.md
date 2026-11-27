@@ -65,15 +65,17 @@ The ZIP central-directory file header defined by the PKWARE ZIP specification ha
 
 The inspection identifies the malformed structure, but does not yet identify which packaging step or tool introduced it.
 
-## 5. v1.0.6 source comparison
+## 5. Source comparison
 
-Seven implementation/configuration files recovered from the v1.0.6 ZIP were compared with the corresponding files in the checked-out v1.0.6 source tree:
+Seven implementation/configuration files recovered from each of the v1.0.5 and v1.0.6 ZIPs were compared with the corresponding files in the matching Git tag. For both archives, all seven files matched byte-for-byte:
 
-- `VoiceMeeter-IdleWatcher.ps1` matched byte-for-byte.
-- `VoiceMeeter-IdleWatcher.psd1`, `VoiceMeeter-IdleWatcher.vbs`, the three `.psm1` modules, and `VMRIdleWatcherNative.cs` matched after normalizing line endings from LF to CRLF.
-- `QUICK_START.txt` was not included in this source-file comparison.
+- VoiceMeeter-IdleWatcher.ps1
+- VoiceMeeter-IdleWatcher.psd1
+- VoiceMeeter-IdleWatcher.vbs
+- the three .psm1 modules
+- VMRIdleWatcherNative.cs
 
-This establishes textual correspondence for the seven compared implementation/configuration files. It does not establish that every possible build or runtime dependency is benign, and the same comparison was not performed for the v1.0.5 package in this workflow.
+QUICK_START.txt was not part of this seven-file runtime/source comparison. The byte-for-byte matches establish that the compared files correspond to their respective tags; they do not establish that every possible build/runtime dependency is benign or that the packages are safe.
 
 ## 6. Limited static source screening
 
@@ -111,23 +113,23 @@ The platform's Defender signature version at scan time was `1.463.480.0`.
 2. Every local-file entry examined in both packages passed its recorded CRC32 check.
 3. v1.0.5 passed the tested standard central-directory consistency checks.
 4. v1.0.6 has a non-standard/malformed central-directory layout: its records match the local entries when interpreted with a 44-byte fixed portion, not the standard 46-byte portion.
-5. The seven compared v1.0.6 implementation/configuration files correspond textually to the checked-out v1.0.6 source files (one byte-for-byte and six after line-ending normalization).
+5. All seven compared implementation/configuration files in each archive matched the corresponding files in its own Git tag byte-for-byte.
 6. The configured static searches reported no matches, but their coverage is limited.
-7. The Defender scan on the hosted runner reported no detections, but its disabled protection components make that result inconclusive for a fully protected end-user system.
+7. Defender reported no detections for the exact archives and extracted folders in the tested clean Windows 11 guest with the listed protection components enabled. This is a bounded negative result, not proof of safety and not an explanation of the host detection.
 
-**No malware verdict is made.** The v1.0.6 packaging defect is established by the archive-structure checks; the reason for the reported Defender and Google classifications remains unknown. The v1.0.5 package's valid ZIP structure does not establish that it is harmless.
+**No malware verdict is made.** The v1.0.6 packaging defect is established by archive-structure checks; the reason for the reported Defender and Google classifications remains unknown. The v1.0.5 package's valid ZIP structure and the clean-guest scan results do not establish that either package is harmless.
 
 ## 9. Work still required
 
 Before either historical package can be described as cleared for distribution, the following remain:
 
-1. reproduce the download and scan on a clean Windows 11 virtual machine with current Defender signatures and real-time, behavior, and IOAV protection enabled;
-2. test browser/SmartScreen behavior separately from the Defender file scan;
-3. identify the packaging command or tool that produced the v1.0.6 central-directory defect, then rebuild and validate a replacement package with independent ZIP readers;
-4. perform controlled runtime observation in an isolated VM, recording process, file, registry, and network activity; and
-5. if a specific vendor detection persists, request the exact detection rationale or sample analysis from that vendor.
+1. test browser/SmartScreen launch reputation separately; the observed absence of an Edge download warning was not a SmartScreen launch test;
+2. identify the packaging command/tool or reproducible process that produced the v1.0.6 central-directory defect; the original writer has not been identified;
+3. perform a controlled working-mode runtime observation in an isolated VM with VoiceMeeter installed, recording process, file, registry and network activity (for example, with Process Monitor/ETW);
+4. verify the Authenticode publisher/signature of the VoiceMeeter Remote API DLL used in a controlled working installation; and
+5. seek a vendor explanation or sample analysis for the host Wacatac detection and clarify the Google Search Console warning/review outcome.
 
-Until those steps are completed, the temporary pause on public Portable ZIP distribution remains appropriate.
+The clean-guest Defender scans, exact archive comparisons, manual source review and limited missing-DLL fail-fast test are complete. They do not close the remaining items above. Until the unresolved security questions are adequately addressed, the temporary pause on public Portable ZIP distribution remains appropriate.
 
 ## 10. Repository impact and reproducibility
 
@@ -204,7 +206,7 @@ Two implementation aspects should remain visible in the security record:
 
 ### 11.5. ZIP packaging provenance: unresolved
 
-The current main branch contains one workflow, powershell-check.yml. It parses PowerShell 5.1, checks project contracts, compiles the embedded C# source, and tests the VBS invalid-argument path. It does not build Portable ZIP archives. A repository search for Compress-Archive and related packaging commands did not find a build recipe in the available main source tree. Historical gh-pages commits that added/replaced the ZIPs changed only the binary archive. Therefore the tool and exact packaging step that produced the 44-byte central-directory layout in v1.0.6 remain unknown.
+The current main branch contains one workflow, powershell-check.yml. It parses PowerShell 5.1, checks project contracts, compiles the embedded C# source, and tests the VBS invalid-argument path. It does not build Portable ZIP archives. A repository search for Compress-Archive and related packaging commands did not find a build recipe in the available main source tree. The first v1.0.5 ZIP object was added in gh-pages commit 69755ea726cb0523249ba5a5511a2023139b2b6c (83,697 bytes; SHA-256 4d3b2676212f3b24bcd6c0d2eae11a74e1d7e03d2f2e145b877d22d771553286; Git blob 5a8905c8…). That commit also changed index.html (theme color, dark-theme CSS and download links), so it did not change only the binary archive. The ZIP was replaced about two minutes later by commit d69bb55 with the final v1.0.5 object (83,715 bytes; SHA-256 53B9FB4928C77B4F3C4805589A902A1D134B092EE7A0784F8ACFFE2B0D1633BF). The v1.0.6 ZIP was added in commit 9b70b1e (84,958 bytes; SHA-256 C3B8097C59A583167837481503EF17D114282D634A849F0CA76EC95243A018AE). The first v1.0.5 object is recorded here as packaging history, not as one of the two final archives examined/scanned in this report. Therefore the tool and exact packaging step that produced the 44-byte central-directory layout in v1.0.6 remain unknown.
 
 ### 11.6. Updated conclusion and remaining unknowns
 

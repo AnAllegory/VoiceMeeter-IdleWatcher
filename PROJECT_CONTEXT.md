@@ -33,22 +33,22 @@
 - Поколение 2; 6 ГБ RAM; 2 виртуальных процессора.
 - Сеть Default Switch.
 - Динамически расширяемый VHDX, максимальный размер 80 ГБ:
-  E:\VM\VM-Test-Windows11\VM-Test-Windows11\Virtual Hard Disks\VM-Test-Windows11.vhdx
+  (host-local path omitted)
 - ISO:
-  E:\VM\Windows11_Client_x64_ru-ru_26300_9457.iso
+  (host-local filename/path omitted)
 - SHA-256, вычисленный PowerShell на хосте и сверенный с опубликованным значением для этого ISO:
   3DD71E8F84BFDC0054E1C4383DB2EAC921D21952AC03B2231CB6E9610A2F7423
 
 Первоначальная загрузка VM завершилась UEFI Boot Summary с ошибкой загрузки SCSI DVD. После временного отключения Secure Boot внутри VM установщик Windows запустился. Это наблюдаемая последовательность, но сама по себе она не доказывает окончательную причину сбоя. Secure Boot сейчас оставлен отключённым; не включать его и не менять шаблоны наугад. **Состояние виртуального TPM 2.0 в беседе не было надёжно подтверждено**: не утверждать, что он включён, пока это не проверено в параметрах VM. Виртуальный TPM Hyper-V не равен физическому TPM-чипу хоста.
 
-Внутри гостевой Windows выбрана редакция Windows 11 Pro, регион Россия и русская клавиатура. На этапе OOBE началась проверка/загрузка обновлений. Имя гостевого устройства VM-LAB-WIN11 и локальное имя пользователя LabUser предлагались как варианты, но окончательное подтверждение этих двух значений отсутствует. Точный текущий экран гостевой Windows следует уточнить у пользователя перед следующей инструкцией.
+В гостевой Windows установлена редакция Windows 11 Pro, выбраны регион Россия и русская клавиатура. Имя гостевого компьютера подтверждено: VM-LAB-WIN11. Имя локальной учётной записи Windows не подтверждено и не должно подменяться именем компьютера.
 
 В гостя не передавались физические диски хоста и общие папки. Default Switch предоставляет сетевой доступ через хост. Это снижает прямое смешение сред, но не является абсолютной гарантией изоляции. Не включать общий доступ к папкам/буферу обмена и не подключать личный диск E: без отдельной необходимости.
 
 
 ### Последние лабораторные результаты (27.11.2026)
 
-- Гостевая Windows: Windows 11 Pro 26H2, сборка 10.0.26300.9974, пользователь VM-LAB-WIN11. VoiceMeeter не устанавливался.
+- Гостевая Windows: Windows 11 Pro 26H2, сборка 10.0.26300.9974; имя компьютера VM-LAB-WIN11. VoiceMeeter не устанавливался.
 - Defender: служба, антивирус, real-time, Behavior Monitor и IOAV включены; Security Intelligence 1.463.492.0 (обновлено 27.11.2026 07:20:29).
 - Оба архива и обе извлечённые папки прошли явные выборочные сканирования Defender без обнаружений; команды MpCmdRun завершились ExitCode=0.
 - v1.0.5 штатно открывается .NET ZipFile/tar и распаковывается Expand-Archive. v1.0.6 не читается стандартными ZIP-разборщиками; ручной разбор 8 локальных записей показал совпадение всех CRC32, и файлы были извлечены без исполнения.
@@ -324,8 +324,8 @@ This section separates documented observations from unresolved explanations. It 
 | Did Google flag the v1.0.5 Portable ZIP / linking page? | Reported in Search Console and documented on the site and in repository notices. | The exact underlying Google classifier reason and final review outcome. |
 | Did Defender detect v1.0.6 Portable ZIP? | Yes; Trojan:Script/Wacatac.H!ml was reported and the downloaded archive was quarantined on the maintainer's Windows 11 PC. | Whether this is a true positive, false positive or packaging/heuristic interaction. |
 | Did a separate folder scan detect the same threat? | The maintainer reported no detection event in a separate custom scan of the installed application folder. | This does not clear the ZIP, the extracted contents, every file or every execution path. |
-| Has the same archive been tested in a clean guest? | No result is recorded as of 2026-11-27; the Hyper-V guest is still being prepared. | Clean-guest scan result and any later controlled runtime behavior. |
-| Is there a confirmed ZIP layout defect? | A ZIP-structure/layout concern was mentioned during recent conversations. | The exact malformed/duplicate/missing paths and a reproducible comparison have not been captured in the canonical record. Do not describe it as confirmed until the original archives are inspected. |
+| Has the same archive been tested in a clean guest? | Yes. Both exact archives and extracted folders were scanned in the clean Windows 11 guest with Defender protections enabled; no detections were reported there. | This does not negate the host Wacatac detection or prove package safety; full working-mode runtime testing remains open. |
+| Is there a confirmed ZIP layout defect? | Yes. The v1.0.6 central-directory records have a reproducible non-standard 44-byte fixed layout instead of the standard 46-byte structure; local records pass CRC32. | The exact packaging tool/process that produced the defect remains unknown. |
 | Is the source proven safe? | Static CI and prior source review/target-PC validation exist. | CI is not malware analysis and does not certify packaged archives or prove absence of malicious behavior. |
 
 ### Required handling
@@ -357,9 +357,8 @@ This section separates documented observations from unresolved explanations. It 
 | Virtual processors | 2 |
 | Virtual switch | Default Switch |
 | Virtual disk | Dynamically expanding VHDX, maximum 80 GB |
-| VHDX path | E:\VM\VM-Test-Windows11\VM-Test-Windows11\Virtual Hard Disks\VM-Test-Windows11.vhdx |
-| Installation ISO | E:\VM\Windows11_Client_x64_ru-ru_26300_9457.iso |
-| ISO build | Windows 11 Client x64, Russian, build 26300.9457 |
+| Virtual disk location | Host-local path intentionally omitted from this public handover. |
+| Installation media | Windows 11 Client x64, Russian, build 26300.9457; local filename/path omitted. |
 | ISO SHA-256 | 3DD71E8F84BFDC0054E1C4383DB2EAC921D21952AC03B2231CB6E9610A2F7423 |
 
 The maintainer computed the ISO SHA-256 with PowerShell and reported that it matched the Microsoft-published hash checked during download. The ISO is an installation medium; Windows itself is installed inside the VHDX. The dynamically expanding 80 GB value is a maximum virtual size, not 80 GB preallocated on E:.
@@ -379,26 +378,27 @@ Current handover facts:
 
 - Windows 11 Pro was selected in Windows Setup.
 - The guest region was set to Russia and the keyboard to Russian.
-- The guest device name VM-LAB-WIN11 and local account name LabUser were suggested during OOBE, but their final acceptance is not confirmed in this record.
-- OOBE reached a Windows update check/download screen, which indicated that the process could take around 30 minutes. The exact current screen and update completion must be confirmed with the maintainer at the next interaction.
+- The guest computer name is confirmed as VM-LAB-WIN11. The local Windows account name is not confirmed in this record.
+- OOBE and Windows Update were completed before the archive tests documented below.
 - No third-party hardware-driver bundles, optimization utilities or additional antivirus products have been installed as part of the recorded lab preparation.
 
 ### Minimal lab policy
 
 Use Windows Update, Defender platform/security-intelligence updates and inbox Hyper-V virtual-device drivers. Do not install host motherboard, physical CPU, GPU, Realtek or other OEM drivers into this guest. Do not add unnecessary developer tools or applications. Keep Defender enabled. Do not enable host folder sharing or attach personal physical disks for convenience.
 
-## 13. Next actions for the clean-guest investigation
+## 13. Remaining actions for the security investigation
 
-1. Finish the guest OOBE and Windows Update. Confirm the guest reaches the desktop and reboots normally from its VHDX with the ISO no longer needed for boot.
-2. Update Microsoft Defender Security Intelligence and verify that real-time protection is enabled. Record the actual state and version rather than assuming defaults.
-3. Create and name a Hyper-V checkpoint for the updated, Defender-ready guest before importing any historical sample.
-4. Obtain the exact historical v1.0.5 and v1.0.6 Portable artifacts from a traceable source. Do not recover the quarantined host copy. If an original artifact is unavailable, state that limitation instead of substituting a GitHub-generated source snapshot.
-5. Record artifact filenames, sizes and SHA-256 hashes. Compare ZIP entry lists and directory structure before extraction. Keep the two versions separate.
-6. Scan the ZIP archives without executing them. Record Defender's detection name, affected path, action, timestamp and intelligence version. If a sample is quarantined, do not restore it just to continue.
-7. Compare archive contents with the corresponding tagged source/release records. Do not infer a false positive from a clean folder scan or a clean scan of a different artifact.
-8. Only consider runtime execution after static/archive evidence has been reviewed and the maintainer explicitly chooses a controlled test. Use a fresh checkpoint and disable guest networking before any run that does not require network access. Never expose host folders or personal data to the guest.
+The clean-guest preparation, Defender scans of both exact historical ZIPs and extracted folders, archive parsing/comparison, seven-file byte-for-byte tag comparisons, manual source review and limited missing-DLL fail-fast test are complete.
 
-No clean-guest scan, archive comparison or runtime result is established by this handover. These are pending tasks, not completed work.
+The following questions remain open:
+
+1. Test Microsoft SmartScreen/launch reputation separately; the absence of an Edge download warning during file download was not a launch-reputation test.
+2. Identify the exact ZIP writer/tool or reproduce the packaging process that created the v1.0.6 central-directory defect.
+3. If a controlled runtime test is later approved, install VoiceMeeter in a fresh checkpointed guest and observe the working mode with Process Monitor/ETW. This has not been performed.
+4. Verify the Authenticode publisher/signature of the VoiceMeeter Remote API DLL in a controlled working installation.
+5. Clarify the host Wacatac detection rationale and the Google Search Console warning/review outcome.
+
+Keep public Portable ZIP distribution paused. Do not restore quarantined copies, disable Defender or infer a false positive from the clean-guest results.
 
 ## 14. Recovering project continuity after chat cleanup
 
@@ -441,5 +441,5 @@ This section supersedes the earlier clean-guest pending statements in sections 1
 - The v1.0.6 QUICK_START.txt displays correctly when explicitly read as UTF-8. Earlier garbling came from PowerShell 5.1 default decoding.
 - A limited VBS-driven v1.0.6 test in the guest, with guest networking disconnected and no VoiceMeeter installed, produced the logged missing VoicemeeterRemote64.dll failure. Control flow stops before C# compilation, VoiceMeeter API Login, the main loop and Command.Shutdown. This is not a full working-mode test.
 - Manual review of all seven source files found no direct networking/download, Defender modification, credential/browser/clipboard collection, process injection, registry/service/task/Run-key persistence or similar mechanisms. The review did identify two noteworthy trust/heuristic features: hidden PowerShell launched with -ExecutionPolicy Bypass, and a Remote API DLL selected from registry/standard paths without Authenticode verification. Neither proves malware or explains Wacatac.
-- The current main workflow tests/parses source and compiles C#; it does not package ZIPs. No packaging recipe was found in the inspected current main tree; the historical gh-pages ZIP commits are binary-only. The source of the 44-byte central-directory defect remains unknown.
+- The current main workflow tests/parses source and compiles C#; it does not package ZIPs. No packaging recipe was found in the inspected current main tree; the historical gh-pages ZIP commits included a commit that also changed index.html (theme color, dark-theme CSS and download links), followed by a ZIP-only replacement. The source of the 44-byte central-directory defect remains unknown.
 - Remaining unresolved: host Defender detection rationale, Google Search Console classifier/review outcome, v1.0.6 packaging tool/root cause, SmartScreen reputation, and full runtime behavior with VoiceMeeter installed. Keep public ZIP distribution paused.
