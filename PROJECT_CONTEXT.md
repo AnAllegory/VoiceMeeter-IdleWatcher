@@ -41,7 +41,7 @@
 
 Первоначальная загрузка VM завершилась UEFI Boot Summary с ошибкой загрузки SCSI DVD. После временного отключения Secure Boot внутри VM установщик Windows запустился. Это наблюдаемая последовательность, но сама по себе она не доказывает окончательную причину сбоя. Secure Boot сейчас оставлен отключённым; не включать его и не менять шаблоны наугад. **Состояние виртуального TPM 2.0 в беседе не было надёжно подтверждено**: не утверждать, что он включён, пока это не проверено в параметрах VM. Виртуальный TPM Hyper-V не равен физическому TPM-чипу хоста.
 
-Внутри гостевой Windows выбрана редакция Windows 11 Pro, регион Россия и русская клавиатура. На этапе OOBE началась проверка/загрузка обновлений. Имя гостевого устройства VM-LAB-WIN11 и локальное имя пользователя LabUser предлагались как варианты, но окончательное подтверждение этих двух значений отсутствует. Точный текущий экран гостевой Windows следует уточнить у пользователя перед следующей инструкцией.
+В гостевой Windows установлена редакция Windows 11 Pro, выбраны регион Россия и русская клавиатура. Имя гостевого компьютера подтверждено: VM-LAB-WIN11. Имя локальной учётной записи Windows не подтверждено и не должно подменяться именем компьютера.
 
 В гостя не передавались физические диски хоста и общие папки. Default Switch предоставляет сетевой доступ через хост. Это снижает прямое смешение сред, но не является абсолютной гарантией изоляции. Не включать общий доступ к папкам/буферу обмена и не подключать личный диск E: без отдельной необходимости.
 
@@ -380,7 +380,7 @@ Current handover facts:
 - Windows 11 Pro was selected in Windows Setup.
 - The guest region was set to Russia and the keyboard to Russian.
 - The guest computer name is confirmed as VM-LAB-WIN11. The local Windows account name is not confirmed in this record.
-- OOBE reached a Windows update check/download screen, which indicated that the process could take around 30 minutes. The exact current screen and update completion must be confirmed with the maintainer at the next interaction.
+- OOBE and Windows Update were completed before the archive tests documented below.
 - No third-party hardware-driver bundles, optimization utilities or additional antivirus products have been installed as part of the recorded lab preparation.
 
 ### Minimal lab policy
