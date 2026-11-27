@@ -14,7 +14,8 @@ permalink: /security-audit-en/
 <meta property="og:description" content="Preliminary technical review of historical VoiceMeeter IdleWatcher Portable ZIP packages v1.0.5 and v1.0.6, including archive integrity results and limitations.">
 <meta property="og:url" content="https://anallegory.github.io/VoiceMeeter-IdleWatcher/security-audit-en/">
 <meta property="og:locale" content="en_US">
-<meta property="og:locale:alternate" content="ru_RU"><title>Historical Portable ZIP Security Review | VoiceMeeter IdleWatcher</title>
+<meta property="og:locale:alternate" content="ru_RU">
+<title>Historical Portable ZIP Security Review | VoiceMeeter IdleWatcher</title>
 <style>
 :root{color-scheme:dark;--bg:#0d1422;--panel:#141f31;--ink:#e7edf7;--muted:#a5b4c9;--line:#2b3a52;--link:#a9c5ff;--amber:#f3c678}
 *{box-sizing:border-box}
